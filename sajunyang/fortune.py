@@ -103,7 +103,7 @@ def _pillar_score(chart, a, p: Pillar) -> tuple[float, list, str]:
 
 
 def _grade(s: int) -> str:
-    return "대길" if s >= 85 else "길" if s >= 72 else "평" if s >= 58 else "주의" if s >= 45 else "조심"
+    return "대길" if s >= 85 else "길" if s >= 72 else "순탄" if s >= 58 else "보통" if s >= 45 else "조심"
 
 
 def _elem_of(p: Pillar) -> tuple[str, str]:
@@ -201,8 +201,10 @@ def life_fortune(r) -> dict:
         pts.append({"나이": d.start_age, "시작": d.start_year, "간지": d.pillar.hanja, "한글": d.pillar.hangul,
                     "십성": f"{d.stem_god}/{d.branch_god}", "12운성": stage, "점수": _clamp(s),
                     "현재": bool(d.current), "테마": YEAR_THEME[d.stem_god][0].replace("해", "시기")})
-    best = max(pts, key=lambda x: x["점수"])
     cur = next((x for x in pts if x["현재"]), None)
+    # 전성기는 '지금 이후'(현재 대운 포함)에서 고른다 — 지나간 어린 시절을 알려주면 쓸모가 없다
+    ahead = [x for x in pts if (cur is None or x["나이"] >= cur["나이"]) and x["나이"] < 70] or pts
+    best = max(ahead, key=lambda x: x["점수"])
     nxt = next((x for x in pts if cur and x["나이"] == cur["나이"] + 10), None)
     return {"대운": pts, "전성기": best, "현재": cur, "다음": nxt}
 

@@ -163,7 +163,7 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
 .pillar .lbl { font: 13px var(--title); color: var(--sub); }
 .pillar.me .lbl { color: var(--pink-d); }
-.tile { display: grid; place-items: center; aspect-ratio: 1; border-radius: 20px; margin: 4px 0; font: clamp(30px, 10vw, 46px)/1 "Gowun Dodum", serif; position: relative; font-weight: 700; }
+.tile { display: grid; place-items: center; aspect-ratio: 1; border-radius: 20px; margin: 4px 0; padding-bottom: 14px; font: clamp(26px, 8.5vw, 40px)/1 "Gowun Dodum", serif; position: relative; font-weight: 700; }
 .tile small { position: absolute; bottom: 5px; font: 11px var(--title); opacity: .85; }
 .pillar.me .tile { box-shadow: 0 0 0 3px var(--pink) inset; }
 .e-목 { background: var(--wood-l); color: var(--wood); } .e-화 { background: var(--fire-l); color: var(--fire); }
@@ -173,7 +173,7 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .pillar .god { font-size: 12.5px; min-height: 20px; }
 .pillar .meta { font-size: 12px; color: var(--sub); margin-top: 2px; }
 .bars { display: grid; gap: 10px; }
-.bar { display: grid; grid-template-columns: 64px 1fr 48px; gap: 10px; align-items: center; font-size: 14.5px; }
+.bar { display: grid; grid-template-columns: 64px 1fr 82px; gap: 10px; align-items: center; font-size: 14.5px; }
 .bar .n { font-family: var(--title); } .bar .v { text-align: right; color: var(--sub); font-size: 13px; }
 .f-목 { background: var(--wood); } .f-화 { background: var(--fire); } .f-토 { background: var(--earth); } .f-금 { background: var(--metal); } .f-수 { background: var(--water); }
 .yong { font: 11px var(--title); background: var(--pink); color: #fff; border-radius: 99px; padding: 1px 6px; margin-left: 2px; }
@@ -246,3 +246,4 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .loading .nyang { animation: bob 1s ease-in-out infinite; }
 .foot { font-size: 12px; color: var(--sub); text-align: center; line-height: 1.7; padding: 8px 10px 0; }
 .foot a { color: var(--lav-d); }
+.chat > * { scroll-margin-bottom: 170px; }
