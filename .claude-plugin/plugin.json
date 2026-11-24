@@ -1,0 +1,8 @@
+{
+  "name": "korean-saju",
+  "version": "1.0.0",
+  "description": "한국 사주명리 플러그인 — 천문 계산 만세력(절기·음력), 십성·격국·용신·신살·대운·세운·궁합 MCP 서버와 풀이 스킬. 외부 의존성 없음(Python 3.9+).",
+  "author": { "name": "Kevin" },
+  "license": "MIT",
+  "keywords": ["saju", "사주", "만세력", "명리", "four-pillars", "bazi", "궁합"]
+}
