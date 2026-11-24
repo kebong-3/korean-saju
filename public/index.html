@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>사주냥이 — 2천 년 동안 사주를 봐 온 고양이</title>
+  <meta name="description" content="2천 년 동안 인간의 사주를 봐 온 사주냥이가 2027 신년운세, 평생 총운, 궁합, 나에게 맞는 직업·개운법을 쉽게 풀어주고 고민을 상담해 줘요.">
+  <meta name="theme-color" content="#fff4f1">
+  <meta property="og:title" content="사주냥이 🐾">
+  <meta property="og:description" content="2천 년 동안 인간의 사주를 봐 온 고양이에게 고민 상담 받기">
+  <link rel="icon" href="/nyang.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 첫 방문: 생일 입력 -->
+    <section id="onboard" class="screen" hidden>
+      <div class="hero">
+        <div class="hero-cat" data-nyang="happy" data-size="150"></div>
+        <div class="bubble big">
+          어서 와라냥! 나는 <b>사주냥이</b>.<br>
+          2천 년 동안 인간의 사주를 봐 왔다냥 🐾<br>
+          생일을 알려주면 네 고민부터 들어주겠다냥.
+        </div>
+      </div>
+      <form id="form-me" class="card form" autocomplete="off"></form>
+      <p class="fine">입력한 정보는 이 기기에만 저장되고, 계산할 때만 서버로 보내져요.</p>
+    </section>
+
+    <!-- 메인 -->
+    <div id="main" hidden>
+      <header class="top">
+        <button class="me-chip" id="btn-profile" type="button" aria-label="내 정보 수정">
+          <span class="avatar" data-nyang="normal" data-size="34"></span>
+          <span><b id="me-name">사주냥이</b><small id="me-sub"></small></span>
+        </button>
+        <span class="logo">사주냥이</span>
+      </header>
+      <main>
+        <section id="tab-home" class="tab"></section>
+        <section id="tab-luck" class="tab" hidden></section>
+        <section id="tab-saju" class="tab" hidden></section>
+        <section id="tab-compat" class="tab" hidden></section>
+        <section id="tab-talk" class="tab" hidden></section>
+      </main>
+      <nav class="bottom" role="tablist">
+        <button data-tab="home" aria-selected="true"><i>🏠</i>홈</button>
+        <button data-tab="luck"><i>🔮</i>운세</button>
+        <button data-tab="saju"><i>📜</i>내 사주</button>
+        <button data-tab="compat"><i>💞</i>궁합</button>
+        <button data-tab="talk"><i>💬</i>냥이 상담</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- 용어 설명 바텀시트 -->
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-bg" data-close></div>
+    <div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="grab"></div>
+      <div id="sheet-content"></div>
+      <button class="ghost wide" data-close type="button">알겠다냥!</button>
+    </div>
+  </div>
+
+  <template id="tpl-birth">
+    <h2 data-slot="title" class="form-title">생일을 알려줘</h2>
+    <label class="field"><span>이름(닉네임)</span><input name="nm" maxlength="20" placeholder="냥이가 불러줄 이름"></label>
+    <div class="field"><span>성별</span>
+      <div class="seg"><label><input type="radio" name="gender" value="여" checked><b>여자</b></label><label><input type="radio" name="gender" value="남"><b>남자</b></label></div>
+    </div>
+    <div class="field"><span>생년월일</span>
+      <div class="seg small"><label><input type="radio" name="calendar" value="solar" checked><b>양력</b></label><label><input type="radio" name="calendar" value="lunar"><b>음력</b></label></div>
+      <div class="row3">
+        <select name="year" aria-label="연"></select><select name="month" aria-label="월"></select><select name="day" aria-label="일"></select>
+      </div>
+      <label class="check leap" hidden><input type="checkbox" name="leap"> 윤달이에요</label>
+    </div>
+    <div class="field"><span>태어난 시간</span>
+      <div class="row2"><input type="time" name="time" value="12:00" aria-label="시각"><label class="check"><input type="checkbox" name="unknown"> 몰라요</label></div>
+    </div>
+    <label class="field"><span>태어난 곳</span>
+      <select name="longitude">
+        <option value="126.98">서울·경기</option><option value="126.70">인천</option><option value="127.73">강원(춘천)</option>
+        <option value="128.90">강원(강릉)</option><option value="127.49">충북(청주)</option><option value="127.38">대전·세종·충남</option>
+        <option value="127.15">전북(전주)</option><option value="126.85">광주·전남</option><option value="128.60">대구·경북</option>
+        <option value="129.31">울산</option><option value="129.08">부산</option><option value="128.68">경남(창원)</option>
+        <option value="126.53">제주</option><option value="127.00">해외·모름</option>
+      </select>
+    </label>
+    <details class="adv"><summary>고급 설정</summary>
+      <label class="check"><input type="checkbox" name="split"> 야자시 적용 (밤 11~12시 출생을 당일로)</label>
+    </details>
+  </template>
+
+  <script src="/nyang.js"></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>

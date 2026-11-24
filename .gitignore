@@ -6,3 +6,7 @@ dist/
 .venv/
 .pytest_cache/
 dist/
+.env
+.env.local
+.vercel
+.claude/
