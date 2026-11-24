@@ -1,0 +1,12 @@
+{
+  "name": "korean-saju",
+  "owner": { "name": "kebong-3" },
+  "plugins": [
+    {
+      "name": "korean-saju",
+      "source": "./",
+      "description": "한국 사주명리 — 천문 계산 만세력, 십성·격국·용신·신살·대운·궁합 MCP 서버와 풀이 스킬 (Python, 무의존)",
+      "version": "1.0.0"
+    }
+  ]
+}
