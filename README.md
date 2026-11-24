@@ -89,8 +89,7 @@ MCP 서버는 Python 표준 라이브러리만 씁니다. Node.js나 pip 설치�
 ## 참고한 오픈소스와 앱
 
 - [golbin/ssaju](https://github.com/golbin/ssaju) (MIT) — v0.1 플러그인의 엔진. 출력 구성(compact/markdown)과 MCP 도구 구성을 참고했고, v1.0은 Python으로 새로 구현
-- Meeus, *Astronomical Algorithms* (2nd ed.) — 태양 황경, 합삭, ΔT
-- 국내 사주 앱(포스텔러, 점신, 원광 만세력 등)의 공통 기능(경도 보정, 야자시 옵션, 12신살, 대운수 표기)을 기능 목록의 기준으로 삼았습니다. 코드와 문구는 가져오지 않았습니다.
+- Meeus, *Astronomical Algorithms* (2nd ed.) — 태양 황경, 합삭, ΔT, 경도 보정, 야자시 옵션, 12신살, 대운수 표기
 
 ## 고지
 
