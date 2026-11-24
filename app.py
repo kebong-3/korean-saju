@@ -205,7 +205,7 @@ def _sse(obj: dict) -> str:
 
 
 # ---------------------------------------------------------------- 로컬 개발용 정적 파일
-if not os.environ.get("VERCEL"):
+if not os.environ.get("VERCEL") and (ROOT / "public").is_dir():
     from fastapi.staticfiles import StaticFiles
 
     app.mount("/", StaticFiles(directory=ROOT / "public", html=True), name="public")

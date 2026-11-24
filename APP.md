@@ -22,7 +22,9 @@ app.py              FastAPI 서버 (Vercel 엔트리포인트) — /api/saju, /a
 sajunyang/          운세 점수·상담 시나리오·사주냥이 페르소나·용어사전
 public/             화면 (index.html, style.css, app.js, nyang.js=캐릭터 SVG)
 src/ksaju/          사주 엔진 (외부 의존성 0개, 기존 그대로)
-requirements.txt    웹앱 의존성 (fastapi, anthropic)
+pyproject.toml      엔진 패키지 정보 + 웹앱 의존성(fastapi, anthropic) + Vercel 엔트리포인트
+uv.lock             Vercel이 그대로 설치하는 고정 버전 목록
+requirements.txt    로컬 실행용
 vercel.json         함수 설정 (최대 60초, 테스트·문서 제외)
 ```
 
@@ -41,11 +43,10 @@ python -m uvicorn app:app --port 8000
 3. Framework Preset은 자동으로 **FastAPI**가 잡힙니다. Root Directory는 저장소 루트 그대로.
 4. Deploy
 
-### 첫 배포 때 꼭 확인할 것
-- 빌드 로그에 `fastapi` 설치가 보이는지. 저장소 루트에 엔진용 `pyproject.toml`(의존성 없음)과 `requirements.txt`가 함께 있어서,
-  만약 Vercel이 `pyproject.toml`만 읽고 fastapi를 설치하지 않으면 함수가 `ModuleNotFoundError: fastapi`로 실패합니다.
-  그때는 `pyproject.toml`의 `[project]`에 `dependencies = ["fastapi>=0.117", "anthropic>=1.0"]`를 넣으면 해결됩니다
-  (단, 그러면 엔진을 `pip install`할 때도 두 패키지가 같이 설치됩니다).
+### 의존성은 pyproject.toml에서 읽습니다
+Vercel은 저장소 루트에 `pyproject.toml`이 있으면 `requirements.txt`를 읽지 않습니다(`uv.lock` → `pyproject.toml` 순).
+그래서 웹앱 의존성(fastapi, anthropic)을 `pyproject.toml`의 `dependencies`에 적고, 버전을 고정한 `uv.lock`을 함께 커밋했습니다.
+의존성을 바꾸면 `uv lock`을 다시 실행해 `uv.lock`도 같이 커밋하세요. `requirements.txt`는 로컬 실행용입니다.
 
 ### AI 상담 켜기 (선택)
 Vercel → Project → Settings → Environment Variables

@@ -9,6 +9,12 @@ description = "외부 의존성 없는 한국 사주명리 엔진 — 천문 계
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
+# 아래 의존성은 사주냥이 웹앱(app.py, Vercel 배포)용이다. 사주 엔진(src/ksaju)은 표준 라이브러리만 쓴다.
+# Vercel은 pyproject.toml이 있으면 requirements.txt를 읽지 않으므로 여기에 적어야 배포된다.
+dependencies = [
+  "fastapi>=0.117",
+  "anthropic>=1.0; python_version >= '3.10'",
+]
 keywords = ["saju", "사주", "만세력", "bazi", "four pillars", "korean lunar calendar", "mcp"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -19,6 +25,9 @@ classifiers = [
 [project.scripts]
 ksaju = "ksaju.cli:main"
 ksaju-mcp = "ksaju.mcp_server:main"
+
+[tool.vercel]
+entrypoint = "app:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
