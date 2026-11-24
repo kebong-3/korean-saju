@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from ksaju import read_compatibility, read_saju  # noqa: E402
 from ksaju.core import BRANCH_ELEMENT, ELEMENTS  # noqa: E402
-from sajunyang import counsel, persona  # noqa: E402
+from sajunyang import counsel, ogo, persona  # noqa: E402
 from sajunyang.fortune import bundle  # noqa: E402
 
 app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None)
@@ -100,6 +100,8 @@ def saju(b: Birth):
     d["운세"] = bundle(r, today_kst())
     d["옛이야기"] = persona.pick_story(r.analysis, {s.name for s in r.analysis.sinsal})
     d["상담"] = counsel.build(r, d["운세"], d["옛이야기"])
+    d["오고"] = ogo.build(r, d["운세"])
+    d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
     return d
 
 

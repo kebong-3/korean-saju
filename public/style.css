@@ -247,3 +247,41 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .foot { font-size: 12px; color: var(--sub); text-align: center; line-height: 1.7; padding: 8px 10px 0; }
 .foot a { color: var(--lav-d); }
 .chat > * { scroll-margin-bottom: 170px; }
+
+/* ── 오고(五古) 정밀 감명 ── */
+.books { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 14px; }
+.books button { border: 0; background: #fff; border-radius: 16px; padding: 8px 2px; display: grid; justify-items: center; gap: 2px; cursor: pointer; font: 12px var(--title); box-shadow: var(--shadow); }
+.books i { font-style: normal; font-size: 22px; }
+.books small { color: var(--sub); font-size: 11px; }
+.lens { scroll-margin-top: 70px; }
+.lens-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.lens-head h2 { margin: 0; font-size: 22px; }
+.lens-ic { flex: none; width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; font-size: 28px; background: var(--lav-l); }
+.lens-no { font: 13px var(--title); color: var(--pink-d); }
+.lens-q { font-size: 15px; color: var(--lav-d); margin: 6px 0 12px; font-style: italic; }
+.classic, .modern { border-radius: 18px; padding: 14px 15px; margin-top: 10px; font-size: 15px; }
+.classic { background: #fbf6ee; border-left: 4px solid #d9b77a; }
+.modern { background: #f3f9ff; border-left: 4px solid #7fb2f0; }
+.classic h3, .modern h3 { margin: 0 0 8px; }
+.classic p, .modern p { margin: 0 0 9px; line-height: 1.7; }
+.classic p:last-child, .modern p:last-child { margin: 0; }
+.axes { display: grid; gap: 8px; }
+.ax { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; align-items: center; background: #fff; border-radius: 16px; padding: 12px 14px; }
+.ax b { font: 17px var(--title); font-weight: 400; } .ax .stars { color: var(--pink-d); letter-spacing: 1px; } .ax small { color: var(--sub); font-size: 12px; }
+.ax p { grid-column: 1 / -1; margin: 0; font-size: 14px; }
+.vtable { width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; border-radius: 14px; overflow: hidden; }
+.vtable th { background: var(--lav-l); color: var(--lav-d); font: 13px var(--title); font-weight: 400; text-align: left; padding: 8px 10px; }
+.vtable td { padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+.final { margin: 14px 0; padding: 14px 16px; border-radius: 18px; background: linear-gradient(135deg, #fff, var(--pink-l)); text-align: center; }
+.final small { display: block; color: var(--sub); font: 13px var(--title); }
+.final b { display: block; font: 40px/1.2 var(--title); font-weight: 400; color: var(--pink-d); }
+.final p { margin: 6px 0 0; font-size: 14px; text-align: left; }
+#lens-synth > p { font-size: 15px; line-height: 1.7; }
+.dw3-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x mandatory; }
+.dw3 { flex: 0 0 150px; scroll-snap-align: start; background: #fbf8fd; border-radius: 18px; padding: 10px 12px; border: 2px solid transparent; font-size: 13px; }
+.dw3.now { border-color: var(--pink); background: var(--pink-l); }
+.dw3 .age { font: 15px var(--title); } .dw3 .gz { font: 26px var(--title); }
+.dw3 dl, .year3 dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 6px 0 0; }
+.dw3 dt, .year3 dt { color: var(--lav-d); font-family: var(--title); } .dw3 dd, .year3 dd { margin: 0; }
+.year3 { margin-top: 8px; padding: 12px 14px; border-radius: 18px; background: var(--butter-l); font-size: 14px; }
+#manse-svg svg { display: block; border-radius: 18px; box-shadow: 0 0 0 1px var(--line); }

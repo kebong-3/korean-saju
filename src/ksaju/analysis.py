@@ -329,12 +329,13 @@ def analyze(chart: Chart) -> Analysis:
     else:
         drain = {g: group_w[g] for g in ("식상", "재성", "관성")}
         top = max(drain, key=drain.get)
+        weak = "신약한데" if score <= 45 else "중화이나 월령을 얻지 못해 일간 쪽이 조금 약하고"
         if top == "재성":
             yong_g = "비겁"
-            yreason = "신약한데 재성이 무거워 비겁으로 재성을 감당(군겁쟁재 방지)"
+            yreason = f"{weak} 재성이 무거워 비겁으로 재성을 감당(재다신약 방지)"
         else:
             yong_g = "인성"
-            yreason = f"신약한데 {top}이(가) 강해 인성으로 일간을 생조" + (" (살인상생)" if top == "관성" else "")
+            yreason = f"{weak} {top}이(가) 강해 인성으로 일간을 생조" + (" (살인상생)" if top == "관성" else "")
     y_el = el_of[yong_g]
     hui = (y_el + 4) % 5   # 용신을 생하는 오행
     gi = (y_el + 3) % 5    # 용신을 극하는 오행

@@ -202,9 +202,10 @@ def life_fortune(r) -> dict:
                     "십성": f"{d.stem_god}/{d.branch_god}", "12운성": stage, "점수": _clamp(s),
                     "현재": bool(d.current), "테마": YEAR_THEME[d.stem_god][0].replace("해", "시기")})
     cur = next((x for x in pts if x["현재"]), None)
-    # 전성기는 '지금 이후'(현재 대운 포함)에서 고른다 — 지나간 어린 시절을 알려주면 쓸모가 없다
-    ahead = [x for x in pts if (cur is None or x["나이"] >= cur["나이"]) and x["나이"] < 70] or pts
-    best = max(ahead, key=lambda x: x["점수"])
+    # 전성기는 '지금 이후'(현재 대운 포함)에서, 현실적인 나이(70세 또는 지금+20세까지) 안에서 고른다
+    age_now = r.today.year - c.solar_date.year
+    ahead = [x for x in pts if x["나이"] + 10 > age_now]
+    best = max([x for x in ahead if x["나이"] < max(70, age_now + 20)] or ahead or pts, key=lambda x: x["점수"])
     nxt = next((x for x in pts if cur and x["나이"] == cur["나이"] + 10), None)
     return {"대운": pts, "전성기": best, "현재": cur, "다음": nxt}
 

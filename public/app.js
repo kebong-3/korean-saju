@@ -16,9 +16,12 @@ function buildTermRe() {
 }
 const chip = (t, label) => `<button type="button" class="term" data-t="${esc(t)}">${esc(label ?? t)}</button>`;
 /** 이스케이프된 텍스트에서 [[용어]]는 칩으로, auto=true면 아는 용어도 자동으로 칩으로 */
+/** auto: false(자동 링크 안 함) | true(모두) | Set(카드 안에서 처음 나온 용어만 링크) */
 function linkify(html, auto = false) {
-  if (html.includes("[[")) return html.replace(/\[\[(.+?)\]\]/g, (_, t) => (S.gloss[t] ? chip(t) : esc(t)));
-  return auto && TERM_RE ? html.replace(TERM_RE, (m) => chip(m)) : html;
+  const once = auto instanceof Set ? auto : null;
+  const mk = (t, label) => { if (once) { if (once.has(t)) return label; once.add(t); } return chip(t, label); };
+  if (html.includes("[[")) return html.replace(/\[\[(.+?)\]\]/g, (_, t) => (S.gloss[t] ? mk(t, t) : esc(t)));
+  return auto && TERM_RE ? html.replace(TERM_RE, (m) => mk(m, m)) : html;
 }
 const T = (s, auto = false) => linkify(esc(s), auto);
 function md(src, auto = false) {
@@ -133,7 +136,11 @@ function showTab(tab, sub) {
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
   if (tab === "luck" && sub) setLuck(sub);
   if (tab === "talk") startTalk();
-  if (tab === "saju" && sub) { requestAnimationFrame(() => $(`#${sub}`)?.scrollIntoView({ behavior: "smooth", block: "start" })); return; }
+  if (tab === "saju") {
+    const pane = ["basic", "ogo", "manse"].includes(sub) ? sub : "basic";
+    setSajuPane(pane);
+    if (sub && pane === "basic") { requestAnimationFrame(() => $(`#${sub}`)?.scrollIntoView({ behavior: "smooth", block: "start" })); return; }
+  }
   window.scrollTo({ top: 0 });
 }
 
@@ -173,7 +180,7 @@ function renderHome() {
     <div class="menu" style="margin-bottom:16px">
       ${[["luck:new", "🧧", `${y["연도"]} 신년운세`, "var(--pink-l)"], ["luck:month", "📅", "월별 운세", "var(--butter-l)"], ["luck:life", "📈", "평생 총운", "var(--lav-l)"],
         ["saju:fit", "🎯", "나에게 맞는", "var(--mint-l)"], ["saju:rx", "🍀", "개운 처방전", "var(--mint-l)"], ["compat", "💞", "궁합", "var(--pink-l)"],
-        ["talk", "💬", "고민 상담", "var(--lav-l)"], ["saju", "📜", "정통 사주", "var(--peach-l)"], ["glossary", "📚", "명리 교실", "var(--butter-l)"]]
+        ["talk", "💬", "고민 상담", "var(--lav-l)"], ["saju:ogo", "🏛️", "오고 정밀감명", "var(--peach-l)"], ["glossary", "📚", "명리 교실", "var(--butter-l)"]]
         .map(([g, ic, l, bg]) => `<button type="button" ${g === "glossary" ? 'id="btn-gloss"' : `data-go="${g}"`}><i style="background:${bg}">${ic}</i>${l}</button>`).join("")}
     </div>
     <div class="card story">
@@ -292,6 +299,8 @@ function renderSaju() {
       <div class="raw">${T(raw, true)}</div><div class="ny">${ny}</div></div>`).join("");
   const sinsal = Object.keys(d["신살"]);
   $("#tab-saju").innerHTML = `
+    <div class="segtabs" role="tablist"><button data-pane="basic" type="button">기본 풀이</button><button data-pane="ogo" type="button">오고 정밀 감명</button><button data-pane="manse" type="button">만세력</button></div>
+    <div data-spane="basic">
     <div class="card"><div class="card-head"><h2>${chip("원국", "나의 사주 원국")}</h2><span class="badge">${chip("사주팔자", "팔자 여덟 글자")}</span></div>
       <div class="pillars">${pillars}</div>
       <p class="sub" style="margin:12px 0 0">위는 ${chip("천간")}, 아래는 ${chip("지지")}. 글자 위아래 작은 글씨는 ${chip("십성")}과 ${chip("12운성")}, 맨 아래는 ${chip("지장간")}이다냥. 밑줄 친 말을 누르면 냥이가 설명해 준다냥!</p></div>
@@ -319,7 +328,139 @@ function renderSaju() {
     <details class="card"><summary><b>만세력 상세 (전문가용)</b></summary>
       <p class="sub">양력 ${esc(d["입력"]["양력"])} ${esc(d["입력"]["시각"] || "시간 모름")} · ${esc(d["입력"]["음력"])}<br>${(d["입력"]["보정"] || []).map(esc).join("<br>")}<br>
       ${chip("절입")}: ${esc(d["절입"]["직전"])} → ${esc(d["절입"]["직후"])}<br>${chip("대운수")} ${d["대운"].daewoonsu} (${esc(d["대운"].direction)}) · ${esc(d["대운"].basis)}<br>
-      ${T(d["용신"]["근거"], true)}</p>${(d["주의"] || []).map((x) => `<p class="error">⚠ ${esc(x)}</p>`).join("")}</details>`;
+      ${T(d["용신"]["근거"], true)}</p>${(d["주의"] || []).map((x) => `<p class="error">⚠ ${esc(x)}</p>`).join("")}</details>
+    </div>
+    <div data-spane="ogo" hidden>${renderOgo(d)}</div>
+    <div data-spane="manse" hidden>${renderManse(d)}</div>`;
+  $$("#tab-saju .segtabs button").forEach((b) => b.addEventListener("click", () => setSajuPane(b.dataset.pane)));
+  $$("#tab-saju [data-lens-go]").forEach((b) => b.addEventListener("click", () => $(`#lens-${b.dataset.lensGo}`)?.scrollIntoView({ behavior: "smooth", block: "start" })));
+  $("#btn-manse-png")?.addEventListener("click", saveMansePng);
+  setSajuPane("basic");
+}
+function setSajuPane(p) {
+  $$("#tab-saju .segtabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.pane === p));
+  $$("#tab-saju [data-spane]").forEach((x) => (x.hidden = x.dataset.spane !== p));
+}
+
+// ───────────────────────── 오고(五古) 정밀 감명
+function renderOgo(d) {
+  const o = d["오고"], sy = o.synth;
+  const list = (arr, seen) => arr.map((x) => md(x, seen)).join("");
+  const lensCard = (L, i, _a, seen = new Set()) => `
+    <div class="card lens" id="lens-${L.id}">
+      <div class="lens-head"><span class="lens-ic">${L.icon}</span><div><div class="lens-no">제${i + 1}렌즈 · ${esc(L.lens)}</div>
+        <h2>${esc(L.book)}</h2><div class="sub">${esc(L.era)}</div></div></div>
+      <p class="lens-q">“${esc(L.q)}”</p>
+      <div class="say"><span class="who" data-nyang="normal" data-size="44"></span><div class="bubble lav">${md(L.easy, seen)}</div></div>
+      <div class="chips" style="margin-bottom:12px">${L.basis.map((b) => `<span class="chip">${T(b)}</span>`).join("")}</div>
+      <div class="classic"><h3>📜 고전의 해석 <span class="sub">原典</span></h3>${list(L.classic, seen)}</div>
+      <div class="modern"><h3>✨ 현대적 풀이 <span class="sub">現代</span></h3>${list(L.modern, seen)}</div>
+    </div>`;
+  const ax = sy["세축"].map((x) => `<div class="ax"><b>${esc(x["축"])}</b><span class="stars">${esc(x["평가"])}</span><small>${esc(x["책"])}</small><p>${T(x["요지"], true)}</p></div>`).join("");
+  const yt = sy["용신비교"].map((x) => `<tr><td>${esc(x["관점"])}</td><td><b>${esc(x["오행"])}</b></td><td>${esc(x["뜻"])}</td></tr>`).join("");
+  const dw = sy["대운"].map((x) => `<div class="dw3 ${x["현재"] ? "now" : ""}"><div class="age">${x["나이"]}세 <span class="sub">${x["시작"]}~</span></div>
+      <div class="gz">${esc(x["간지"])}</div><div class="sub">${T(x["십신"], true)}</div>
+      <dl><dt>그릇</dt><dd>${esc(x["그릇"])}</dd><dt>온도</dt><dd>${esc(x["온도"])}</dd><dt>균형</dt><dd>${esc(x["균형"])}</dd></dl></div>`).join("");
+  const y = sy["세운"];
+  return `
+    <div class="card tint-lav"><div class="say" style="margin:0"><span class="who" data-nyang="happy" data-size="64"></span>
+      <div class="bubble">${o.intro.map((x) => md(x, true)).join("")}</div></div>
+      <div class="books">${o.lenses.map((L) => `<button type="button" data-lens-go="${L.id}"><i>${L.icon}</i>${esc(L.book.split("(")[0])}<small>${esc(L.lens)}</small></button>`).join("")}</div></div>
+    ${o.lenses.map(lensCard).join("")}
+    <div class="card tint-pink" id="lens-synth"><div class="lens-head"><span class="lens-ic">🔺</span><div><div class="lens-no">입체 종합 · 三位一體</div><h2>그릇 · 온도 · 균형</h2>
+      <div class="sub">《자평진전》 그릇 + 《궁통보감》 온도 + 《적천수》 균형</div></div></div>
+      <div class="axes">${ax}</div>
+      <h3 style="margin-top:16px">세 관점의 용신 비교</h3>
+      <table class="vtable"><thead><tr><th>관점</th><th>오행</th><th>의미</th></tr></thead><tbody>${yt}</tbody></table>
+      <div class="final"><small>냥이의 최종 판단 · 가장 먼저 챙길 기운</small><b>${esc(sy["최종용신"])}</b><p>${T(sy["최종근거"], true)}</p></div>
+      ${list(sy["입체해석"], new Set())}
+    </div>
+    <div class="card"><h2>대운 · 세운을 세 렌즈로</h2>
+      <div class="say"><span class="who" data-nyang="think" data-size="44"></span><div class="bubble">${sy["운해석"].map((x) => md(x, true)).join("")}</div></div>
+      <div class="dw3-list">${dw}</div>
+      <div class="year3"><b>${y["연도"]}년 세운 ${esc(y["간지"])}</b> <span class="sub">${T(y["십신"], true)}</span>
+        <dl><dt>그릇</dt><dd>${esc(y["그릇"])}</dd><dt>온도</dt><dd>${esc(y["온도"])}</dd><dt>균형</dt><dd>${esc(y["균형"])}</dd></dl>
+        ${y["작용"].length ? `<p class="sub">${T(y["작용"].join(" / "), true)}</p>` : ""}</div>
+    </div>
+    <p class="fine">${esc(o.note)}</p>`;
+}
+
+// ───────────────────────── 만세력 (SVG + PNG 저장)
+const EL_COLOR = { 목: ["#e1f6ea", "#2f8f5b"], 화: ["#ffe3e3", "#d94848"], 토: ["#fff0d6", "#c47d10"], 금: ["#eef0f5", "#5f6880"], 수: ["#e4ebff", "#3d5fc4"] };
+const STEM_EL = { 甲: "목", 乙: "목", 丙: "화", 丁: "화", 戊: "토", 己: "토", 庚: "금", 辛: "금", 壬: "수", 癸: "수" };
+function manseSvg(d) {
+  const order = ["시주", "일주", "월주", "연주"], W = 680, cw = 140, x0 = 120;
+  const i = d["입력"];
+  const rows = [["stemGod", "십성", 34], ["stem", "천간", 92], ["branch", "지지", 92], ["branchGod", "십성", 34],
+    ["hidden", "지장간", 34], ["stage", "12운성", 34], ["s12", "12신살", 34], ["naeum", "납음", 34]];
+  const cell = (key, p, lbl) => ({
+    stemGod: p["천간"]["십성"].replace("일간(나)", "일간"), branchGod: p["지지"]["십성"],
+    hidden: p["지지"]["지장간"].map((x) => x.split("(")[0]).join(" "), stage: p["지지"]["12운성"],
+    s12: (d["12신살"]?.["연지기준"]?.[lbl[0]] || ""), naeum: (d["납음"]?.[lbl] || "").split("(")[0],
+  }[key]);
+  let y = 96, body = "";
+  rows.forEach(([key, name, h]) => {
+    body += `<text x="${x0 / 2}" y="${y + h / 2 + 5}" text-anchor="middle" font-size="15" fill="#8a7f99">${name}</text>`;
+    order.forEach((lbl, k) => {
+      const p = d["원국"][lbl], cx = x0 + k * cw + cw / 2;
+      if (key === "stem" || key === "branch") {
+        if (!p) {
+          body += `<rect x="${x0 + k * cw + 8}" y="${y + 4}" width="${cw - 16}" height="${h - 8}" rx="16" fill="#fbf8fd" stroke="#f0e6ef" stroke-dasharray="5 4"/>
+            <text x="${cx}" y="${y + h / 2 + 6}" text-anchor="middle" font-size="15" fill="#8a7f99">${key === "stem" ? "시간" : "미상"}</text>`;
+          return;
+        }
+        const ch = key === "stem" ? p["천간"]["글자"] : p["지지"]["글자"];
+        const el = key === "stem" ? p["천간"]["오행"] : d["지지오행"][lbl];
+        const [fill, color] = EL_COLOR[el];
+        body += `<rect x="${x0 + k * cw + 8}" y="${y + 4}" width="${cw - 16}" height="${h - 8}" rx="16" fill="${fill}" ${lbl === "일주" ? 'stroke="#ff8fa3" stroke-width="3"' : ""}/>
+          <text x="${cx}" y="${y + h / 2 + 12}" text-anchor="middle" font-size="44" font-weight="700" fill="${color}">${ch}</text>
+          <text x="${cx}" y="${y + h - 10}" text-anchor="middle" font-size="12" fill="${color}">${esc((key === "stem" ? p["한글"][0] : p["한글"][1]) + " · " + el)}</text>`;
+        return;
+      }
+      body += `<text x="${cx}" y="${y + h / 2 + 5}" text-anchor="middle" font-size="15" fill="#3b2f4a">${esc(p ? cell(key, p, lbl) : "—")}</text>`;
+    });
+    y += h + 6;
+    body += `<line x1="16" x2="${W - 16}" y1="${y - 3}" y2="${y - 3}" stroke="#f0e6ef"/>`;
+  });
+  const dw = (d["운세"]?.["평생운"]?.["대운"] || []).slice(0, 8);
+  let dws = `<text x="24" y="${y + 30}" font-size="16" fill="#7c5cf0" font-weight="700">대운 (${esc(d["대운"].direction)} · 대운수 ${d["대운"].daewoonsu})</text>`;
+  const dwW = (W - 32) / Math.max(dw.length, 1);
+  dw.forEach((p, k) => {
+    const x = 16 + k * dwW, el = STEM_EL[p["간지"][0]];
+    dws += `<rect x="${x + 3}" y="${y + 44}" width="${dwW - 6}" height="86" rx="12" fill="${p["현재"] ? "#ffe4ea" : "#fbf8fd"}" ${p["현재"] ? 'stroke="#ff8fa3" stroke-width="2"' : ""}/>
+      <text x="${x + dwW / 2}" y="${y + 64}" text-anchor="middle" font-size="12" fill="#8a7f99">${p["나이"]}세</text>
+      <text x="${x + dwW / 2}" y="${y + 98}" text-anchor="middle" font-size="26" font-weight="700" fill="${EL_COLOR[el][1]}">${esc(p["간지"])}</text>
+      <text x="${x + dwW / 2}" y="${y + 120}" text-anchor="middle" font-size="11" fill="#8a7f99">${esc(p["십성"])}</text>`;
+  });
+  const H = y + 150;
+  const title = `${d["이름"] ? esc(d["이름"]) + " 님의 " : ""}만세력`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif" role="img" aria-label="만세력">
+    <rect width="${W}" height="${H}" rx="24" fill="#fff"/>
+    <text x="24" y="40" font-size="24" font-weight="700" fill="#3b2f4a">${title}</text>
+    <text x="24" y="66" font-size="13" fill="#8a7f99">양력 ${esc(i["양력"])} ${esc(i["시각"] || "시간 미상")} · ${esc(i["음력"])} · ${esc(i["성별"])} · ${esc(i["띠"])}띠</text>
+    <text x="${W - 24}" y="40" font-size="14" text-anchor="end" fill="#f0607d">사주냥이</text>
+    ${order.map((lbl, k) => `<text x="${x0 + k * cw + cw / 2}" y="88" text-anchor="middle" font-size="14" fill="${lbl === "일주" ? "#f0607d" : "#8a7f99"}">${lbl}${lbl === "일주" ? " (나)" : ""}</text>`).join("")}
+    ${body}${dws}</svg>`;
+}
+function renderManse(d) {
+  return `<div class="card"><div class="card-head"><h2>만세력</h2><button class="ghost" id="btn-manse-png" type="button">🖼️ 이미지로 저장</button></div>
+    <div id="manse-svg">${manseSvg(d)}</div>
+    <p class="sub" style="margin:10px 0 0">절입 ${esc(d["절입"]["직전"])} → ${esc(d["절입"]["직후"])} · ${(d["입력"]["보정"] || []).map(esc).join(" · ")}</p>
+    ${(d["주의"] || []).map((x) => `<p class="error">⚠ ${esc(x)}</p>`).join("")}</div>`;
+}
+function saveMansePng() {
+  const svg = $("#manse-svg svg");
+  const xml = new XMLSerializer().serializeToString(svg);
+  const vb = svg.viewBox.baseVal, scale = 2;
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas");
+    cv.width = vb.width * scale; cv.height = vb.height * scale;
+    const ctx = cv.getContext("2d"); ctx.scale(scale, scale); ctx.drawImage(img, 0, 0, vb.width, vb.height);
+    const a = document.createElement("a");
+    a.download = `만세력_${S.d["입력"]["양력"]}.png`; a.href = cv.toDataURL("image/png"); a.click();
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
 }
 
 // ───────────────────────── 궁합
