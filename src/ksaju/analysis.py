@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import combinations
 
-from .core import (BRANCH_ELEMENT, BRANCHES, ELEMENTS, HIDDEN, STEM_ELEMENT, STEMS, TEN_GOD_GROUP,
+from .core import (BRANCH_ELEMENT, BRANCHES, ELEMENTS, HIDDEN, STEM_ELEMENT, STEMS, STEMS_KO, TEN_GOD_GROUP,
                    Chart, Pillar, branch_main_stem, element_ten_god_group, is_yang_stem, ten_god,
                    twelve_stage)
 
@@ -303,13 +303,13 @@ def analyze(chart: Chart) -> Analysis:
         else:
             gyeok = f"{tgod}격"
     gyeok_note = (f"월지 {BRANCHES[chart.month.branch]}({month_stage})의 지장간 {STEMS[pick]}"
-                  f"{'이(가) 천간에 투출' if tuchul else '(정기)'} → {tgod}")
+                  f"{(('이' if STEMS_KO[pick] in '갑을병정경신임' else '가') + ' 천간에 투출') if tuchul else '(정기)'} → {tgod}")
     notes: list[str] = []
     if strength == "극신강" and group_pct["비겁"] >= 50:
         notes.append("비겁이 압도적 — 종왕격(전왕격) 성립 여부를 함께 검토할 만함")
     if strength == "극신약":
         top = max(("식상", "재성", "관성"), key=lambda g: group_w[g])
-        notes.append(f"일간이 매우 약하고 {top}이(가) 강함 — 종격(從{top}) 가능성 검토")
+        notes.append(f"일간이 매우 약하고 {top}이 강함 — 종격(從{top}) 가능성 검토")
     if chart.day.hanja in GOEGANG:
         notes.append("일주 괴강 — 괴강격 성향(강한 결단력·극단성)")
 
@@ -335,7 +335,7 @@ def analyze(chart: Chart) -> Analysis:
             yreason = f"{weak} 재성이 무거워 비겁으로 재성을 감당(재다신약 방지)"
         else:
             yong_g = "인성"
-            yreason = f"{weak} {top}이(가) 강해 인성으로 일간을 생조" + (" (살인상생)" if top == "관성" else "")
+            yreason = f"{weak} {top}이 강해 인성으로 일간을 생조" + (" (살인상생)" if top == "관성" else "")
     y_el = el_of[yong_g]
     hui = (y_el + 4) % 5   # 용신을 생하는 오행
     gi = (y_el + 3) % 5    # 용신을 극하는 오행
