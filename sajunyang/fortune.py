@@ -96,15 +96,88 @@ def _pillar_score(chart, a, p: Pillar) -> tuple[float, list, str]:
     se, be = ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]
     raw = 0.55 * t[se] + 0.45 * t[be]
     rels = find_relations(chart.pillars, [p])
-    good = sum(1 for r in rels if r.kind in GOOD_REL)
-    bad = sum(1 for r in rels if r.kind in BAD_REL)
+    # 같은 두 글자 사이의 마찰(충+형, 해+원진 등)은 한 번만 센다
+    good = len({frozenset(r.members) for r in rels if r.kind in GOOD_REL})
+    bad = len({frozenset(r.members) for r in rels if r.kind in BAD_REL})
     stage = twelve_stage(chart.day_stem, p.branch)
     score = 60 + raw * 11 + min(good, 3) * 3 - min(bad, 4) * 3.5 + (3 if stage in RISE else -2 if stage in FALL else 0)
     return score, rels, stage
 
 
 def _grade(s: int) -> str:
-    return "대길" if s >= 85 else "길" if s >= 72 else "순탄" if s >= 58 else "보통" if s >= 45 else "조심"
+    return "대길" if s >= 80 else "길" if s >= 68 else "순탄" if s >= 56 else "보통" if s >= 45 else "정비"
+
+
+def _signal(s: int) -> str:
+    return "☀️ 밀기" if s >= 65 else "⛅ 실행" if s >= 50 else "🌧️ 정비"
+
+
+MISSION_EL = {
+    "목": ["산책 15분 하기", "식물에 물 주기", "새 계획 한 줄 쓰기"],
+    "화": ["햇볕 10분 쬐기", "좋아하는 노래로 스트레칭하기", "누군가에게 칭찬 한마디 하기"],
+    "토": ["세 끼 제때 챙겨 먹기", "책상 위 5분 정리하기", "5분 명상하기"],
+    "금": ["안 쓰는 물건 하나 버리기", "근력운동 10분 하기", "할 일 목록 깔끔하게 정리하기"],
+    "수": ["물 6잔 마시기", "평소보다 30분 일찍 자기", "책 10쪽 읽기"],
+}
+MONTH_TIP = {
+    "비견": "내 페이스를 지키는 달이다냥. 비교 금지!", "겁재": "지갑 단속하는 달이다냥. 큰 지출은 한 번 더 생각!",
+    "식신": "좋아하는 걸 꾸준히 하면 복이 붙는 달이다냥.", "상관": "아이디어가 샘솟는 달! 말은 부드럽게 하라냥.",
+    "편재": "새로운 기회에 손 들어보는 달이다냥.", "정재": "통장·생활 루틴을 정리하면 운이 붙는 달이다냥.",
+    "편관": "할 일이 몰려도 하나씩! 체력부터 챙기는 달이다냥.", "정관": "약속·마감을 지키면 인정받는 달이다냥.",
+    "편인": "혼자 깊이 파고들기 좋은 달이다냥.", "정인": "배우고 물어보면 귀인이 나타나는 달이다냥.",
+}
+GROUP_TODO = {
+    "인성": ["자격증·강의 시작하기", "계약서·서류 정리하기", "멘토에게 조언 구하기"],
+    "관성": ["지원서·면접 도전하기", "새 역할·책임 맡아 보기", "규칙적인 루틴 세우기"],
+    "재성": ["예산·가계부 점검하기", "부업·사이드 수익 시도하기", "연봉·단가 협상 준비하기"],
+    "식상": ["포트폴리오·작품 공개하기", "발표·SNS로 내 생각 보여주기", "새 취미로 재능 꺼내기"],
+    "비겁": ["모임·네트워킹 나가기", "운동 루틴 만들기", "홀로서기 계획 세우기"],
+}
+EASY_REL = {
+    "충": "계획이 흔들리기 쉬우니 일정에 여유를 두기", "천간충": "의견이 부딪히기 쉬우니 결론은 하루 미루기",
+    "형": "서류·약속은 두 번 확인하기", "파": "플랜 B를 하나 준비해 두기", "해": "괜한 오해가 생기기 쉬우니 말은 부드럽게",
+    "원진": "사소한 말에 서운해지기 쉬우니 답장은 한 템포 늦게", "귀문": "촉이 예민해지니 직감은 메모만 하고 결정은 천천히",
+    "육합": "사람과 손잡기 좋은 흐름", "천간합": "생각이 통하는 사람을 만나기 좋은 흐름",
+    "삼합": "힘이 한데 모이는 흐름 — 팀 프로젝트에 좋음", "반합": "협력이 잘 되는 흐름", "방합": "같은 편이 모이는 흐름",
+}
+
+
+def _easy(rels) -> list[str]:
+    out = []
+    for r in rels:
+        t = EASY_REL.get(r.kind if hasattr(r, "kind") else str(r).split(":")[0])
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
+def _caution(rels: list[str]) -> list[str]:
+    out = []
+    for x in rels:
+        k = x.split(":")[0]
+        if k == "충" and "일지" in x:
+            t = "연애·집 등 생활 환경에 변화 바람 — 큰 결정은 정보부터 모으기"
+        elif k == "충" and "월지" in x:
+            t = "직장·소속에 변화 바람 — 이직 생각이 나면 정보 수집만"
+        else:
+            t = EASY_REL.get(k)
+            if k in GOOD_REL:
+                t = None
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
+def _todo(groups: list[str], gods: str) -> list[str]:
+    g = groups[0]
+    items = list(GROUP_TODO[g][:2])
+    if groups[1] != g:
+        items.append(GROUP_TODO[groups[1]][0])
+    else:
+        items.append(GROUP_TODO[g][2])
+    if "겁재" in gods:
+        items[-1] = "지출 상한 정해 두기"
+    return items
 
 
 def _elem_of(p: Pillar) -> tuple[str, str]:
@@ -123,16 +196,28 @@ def day_fortune(r, d: date) -> dict:
     p = Pillar(t["day_index"], "일진")
     s, rels, stage = _pillar_score(c, a, p)
     score = _clamp(s)
-    adv = ELEMENT_ADVICE[a.yongshin]
+    di = t["day_index"]
+    day_el = ELEMENTS[STEM_ELEMENT[p.stem]]
+    lucky_el = day_el if day_el in (a.yongshin, a.huishin) else (a.yongshin if di % 2 == 0 else a.huishin)
+    adv = ELEMENT_ADVICE[lucky_el]
+    pick = lambda xs: xs[di % len(xs)]  # noqa: E731  날짜(일진)마다 돌아가며 고른다
+    foods = ELEMENT_FOOD[lucky_el].split("(")[1].rstrip(")").split(", ")
+    god = t["stem_god"]
+    mission_by_god = {
+        "비견": "오늘 내 기준 한 가지 지키기", "겁재": "오늘 쓴 돈 세 줄로 적기", "식신": "좋아하는 거 30분 하기",
+        "상관": "떠오른 아이디어 3줄 메모하기", "편재": "안 가 본 가게·길 하나 가 보기", "정재": "지갑·통장 하나 정리하기",
+        "편관": "할 일 목록에서 제일 큰 것 하나만 끝내기", "정관": "약속 시간 5분 일찍 도착하기",
+        "편인": "혼자만의 시간 20분 갖기", "정인": "궁금한 거 하나 검색해서 배우기",
+    }
     return {
         "date": d.isoformat(), "요일": WEEKDAY[d.weekday()], "일진": t["day"], "월건": t["month"],
-        "점수": score, "등급": _grade(score),
+        "점수": score, "등급": _grade(score), "신호": _signal(score),
         "십성": f"{t['stem_god']}/{t['branch_god']}", "12운성": stage,
-        "한마디": DAY_TIP[t["stem_god"]],
-        "작용": [str(x) for x in rels],
-        "행운": {"색": adv["색"].split("·")[0], "숫자": adv["숫자"], "방위": adv["방위"],
-               "음식": ELEMENT_FOOD[a.yongshin].split("(")[1].rstrip(")").split(", ")[0]},
-        "미션": adv["활동"].split("·")[0] + " 10분 하기",
+        "한마디": DAY_TIP[god],
+        "작용": [str(x) for x in rels], "쉬운작용": _easy(rels),
+        "행운": {"색": pick(adv["색"].split("·")), "숫자": pick(adv["숫자"].split(", ")), "방위": adv["방위"],
+               "음식": pick(foods), "오행": lucky_el},
+        "미션": mission_by_god[god] if di % 2 == 0 else pick(MISSION_EL[a.yongshin]),
     }
 
 
@@ -205,11 +290,19 @@ def year_fortune(r, year: int) -> dict:
     months = []
     for m in wolun(c, year):
         ms, mrels, _ = _pillar_score(c, a, m.pillar)
-        months.append({"그룹": [GROUP[m.stem_god], GROUP[m.branch_god]], "월": m.start_kst.month, "절기": m.label.rstrip("~"), "시작": m.start_kst.strftime("%m/%d"),
-                       "간지": m.pillar.hanja, "십성": f"{m.stem_god}/{m.branch_god}",
-                       "점수": _clamp((ms + base) / 2 + (ms - 60) * 0.6),
-                       "한마디": DAY_TIP[m.stem_god], "작용": [str(x) for x in mrels]})
+        sc = _clamp((ms + base) / 2 + (ms - 60) * 0.6)
+        mo = m.start_kst.month
+        rels_s = [str(x) for x in mrels]
+        months.append({"그룹": [GROUP[m.stem_god], GROUP[m.branch_god]], "월": mo,
+                       "표시": f"{mo}월" + (f"({m.start_kst.year})" if m.start_kst.year != year else ""),
+                       "연": m.start_kst.year, "절기": m.label.rstrip("~"), "시작": m.start_kst.strftime("%m/%d"),
+                       "간지": m.pillar.hanja, "십성": f"{m.stem_god}/{m.branch_god}", "점수": sc, "신호": _signal(sc),
+                       "한마디": MONTH_TIP[m.stem_god], "작용": rels_s,
+                       "할일": _todo([GROUP[m.stem_god], GROUP[m.branch_god]], f"{m.stem_god}/{m.branch_god}"),
+                       "주의": _caution(rels_s)})
     ranked = sorted(months, key=lambda x: -x["점수"])
+    good3 = [m for m in months if m in ranked[:3]]
+    bad2 = [m for m in months if m in ranked[-2:]]
 
     se, be = _elem_of(p)
     tips = []
@@ -230,7 +323,8 @@ def year_fortune(r, year: int) -> dict:
         "분야": {"재물운": money, "직업운": work, "연애운": love, "건강운": health, "학업운": study, "인간관계": people},
         "작용": [str(x) for x in rels], "조언": tips,
         "일지충": day_clash, "일지합": day_harmony, "월지충": any(x.kind in BAD_REL for x in month_hit),
-        "월별": months, "좋은달": [m["월"] for m in ranked[:3]], "조심할달": [m["월"] for m in ranked[-2:]],
+        "월별": months, "좋은달": [m["월"] for m in good3], "조심할달": [m["월"] for m in bad2],
+        "좋은달표시": [m["표시"] for m in good3], "조심할달표시": [m["표시"] for m in bad2],
     }
 
 
@@ -246,8 +340,9 @@ def life_fortune(r) -> dict:
     cur = next((x for x in pts if x["현재"]), None)
     # 전성기는 '지금 이후'(현재 대운 포함)에서, 현실적인 나이(70세 또는 지금+20세까지) 안에서 고른다
     age_now = r.today.year - c.solar_date.year
+    upcoming = [x for x in pts if age_now < x["나이"] <= age_now + 20]
     ahead = [x for x in pts if x["나이"] + 10 > age_now]
-    best = max([x for x in ahead if x["나이"] < max(70, age_now + 20)] or ahead or pts, key=lambda x: x["점수"])
+    best = max(upcoming or ahead or pts, key=lambda x: x["점수"])
     nxt = next((x for x in pts if cur and x["나이"] == cur["나이"] + 10), None)
     return {"대운": pts, "전성기": best, "현재": cur, "다음": nxt}
 
@@ -300,7 +395,8 @@ def gaewoon(r, year: int) -> dict:
     se, be = _elem_of(p)
     rx = [
         {"제목": "행운 컬러", "내용": f"{y['색']} — 옷·폰케이스·네일 포인트로!", "이유": f"용신 {a.yongshin}의 색"},
-        {"제목": "책상·침대 방향", "내용": f"{y['방위']}쪽을 바라보거나 그쪽에 두기", "이유": f"용신 {a.yongshin}의 방위"},
+        {"제목": "책상·침대 방향", "내용": ("방 한가운데를 깔끔하게 비우고 그 근처에 앉기" if y["방위"] == "중앙" else f"{y['방위']}을 바라보거나 그쪽에 두기"),
+         "이유": f"용신 {a.yongshin}의 방위"},
         {"제목": "개운 음식", "내용": ELEMENT_FOOD[a.yongshin], "이유": "오행과 맛(오미)의 짝"},
         {"제목": "개운 아이템", "내용": ELEMENT_ITEM[a.yongshin], "이유": f"{a.yongshin} 기운을 곁에 두기"},
         {"제목": "생활 습관", "내용": y["활동"], "이유": f"{a.yongshin} 기운을 몸으로 채우기"},
@@ -317,12 +413,124 @@ def gaewoon(r, year: int) -> dict:
     return {"처방": rx, "피할것": avoid, "조후": extra, "올해": year_tip}
 
 
+def this_month(r, today: date) -> dict | None:
+    """오늘이 속한 절기 달(월운)과 할 일·피할 일."""
+    from datetime import datetime
+    c, a = r.chart, r.analysis
+    now = datetime(today.year, today.month, today.day, 12)
+    cand = []
+    for y in (today.year - 1, today.year):
+        cand += wolun(c, y)
+    cand.sort(key=lambda m: m.start_kst)
+    cur = None
+    for i, m in enumerate(cand):
+        nxt = cand[i + 1].start_kst if i + 1 < len(cand) else None
+        if m.start_kst <= now and (nxt is None or now < nxt):
+            cur, end = m, nxt
+    if cur is None:
+        return None
+    ms, mrels, _ = _pillar_score(c, a, cur.pillar)
+    yp = Pillar(year_index(cur.start_kst.year if cur.start_kst.month != 1 else cur.start_kst.year - 1), "")
+    base, _, _ = _pillar_score(c, a, yp)
+    sc = _clamp((ms + base) / 2 + (ms - 60) * 0.6)
+    rels_s = [str(x) for x in mrels]
+    groups = [GROUP[cur.stem_god], GROUP[cur.branch_god]]
+    avoid = _caution(rels_s)[:2]
+    if ELEMENTS[STEM_ELEMENT[cur.pillar.stem]] == a.gishin or ELEMENTS[BRANCH_ELEMENT[cur.pillar.branch]] == a.gishin:
+        avoid.append("부담 기운(기신)이 들어오는 달 — 무리한 일정보다 컨디션 관리")
+    if not avoid:
+        avoid = ["큰 충돌은 없는 달 — 미뤄둔 일 하나를 끝내 보기"]
+    return {"절기": cur.label.rstrip("~"), "시작": cur.start_kst.strftime("%m/%d"),
+            "끝": end.strftime("%m/%d") if end else "", "간지": cur.pillar.hanja, "십성": f"{cur.stem_god}/{cur.branch_god}",
+            "점수": sc, "신호": _signal(sc), "한마디": MONTH_TIP[cur.stem_god],
+            "할일": _todo(groups, f"{cur.stem_god}/{cur.branch_god}"), "피할일": avoid[:2], "작용": rels_s}
+
+
+QUARTERS = [("1분기", [2, 3, 4]), ("2분기", [5, 6, 7]), ("3분기", [8, 9, 10]), ("4분기", [11, 12, 1])]
+
+
+def year_plan(yf: dict) -> list[dict]:
+    """신년운세 월별 → 분기 액션 플랜."""
+    out = []
+    for name, mos in QUARTERS:
+        ms = [m for m in yf["월별"] if m["월"] in mos]
+        avg = round(sum(m["점수"] for m in ms) / len(ms))
+        best = max(ms, key=lambda m: m["점수"])
+        focus = best["할일"][0]
+        out.append({"분기": name, "달": [m["표시"] for m in ms], "점수": avg, "신호": _signal(avg),
+                    "핵심": f"{best['표시']}에 '{focus}'",
+                    "달별": [{"표시": m["표시"], "신호": m["신호"], "할일": m["할일"][0], "주의": (m["주의"] or [""])[0]} for m in ms]})
+    return out
+
+
+PURPOSE = {  # 목적 → (반기는 십성 그룹, 설명)
+    "이직·취업": ({"관성", "인성"}, "직장(관성)·문서(인성) 기운이 들어오는 때"),
+    "연애·소개팅": (None, "연인 기운과 표현(식상) 기운이 들어오는 때"),
+    "시험·자격증": ({"인성", "관성"}, "공부·문서(인성) 기운이 들어오는 때"),
+    "돈·부업": ({"재성", "식상"}, "재물(재성)·생산(식상) 기운이 들어오는 때"),
+    "이사·계약": (None, "합(협력) 기운이 들고 형(서류 마찰)이 없는 때"),
+}
+
+
+def pick_months(months: list[dict], groups: set[str] | None, bad: list[int], n: int = 3, need=None) -> list[dict]:
+    """추천 달 공통 규칙: 조심할 달 제외, 50점 이상, 원하는 그룹 우선."""
+    pool = [m for m in months if m["월"] not in bad and m["점수"] >= 50 and (need is None or need(m))]
+    if groups:
+        pool = [m for m in pool if set(m["그룹"]) & groups] or pool
+    return sorted(sorted(pool, key=lambda m: -m["점수"])[:n], key=months.index)
+
+
+def timing(r, yf: dict, ahead: list[dict]) -> list[dict]:
+    female = r.chart.birth.gender == "여"
+    spouse = "관성" if female else "재성"
+    out = []
+    for purpose, (groups, why) in PURPOSE.items():
+        need = None
+        g = groups
+        if purpose == "연애·소개팅":
+            g = {spouse, "식상"}
+        if purpose == "이사·계약":
+            need = lambda m: any(x.split(":")[0] in GOOD_REL for x in m["작용"]) and not any(x.startswith("형") for x in m["작용"])  # noqa: E731
+        if purpose == "돈·부업":
+            need = lambda m: "겁재" not in m["십성"]  # noqa: E731
+        ms = pick_months(yf["월별"], g, yf["조심할달"], need=need)
+        if not ms and need:
+            ms = pick_months(yf["월별"], g, yf["조심할달"])
+        avoid = [m["표시"] for m in yf["월별"] if m["월"] in yf["조심할달"]]
+        yrs = [x["연도"] for x in ahead if g and set(x["십성그룹"]) & g and x["점수"] >= 55][:3]
+        out.append({"목적": purpose, "추천": [m["표시"] for m in ms], "피할": avoid, "이유": why, "추천해": yrs})
+    return out
+
+
+def transition(life: dict, today: date) -> dict | None:
+    nxt = life.get("다음")
+    if not nxt:
+        return None
+    left = nxt["시작"] - today.year
+    g = GROUP[nxt["십성"].split("/")[0]]
+    seeds = {
+        "인성": ["자격·학위 하나 정해서 준비 시작", "배울 사람(멘토) 찾기", "서류·계약 관리 습관 들이기"],
+        "관성": ["경력·포트폴리오를 '직함'으로 정리하기", "조직 안에서 맡을 역할 정하기", "체력·생활 규칙 만들기"],
+        "재성": ["돈 관리 시스템(통장 쪼개기) 만들기", "부업·사업 아이디어 작게 실험", "숫자로 성과 기록하기"],
+        "식상": ["내 이름 건 결과물 1개 만들기", "전문 분야 1개 정해 깊게 공부", "말·글로 표현하는 연습"],
+        "비겁": ["나만의 기준·목표 세우기", "함께 갈 동료 만들기", "운동으로 체력 기르기"],
+    }[g]
+    return {"다음": nxt, "남은해": left, "씨앗": seeds,
+            "문구": f"{nxt['시작']}년({nxt['나이']}세)에 냥이 달력으로 계절이 바뀐다냥 — '{nxt['테마']}'. 지금 심을 씨앗 3개!"}
+
+
 def bundle(r, today: date) -> dict:
     target = today.year + 1 if today.month >= 10 else today.year
     yf = year_fortune(r, target)
     life = life_fortune(r)
     mt = matches(r)
+    ahead = years_ahead(r, today.year)
+    later = [x for x in ahead if x["연도"] > today.year]
+    harvest = max(later, key=lambda x: x["점수"]) if later else None
     return {"오늘운세": today_fortune(r, today), "내일운세": day_fortune(r, today + timedelta(days=1)),
             "시간대": hourly(r, today), "달력": calendar(r, today, 35),
             "신년운세": yf, "평생운": life, "맞춤": mt,
-            "개운법": gaewoon(r, target), "앞으로10년": years_ahead(r, today.year)}
+            "개운법": gaewoon(r, target), "앞으로10년": ahead,
+            "이번달": this_month(r, today), "분기플랜": year_plan(yf), "타이밍": timing(r, yf, ahead),
+            "대운전환": transition(life, today),
+            "로드맵": ({"수확": harvest, "준비": max(today.year, harvest["연도"] - 2)} if harvest else None)}

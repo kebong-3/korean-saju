@@ -3,8 +3,21 @@ from __future__ import annotations
 
 from .analysis import (BREAK, GWIMUN, HARM, PUNISH_PAIRS, SIX_COMBINE, STEM_CLASH, STEM_COMBINE,
                        THREE_COMBINE, WONJIN, Analysis)
-from .core import ELEMENTS, STEM_ELEMENT, STEMS, Chart
+from .core import STEMS_KO, ELEMENTS, STEM_ELEMENT, STEMS, Chart
 
+
+
+def _j(word: str, pair: str) -> str:
+    """받침에 맞는 조사. 한자 뒤 괄호 속 한글 독음 기준."""
+    import re
+    base = re.sub(r"[^가-힣]", "", word.split("(")[-1]) or word
+    ch = base[-1] if base and "가" <= base[-1] <= "힣" else None
+    bat = ch is not None and (ord(ch) - 0xAC00) % 28 != 0
+    return f"{word}{pair[0] if bat else pair[1]}"
+
+
+def _s(i: int) -> str:
+    return f"{STEMS[i]}({STEMS_KO[i]})"
 
 def _branch_relation(a: int, b: int) -> tuple[int, str]:
     pair = frozenset((a, b))
@@ -40,10 +53,10 @@ def _stem_relation(a: int, b: int) -> tuple[int, str]:
     rel = (eb - ea) % 5
     return {
         0: (5, "같은 오행 — 친구 같은 동반자, 경쟁심 주의"),
-        1: (6, f"{STEMS[a]}이(가) {STEMS[b]}을(를) 생함 — 1번이 베풀고 2번이 받는 구조"),
-        4: (6, f"{STEMS[b]}이(가) {STEMS[a]}을(를) 생함 — 2번이 베풀고 1번이 받는 구조"),
-        2: (-2, f"{STEMS[a]}이(가) {STEMS[b]}을(를) 극함 — 1번이 주도·통제하는 구조"),
-        3: (-2, f"{STEMS[b]}이(가) {STEMS[a]}을(를) 극함 — 2번이 주도·통제하는 구조"),
+        1: (6, f"{_j(_s(a), '이가')} {_j(_s(b), '을를')} 살려 줌 — 1번이 베풀고 2번이 받는 구조"),
+        4: (6, f"{_j(_s(b), '이가')} {_j(_s(a), '을를')} 살려 줌 — 2번이 베풀고 1번이 받는 구조"),
+        2: (-2, f"{_j(_s(a), '이가')} {_j(_s(b), '을를')} 누름 — 1번이 주도·통제하는 구조"),
+        3: (-2, f"{_j(_s(b), '이가')} {_j(_s(a), '을를')} 누름 — 2번이 주도·통제하는 구조"),
     }[rel]
 
 
@@ -64,15 +77,15 @@ def compatibility(c1: Chart, a1: Analysis, c2: Chart, a2: Analysis) -> dict:
         msg = []
         if a_from.yongshin in rich:
             score += 10
-            msg.append(f"상대가 내 용신 {a_from.yongshin}을(를) 풍부하게 가짐")
+            msg.append(f"상대가 내 용신 {_j(a_from.yongshin, '을를')} 풍부하게 가짐")
         if a_from.gishin in rich:
             score -= 5
-            msg.append(f"상대에게 내 기신 {a_from.gishin}이(가) 많음")
+            msg.append(f"상대에게 내 기신 {_j(a_from.gishin, '이가')} 많음")
         lacking = [e for e, w in a_from.element_weight.items() if w < 8]
         filled = [e for e in lacking if other.element_weight[e] >= 18]
         if filled:
             score += 4 * len(filled)
-            msg.append(f"내게 부족한 {','.join(filled)}을(를) 채워줌")
+            msg.append(f"내게 부족한 {_j(','.join(filled), '을를')} 채워줌")
         return score, "; ".join(msg) or "뚜렷한 보완/충돌 없음"
 
     s, t = fills(a1, a2)

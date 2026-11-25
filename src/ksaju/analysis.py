@@ -161,10 +161,10 @@ def find_sinsal(chart: Chart) -> tuple[list[Sinsal], dict[str, dict[str, str]]]:
             add("금여록", pos)
         if p.hanja in BAEKHO:
             add("백호대살", pos)
-        if STEMS[p.stem] == CHEONDEOK[chart.month.branch] or BRANCHES[p.branch] == CHEONDEOK[chart.month.branch]:
-            if p.label != "월주":
-                add("천덕귀인", pos)
-        if STEMS[p.stem] == WOLDEOK[chart.month.branch] and p.label != "월주":
+        # 천덕·월덕은 월지 기준으로 원국 천간(월간 포함)·지지에서 찾는다
+        if STEMS[p.stem] == CHEONDEOK[chart.month.branch] or (BRANCHES[p.branch] == CHEONDEOK[chart.month.branch] and p.label != "월주"):
+            add("천덕귀인", pos)
+        if STEMS[p.stem] == WOLDEOK[chart.month.branch]:
             add("월덕귀인", pos)
     if chart.day.hanja in GOEGANG:
         add("괴강살", "일")
@@ -178,9 +178,11 @@ def find_sinsal(chart: Chart) -> tuple[list[Sinsal], dict[str, dict[str, str]]]:
     for p in ps:
         twelve["연지기준"][POS_KO[p.label]] = twelve_sinsal(chart.year.branch, p.branch)
         twelve["일지기준"][POS_KO[p.label]] = twelve_sinsal(chart.day.branch, p.branch)
-    for basis in twelve.values():
+    # 기준 글자 자신(연지 기준이면 연지, 일지 기준이면 일지)은 판정하지 않는다
+    for basis_name, basis in twelve.items():
+        self_pos = "연" if basis_name == "연지기준" else "일"
         for pos, name in basis.items():
-            if name in ("역마살", "연살(도화)", "화개살") and pos not in ("연",):
+            if name in ("역마살", "연살(도화)", "화개살") and pos != self_pos:
                 add(name.replace("연살(도화)", "도화살"), pos)
     return [Sinsal(k, v) for k, v in found.items()], twelve
 
@@ -317,15 +319,16 @@ def analyze(chart: Chart) -> Analysis:
     de = STEM_ELEMENT[ds]
     el_of = {"비겁": de, "식상": (de + 1) % 5, "재성": (de + 2) % 5, "관성": (de + 3) % 5, "인성": (de + 4) % 5}
     if score >= 55 or (score > 45 and deukryeong):
+        strong = "신강하고" if score >= 55 else "중화이나 월령을 얻어 일간 쪽이 조금 강하고"
         if group_w["인성"] > group_w["비겁"]:
             yong_g = "재성"
-            yreason = "신강하고 인성이 무거워 재성으로 인성을 제어(재극인)"
+            yreason = f"{strong} 인성이 무거워 재성으로 인성을 제어(재극인)"
         elif group_w["관성"] >= group_w["식상"]:
             yong_g = "관성"
-            yreason = "신강하고 비겁이 많아 관성으로 비겁을 제어"
+            yreason = f"{strong} 비겁이 많아 관성으로 비겁을 제어"
         else:
             yong_g = "식상"
-            yreason = "신강하고 비겁이 많아 식상으로 기운을 설기(泄氣)"
+            yreason = f"{strong} 비겁이 많아 식상으로 기운을 설기(泄氣)"
     else:
         drain = {g: group_w[g] for g in ("식상", "재성", "관성")}
         top = max(drain, key=drain.get)

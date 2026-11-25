@@ -61,19 +61,21 @@ SEASON = {2: "봄", 3: "봄", 4: "봄", 5: "여름", 6: "여름", 7: "여름", 8
 SEASON_HANJA = {"봄": "春", "여름": "夏", "가을": "秋", "겨울": "冬"}
 # 월지가 대표하는 계절 오행(사계 토월 辰未戌丑은 토)
 MONTH_ELEMENT = {2: 0, 3: 0, 5: 1, 6: 1, 8: 3, 9: 3, 11: 4, 0: 4, 4: 2, 7: 2, 10: 2, 1: 2}
-# 궁통보감 계열 조후 원칙 요약 — 일간 × 계절 → 대표 조후 글자 (유파·주석본마다 세부 차이)
-JOHU_KEYS = {
-    "甲": {"봄": "丙癸", "여름": "癸丁", "가을": "庚丁", "겨울": "丙丁"},
-    "乙": {"봄": "丙癸", "여름": "癸丙", "가을": "癸丙", "겨울": "丙"},
-    "丙": {"봄": "壬庚", "여름": "壬庚", "가을": "壬甲", "겨울": "甲壬"},
-    "丁": {"봄": "甲庚", "여름": "壬甲", "가을": "甲庚", "겨울": "甲庚"},
-    "戊": {"봄": "丙甲癸", "여름": "壬甲", "가을": "丙癸", "겨울": "丙甲"},
-    "己": {"봄": "丙癸", "여름": "癸丙", "가을": "丙癸", "겨울": "丙甲"},
-    "庚": {"봄": "戊甲丁", "여름": "壬戊", "가을": "丁甲", "겨울": "丁丙"},
-    "辛": {"봄": "己壬", "여름": "壬己", "가을": "壬甲", "겨울": "丙壬"},
-    "壬": {"봄": "庚戊", "여름": "庚辛癸", "가을": "甲戊", "겨울": "戊丙"},
-    "癸": {"봄": "辛丙", "여름": "庚辛", "가을": "辛丙", "겨울": "丙辛"},
+# 궁통보감 조후용신 통용 요약표 — 일간 × 월지(寅卯辰巳午未申酉戌亥子丑). 주석본·유파마다 세부 차이가 있다.
+_JOHU_ROWS = {
+    "甲": "丙癸 庚丙丁戊己 庚丁壬 癸丁庚 癸丁庚 癸丁庚 庚丁壬 庚丁丙 庚甲丁壬癸 庚丁丙戊 丁庚丙 丁庚丙",
+    "乙": "丙癸 丙癸 癸丙戊 癸 癸丙 癸丙 丙癸己 癸丙丁 癸辛 丙戊 丙 丙",
+    "丙": "壬庚 壬己 壬甲 壬庚癸 壬庚 壬庚 壬戊 壬癸 甲壬 甲戊庚壬 壬戊己 壬甲",
+    "丁": "甲庚 庚甲 甲庚 甲庚 壬庚癸 甲壬庚 甲庚丙戊 甲庚丙戊 甲庚戊 甲庚 甲庚 甲庚",
+    "戊": "丙甲癸 丙甲癸 甲丙癸 甲丙癸 壬甲丙 癸丙甲 丙癸甲 丙癸 甲丙癸 甲丙 丙甲 丙甲",
+    "己": "丙庚甲 甲癸丙 丙癸甲 癸丙 癸丙 癸丙 丙癸 丙癸 甲丙癸 丙甲戊 丙甲戊 丙甲戊",
+    "庚": "戊甲壬丙丁 丁甲庚丙 甲丁壬癸 壬戊丙丁 壬癸 丁甲 丁甲 丁甲丙 甲壬 丁丙 丁甲丙 丙丁甲",
+    "辛": "己壬庚 壬甲 壬甲 壬甲癸 壬己癸 壬庚甲 壬甲戊 壬甲 壬甲 壬丙 丙戊壬甲 丙壬戊己",
+    "壬": "庚丙戊 戊辛庚 甲庚 壬辛庚癸 癸庚辛 辛甲 戊丁 甲庚 甲丙 戊丙庚 戊丙 丙丁甲",
+    "癸": "辛丙 庚辛 丙辛甲 辛 庚辛壬癸 庚辛壬癸 丁 辛丙 辛甲壬癸 庚辛戊丁 丙辛 丙丁",
 }
+_MONTH_ORDER = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1]
+JOHU_KEYS = {stem: {b: cell for b, cell in zip(_MONTH_ORDER, row.split())} for stem, row in _JOHU_ROWS.items()}
 JOHU_WHY = {
     "목": {"봄": "이른 봄 나무는 아직 춥다 — 햇볕(丙)으로 데우고 빗물(癸)로 적셔야 싹이 튼다",
           "여름": "한여름 나무는 말라 간다 — 무엇보다 물(癸)이 급하다",
@@ -82,7 +84,7 @@ JOHU_WHY = {
     "화": {"봄": "봄 불은 기운이 오르는 중 — 물(壬)로 빛을 비추고 나무(甲)로 땔감을 댄다",
           "여름": "한여름 불은 너무 뜨겁다 — 큰물(壬)로 열을 식혀야 오히려 빛난다",
           "가을": "가을 불은 기운이 꺼져 간다 — 나무(甲)로 다시 지펴야 한다",
-          "겨울": "겨울 불은 꺼지기 쉽다 — 땔감(甲)이 가장 급하다"},
+          "겨울": "겨울 불은 약하다 — 초겨울엔 땔감(나무)을 대고, 한겨울엔 큰물에 비친 햇빛처럼 물과 짝을 이뤄 빛을 낸다"},
     "토": {"봄": "봄 흙은 차갑고 나무에 눌린다 — 햇볕(丙)으로 데우고 물(癸)로 적셔야 농사가 된다",
           "여름": "여름 흙은 바짝 마른다 — 물(壬癸)이 없으면 갈라진 땅이 된다",
           "가을": "가을 흙은 기운이 빠져 서늘하다 — 햇볕(丙)과 물(癸)로 기름지게",
@@ -107,7 +109,7 @@ GYEOK_INFO = {  # 격의 십신 → (순용/역용, 고전 요지, 현대 그릇
            "판을 키우는 사업가형 그릇 — 영업, 무역, 투자, 플랫폼·커머스, 프로젝트 사업"),
     "정인": ("순용(順用)", "인수(印綬)는 선한 신이라 관살(官殺)이 생해 주면 귀하다(관인상생). 재(財)가 인을 깨면(탐재괴인) 패하고, 인이 너무 무거우면 재로 덜어낸다.",
            "배움과 자격으로 서는 그릇 — 교육, 연구, 의료·약학, 상담, 공공기관, 출판"),
-    "편인": ("역용(逆用)", "편인(偏印, 효신梟神)은 식신을 빼앗기 쉬워(도식倒食) 재(財)로 제어하는 것을 좋게 본다. 관살을 만나면 인으로서 쓰인다.",
+    "편인": ("순용(順用)", "《자평진전》은 인수(印綬)를 정·편 모두 좋은 격으로 본다. 다만 편인이 식신을 만나면 효신(梟神)이 되어 식신을 빼앗으므로(도식倒食) 재(財)로 제어해야 한다.",
            "남다른 전문성의 그릇 — 기술·연구개발, 디자인, 심리·종교·철학, 데이터·보안, 니치 전문가"),
     "식신": ("순용(順用)", "식신(食神)은 선한 신이라 재(財)를 생하면 부(식신생재), 칠살을 만나면 제어하여 귀(식신제살)가 된다. 편인(효신)이 식신을 치면 패한다.",
            "재능을 꾸준히 생산하는 그릇 — 전문 기술, 콘텐츠·요리·교육, 크리에이터, 서비스업"),
@@ -247,7 +249,7 @@ def build(r, fx: dict) -> dict:
                                                      "인성", ("재성" if female else "식상"), "비겁"])]
     tc_list = ", ".join(f"{lbl[0]}지 {b} 속 {s}" for lbl, b, s in tuchul) or "없음"
     lens1 = {
-        "id": "japyeong", "book": "연해자평(淵海子平)", "era": "송(宋) · 서자평(徐子平) 학설을 서대승(徐大升)이 정리",
+        "id": "japyeong", "book": "연해자평(淵海子平)", "era": "송(宋) 서자평(徐子平) 학설 → 서대승(徐大升) 《연해》·《연원》 → 명(明) 당금지(唐錦池) 합편",
         "lens": "뼈대", "icon": "🦴",
         "q": "이 사람의 '나'는 누구이고, 주변 기운은 나와 어떤 관계로 짜여 있는가?",
         "easy": f"사주를 사람 몸에 비유하면 이 책은 '뼈대'를 본다냥. 태어난 날의 천간 {dmh}을 '나'로 세우고, 나머지 일곱 글자가 나에게 무엇(돈·일·사람·배움)인지 관계도를 그린다냥.",
@@ -299,7 +301,7 @@ def build(r, fx: dict) -> dict:
         "양인살": ("양인(陽刃) — 칼날, 과강하면 흉하나 관살로 제어하면 위엄", "결단력·승부욕. 외과·군경·법조·스포츠에서 강점"),
         "홍염살": ("홍염(紅艶) — 이성의 정이 많다", "분위기 있는 매력, 대중 호감도. 연애·연예·뷰티·서비스업"),
         "금여록": ("금여(金輿) — 황금 수레, 배우자 덕과 품위", "생활 수준·배우자 복, 품위 있는 라이프스타일"),
-        "백호대살": ("백호(白虎) — 혈광(血光)의 흉살로 보았다", "강한 에너지. 의료·위험관리·전문직에서 쓰면 길, 안전·건강 관리 필요"),
+        "백호대살": ("백호(白虎) — 옛날엔 혈광(血光)을 경계한 '센 기운'으로 보았다", "강한 에너지. 의료·위험관리·전문직에서 쓰면 길, 안전·건강 관리 필요"),
         "천덕귀인": ("천덕(天德) — 하늘의 덕으로 흉을 줄인다", "타고난 보호막, 큰 사고를 비껴가는 운"),
         "월덕귀인": ("월덕(月德) — 달의 덕, 온화하고 인덕이 있다", "인복·온화한 평판"),
         "괴강살": ("괴강(魁罡) — 총명하고 강하나 극단으로 흐르기 쉽다", "카리스마형 리더십. 고집만 다스리면 큰 그릇"),
@@ -311,7 +313,7 @@ def build(r, fx: dict) -> dict:
     sin_lines_c = [f"{sin_classic[k][0]} — 위치: {'·'.join(v)}주" for k, v in sins.items() if k in sin_classic]
     sin_lines_m = [f"[[{k}]]: {sin_classic[k][1]}" for k in sins if k in sin_classic]
     gm_pos = sins.get("공망", [])
-    gm_mean = {"연": "조상·집안 덕이 약하거나 일찍 독립", "월": "부모·형제·첫 직장과의 인연이 엷음, 스스로 길을 냄",
+    gm_mean = {"연": "일찍 자기 길을 내는 독립형", "월": "부모·첫 직장에 기대기보다 스스로 길을 내는 타입",
                "시": "자녀·말년 계획이 늦게 채워짐, 정신적 결실을 중시"}
     t12y = a.twelve_sinsal["연지기준"]; t12d = a.twelve_sinsal["일지기준"]
     target = fx["신년운세"]["연도"]
@@ -370,9 +372,14 @@ def build(r, fx: dict) -> dict:
     y_idx = ELEMENTS.index(a.yongshin)
     y_in_stem = [p.label for p in c.pillars if STEM_ELEMENT[p.stem] == y_idx and p.label != "일주"]
     y_root = [p.label for p in c.pillars if any(STEM_ELEMENT[s] == y_idx for s, _ in HIDDEN[p.branch])]
-    jinga = ("진(眞) — 용신이 천간에 드러나고 지지에 뿌리도 있다" if y_in_stem and y_root else
-             "반진반가 — 용신이 " + ("천간에만 떠 있고 뿌리가 없다" if y_in_stem else "지지 속에만 숨어 있다(운에서 드러날 때 힘을 쓴다)") if (y_in_stem or y_root)
-             else "가(假) — 용신이 원국에 거의 없어 운(運)에서 와야 쓴다")
+    y_ws = _wangsang(y_idx, mb)
+    y_sl = STEM_ELEMENT[sallyeong] == y_idx
+    jin = y_ws in ("왕(旺)", "상(相)") or y_sl
+    power = ("유력(有力) — 천간에 드러나고 지지에 뿌리도 있다" if y_in_stem and y_root else
+             "반유력 — " + ("천간에만 떠 있고 뿌리가 없다" if y_in_stem else "지지 속에만 숨어 있다(운에서 드러날 때 힘을 쓴다)") if (y_in_stem or y_root)
+             else "무력(無力) — 원국에 거의 없어 운(運)에서 와야 쓴다")
+    jinga = (f"{'진(眞)' if jin else '가(假)'} — 월령에서 {y_ws}" + (" · 사령한 기운" if y_sl else "")
+             + (" 이라 계절이 용신을 밀어준다" if jin else " 이라 계절의 도움은 약하다") + f" / {power}")
     strength_word = a.strength
     shun = ("왕한 기운을 덜어 주는 방향(설기·극제)" if a.strength_score >= 55 else
             "약한 일간을 돕는 방향(생조·방조)" if a.strength_score <= 45 else "균형을 지키는 방향(치우친 쪽을 살짝 덜기)")
@@ -397,7 +404,7 @@ def build(r, fx: dict) -> dict:
                               ("거의 없는 오행 " + ", ".join(_e(ELEMENTS.index(b)) for b in breaks) + "에서 흐름이 끊긴다. " if breaks else "")
                               + "".join(f"{jo(_e(ELEMENTS.index(x)), '과와')} {jo(_e(ELEMENTS.index(y)), '이가')} 맞서 싸우니(상전, 相戰) 사이를 잇는 {jo(_e(ELEMENTS.index(m)), '이가')} [[통관]](通關) 신이다. " for x, y, m in wars)),
             f"**청탁(淸濁)**: {cheong} — {cheong_why}.",
-            f"**진가(眞假)**: 억부 용신 {jo(_e(y_idx), '은는')} {jinga}.",
+            f"**진가(眞假)**: 《적천수》는 \"영상심진(令上尋眞)\" — 월령 위에서 진짜를 찾으라 했다. 억부 용신 {jo(_e(y_idx), '은는')} {jinga}.",
             f"**억부(抑扶)**: {a.yong_note.split(' 조후:')[0].replace('억부: ', '')} → 용신 {a.yongshin}, 희신 {a.huishin}, 기신 {a.gishin}, 구신 {a.gushin}, 한신 {a.hanshin}. 기세의 방향은 {shun}이다.",
             *([f"**종화(從化)**: {n}. 《적천수》는 '종(從)'을 함부로 정하지 말라 하니, 실제 삶의 흐름과 대조해 판단한다." for n in jong]),
         ],
@@ -411,7 +418,7 @@ def build(r, fx: dict) -> dict:
             "막힌 곳(유통·통관)은 실제 삶에서 **연결이 필요한 지점**이다. " + (f"예컨대 {jo(wars[0][0], '과와')} {wars[0][1]}의 충돌은 {wars[0][2]} 성격의 사람·활동이 중재해 준다." if wars else "지금 원국은 큰 충돌이 없어 에너지가 비교적 자연스럽게 돈다."),
             f"청탁은 '깔끔함'의 문제다. {cheong} 사주는 " + ("목표가 선명할 때 크게 성과를 낸다." if "청" in cheong and "탁" not in cheong else "관심사가 넓은 대신 우선순위를 정해 줘야 힘이 모인다."),
         ],
-        "basis": [f"{strength_word} {a.strength_score}%", f"왕신 {top_el}", f"청탁: {cheong}", f"용신 {a.yongshin}({jinga.split(' ')[0]})"],
+        "basis": [f"{strength_word} {a.strength_score}%", f"왕신 {top_el}", f"청탁: {cheong}", f"용신 {a.yongshin}({'진' if jin else '가'})"],
     }
 
     # ============================================================ 4. 자평진전 — 격국
@@ -434,12 +441,19 @@ def build(r, fx: dict) -> dict:
         if has("식신"): seong.append("식신이 칠살을 제어 — 식신제살(食神制殺)"); sang.append("식신")
         if has("상관"): seong.append("상관이 칠살을 다스림 — 상관가살(傷官駕殺)"); sang.append("상관")
         if has("정인", "편인"): seong.append("인이 칠살을 순화 — 살인상생(殺印相生)"); sang.append("인성")
-        if has("정재", "편재") and not (has("식신") or has("정인", "편인")): pae.append("재가 칠살을 생하는데 제화가 없음 — 재자약살(財滋弱殺)의 위험")
+        if has("정재", "편재") and a.strength_score >= 55 and a.group_weight["관성"] < 20:
+            seong.append("신강하고 살이 약해 재로 살을 돕는다 — 재자약살(財滋弱殺)"); sang.append("재성")
+        elif has("정재", "편재") and not (has("식신", "상관") or has("정인", "편인")):
+            pae.append("재가 칠살 편에 서는데 제화가 없음 — 재당살(財黨殺)")
         if not (has("식신", "상관") or has("정인", "편인")): pae.append("칠살을 다스리는 신(식신·인성)이 천간에 없음")
         if has("정관"): pae.append("정관이 섞임 — 관살혼잡")
     elif key in ("정재", "편재"):
-        if has("정관", "편관"): seong.append("재가 관을 생 — 재왕생관"); sang.append("관성")
+        if has("정관"): seong.append("재가 정관을 생 — 재왕생관(財旺生官)"); sang.append("정관")
         if has("식신", "상관"): seong.append("식상이 재를 생 — 식신생재"); sang.append("식상")
+        if has("편관"):
+            if has("식신") or has("정인", "편인"):
+                gu.append("칠살이 드러났으나 식신(제살)이나 인성(화살)이 있어 재투칠살의 해를 줄임(구응)")
+            pae.append("재격에 칠살이 드러남 — 재투칠살(財透七殺)")
         if a.strength_score <= 40: pae.append("일간이 약해 재를 감당하기 버거움 — 재다신약(財多身弱)")
         if has("겁재", "비견") and not has("정관", "편관"): pae.append("비겁이 재를 다툼 — 군겁쟁재(群劫爭財)")
         if has("비견", "겁재") and has("정관", "편관"): gu.append("관성이 비겁을 눌러 재를 지킴(구응)")
@@ -447,22 +461,36 @@ def build(r, fx: dict) -> dict:
         if has("정관", "편관"): seong.append("관살이 인을 생 — 관인상생/살인상생"); sang.append("관성")
         if a.strength_score >= 60 and has("정재", "편재"): seong.append("인이 무거워 재로 덜어냄 — 인중용재(印重用財)"); sang.append("재성")
         if has("정재", "편재") and a.strength_score < 50: pae.append("재가 인을 깸 — 탐재괴인(貪財壞印)")
-        if key == "편인" and has("식신"): pae.append("편인이 식신을 침 — 효신탈식(梟神奪食, 도식)")
+        if has("식신", "상관") and a.strength_score >= 55:
+            seong.append("신강하고 인이 왕해 식상으로 빼냄 — 인수용식상(印綬用食傷)"); sang.append("식상")
+        elif key == "편인" and has("식신"):
+            pae.append("편인이 식신을 침 — 효신탈식(梟神奪食, 도식)")
     elif key == "식신":
-        if has("정재", "편재"): seong.append("식신이 재를 생 — 식신생재(食神生財)"); sang.append("재성")
-        if has("편관"): seong.append("식신이 칠살을 제어 — 식신제살"); sang.append("식신")
+        if has("정재", "편재") and has("편관"):
+            pae.append("재와 칠살이 함께 드러남 — 생재로살(生財露殺)")
+        elif has("정재", "편재"):
+            seong.append("식신이 재를 생 — 식신생재(食神生財)"); sang.append("재성")
+        elif has("편관"):
+            seong.append("식신이 칠살을 데리고 다스림 — 식신대살(食神帶殺)"); sang.append("편관")
         if has("편인"): pae.append("편인(효신)이 식신을 침 — 효신탈식(梟神奪食)")
         if has("편인") and has("정재", "편재"): gu.append("재가 편인을 눌러 식신을 지킴(구응)")
     elif key == "상관":
         if has("정재", "편재"): seong.append("상관이 재를 생 — 상관생재(傷官生財)"); sang.append("재성")
         if has("정인", "편인") and a.strength_score < 50: seong.append("인으로 상관을 다스림 — 상관패인(傷官佩印)"); sang.append("인성")
         if has("편관"): seong.append("상관이 칠살과 짝 — 상관가살(傷官駕殺)"); sang.append("편관")
-        if has("정관"): pae.append("정관을 봄 — 상관견관(傷官見官)")
+        geumsu = STEMS[ds] in "庚辛" and mb in (11, 0)
+        if has("정관") and geumsu:
+            seong.append("금수상관(金水傷官)은 추워서 관(火)을 반긴다 — 상관견관이 오히려 길")
+            sang.append("정관")
+        elif has("정관"):
+            pae.append("정관을 봄 — 상관견관(傷官見官)")
         if has("정관") and has("정인", "편인"): gu.append("인성이 상관을 다스려 관을 지킴(구응)")
     elif key in ("건록", "월겁"):
         if has("정관"): seong.append("녹겁격에 정관이 드러남 — 녹겁용관(祿劫用官)"); sang.append("정관")
         if has("정재", "편재"): seong.append("재를 씀 — 녹겁용재(祿劫用財)"); sang.append("재성")
         if has("식신", "상관"): seong.append("식상을 씀 — 녹겁용식상"); sang.append("식상")
+        if has("편관") and (has("식신") or has("정인", "편인")):
+            seong.append("칠살을 식신이나 인성으로 다스려 씀 — 녹겁용살(祿劫用殺)"); sang.append("편관")
         if not (has("정관", "편관") or has("정재", "편재") or has("식신", "상관")): pae.append("쓸 신(관·재·식상)이 천간에 없음 — 비겁만 왕함")
     elif key == "양인":
         if has("정관", "편관"): seong.append("관살이 양인을 제어 — 양인가살(陽刃駕殺)"); sang.append("관성")
@@ -478,14 +506,14 @@ def build(r, fx: dict) -> dict:
     verdict_short = verdict.split(" — ")[0]
     # 운이 격을 돕는/깨는 십신
     BREAKER = {"정관": {"상관": "상관견관", "편관": "관살혼잡"}, "편관": {"정재": "재자살", "편재": "재자살"},
-               "정재": {"겁재": "겁재탈재", "비견": "비겁쟁재"}, "편재": {"겁재": "겁재탈재", "비견": "비겁쟁재"},
+               "정재": {"겁재": "겁재탈재", "비견": "비겁쟁재", "편관": "재투칠살"}, "편재": {"겁재": "겁재탈재", "비견": "비겁쟁재", "편관": "재투칠살"},
                "정인": {"정재": "탐재괴인", "편재": "탐재괴인"}, "편인": {"정재": "탐재괴인", "편재": "탐재괴인"},
                "식신": {"편인": "효신탈식"}, "상관": {"정관": "상관견관"},
-               "건록": {"겁재": "비겁 과다"}, "월겁": {"겁재": "비겁 과다"}, "양인": {"정재": "재생살 없이 양인만 왕"}}
+               "건록": {"겁재": "비겁 과다"}, "월겁": {"겁재": "비겁 과다"}, "양인": {"식신": "식상이 관살을 제압", "상관": "식상이 관살을 제압"}}
     HELPER = {"정관": {"정재", "편재", "정인", "편인"}, "편관": {"식신", "정인", "편인"}, "정재": {"정관", "식신", "상관"},
-              "편재": {"정관", "편관", "식신", "상관"}, "정인": {"정관", "편관"}, "편인": {"편관", "정재", "편재"},
+              "편재": {"정관", "식신", "상관"}, "정인": {"정관", "편관"}, "편인": {"편관", "정재", "편재"},
               "식신": {"정재", "편재"}, "상관": {"정재", "편재", "정인", "편인"}, "건록": {"정관", "정재", "편재", "식신"},
-              "월겁": {"정관", "정재", "편재", "식신"}, "양인": {"정관", "편관"}}
+              "월겁": {"정관", "정재", "편재", "식신"}, "양인": {"정관", "편관", "정재", "편재"}}
 
     def luck_on_gyeok(sg: str, bg: str) -> str:
         br = BREAKER.get(key, {})
@@ -508,7 +536,7 @@ def build(r, fx: dict) -> dict:
         "classic": [
             "《자평진전》의 첫 원칙: **\"팔자용신(八字用神), 전구월령(專求月令)\"** — 사주의 용신(=격의 기준)은 오로지 월령에서 구한다. 이 책에서 '용신'은 억부의 보약이 아니라 **월령에서 나온 격의 중심 십신**을 뜻한다는 점이 다른 책과 다르다.",
             f"월령 {BRANCHES[mb]}({BRANCHES_KO[mb]})의 지장간은 " + " · ".join(f"{STEMS[s]}{d}일" for s, d in sal_name)
-            + f"이다. 절입({c.prev_jie[1]}) 후 약 {days_in:.1f}일째에 태어나 **{STEMS[sallyeong]}({_god(sl_god)})이 [[사령]](司令)**한다 — 출생 무렵 당번을 서던 기운이다.",
+            + f"이다. 절입({c.prev_jie[1]}) 후 약 {days_in:.1f}일째에 태어나 **{jo(STEMS[sallyeong] + '(' + STEMS_KO[sallyeong] + ')', '이가')} [[사령]](司令)**한다({_god(sl_god)}) — 출생 무렵 당번을 서던 기운이다.",
             f"격국(格局): **{g_name}** — {a.gyeok_note}. " + ("(사령한 글자와 격의 기준 글자가 같아 격의 힘이 순수하다.)" if STEMS[sallyeong] in a.gyeok_note else "(사령 글자와 격의 기준 글자가 달라, 두 기운을 함께 참작한다.)"),
             f"**{info[0]}**: {info[1]}",
             "**성격(成格) 요소**: " + ("; ".join(seong) if seong else "천간에 뚜렷하지 않다"),
@@ -539,7 +567,7 @@ def build(r, fx: dict) -> dict:
     dry = round((w["화"] + w["목"] * .3 + sum(4 for p in c.pillars if p.branch in (7, 10))) - (w["수"] + w["금"] * .3 + sum(4 for p in c.pillars if p.branch in (4, 1))), 1)
     temp_word = "조열(燥熱) — 덥고 건조" if temp >= 15 and dry >= 5 else "한습(寒濕) — 차고 습함" if temp <= -15 and dry <= -5 else \
         "난(暖) — 따뜻한 편" if temp >= 8 else "한(寒) — 서늘한 편" if temp <= -8 else "온화(溫和) — 온도가 고르다"
-    keys = JOHU_KEYS[STEMS[ds]][season]
+    keys = JOHU_KEYS[STEMS[ds]][mb]
     have = []
     for k in keys:
         s = STEMS.index(k)
@@ -549,21 +577,23 @@ def build(r, fx: dict) -> dict:
     sat = sum(2 if st else 1 if hd else 0 for _, st, hd in have)
     sat_word = "충족(充足)" if sat >= len(keys) * 1.5 else "부분 충족" if sat >= 1 else "부족(不足)"
     johu_els = sorted({ELEMENTS[STEM_ELEMENT[STEMS.index(k)]] for k in keys}, key=ELEMENTS.index)
-    warm_dw = [p for p in r.daewoon if ELEMENTS[STEM_ELEMENT[p.pillar.stem]] in johu_els or ELEMENTS[BRANCH_ELEMENT[p.pillar.branch]] in johu_els]
+    temp_el = "수" if temp > 0 else "화"
+    warm_dw = [p for p in r.daewoon if temp_el in (ELEMENTS[STEM_ELEMENT[p.pillar.stem]], ELEMENTS[BRANCH_ELEMENT[p.pillar.branch]])]
     lens5 = {
         "id": "gungtong", "book": "궁통보감(窮通寶鑑)", "era": "원명 《난강망(欄江網)》 · 청(淸) 여춘태(余春台) 편 · 서낙오 평주 《조화원약》",
         "lens": "계절", "icon": "🌡️",
         "q": "이 사람은 어떤 계절의 어떤 온도·습도로 태어났고, 무엇으로 온도를 맞춰야 하는가?",
         "easy": "이 책은 사주의 '온도계'다냥. 같은 나무라도 한겨울 나무와 한여름 나무는 필요한 게 다르다냥 — 겨울엔 햇볕, 여름엔 물! 태어난 계절에 맞춰 꼭 필요한 글자를 찾는다냥.",
         "classic": [
-            f"《궁통보감》은 **일간 10개 × 월령 12개 = 120가지** 경우마다 조후(調候) 용신을 따로 정한 책이다. 이 사주는 **{dmh} 일간, {BRANCHES[mb]}월({season})** 생이다.",
+            f"《궁통보감》은 **일간 10개 × 월령 12개 = 120가지** 경우마다 조후(調候) 용신을 따로 정한 책이다. 이 사주는 **{dmh} 일간, {BRANCHES[mb]}({BRANCHES_KO[mb]})월({season})** 생이다.",
             f"요지: {_plain(JOHU_WHY['목화토금수'[de]][season])}.",
-            f"이 계열에서 대표적으로 꼽는 조후 글자: **{' · '.join(k + '(' + STEMS_KO[STEMS.index(k)] + ')' for k in keys)}** (주석본·유파마다 세부 차이가 있다).",
+            f"{STEMS[ds]}일간 {BRANCHES[mb]}월에 통용 조후표가 꼽는 글자: **{' · '.join(k + '(' + STEMS_KO[STEMS.index(k)] + ')' for k in keys)}** — 앞 글자일수록 우선이다(주석본·유파마다 세부 차이가 있다). "
+            f"이 중 온도를 직접 맞추는 글자는 물(壬癸)과 불(丙丁)이고, 나머지는 뿌리·제방·땔감처럼 조후를 돕는 글자다.",
             "원국의 조후 글자 보유: " + "; ".join(f"{k} — " + ("천간 " + "·".join(st) + "주에 투출" if st else "") + (" / " if st and hd else "") + ("지장간 " + "·".join(hd) + "지에 암장" if hd else "") if (st or hd) else f"{k} — 없음" for k, st, hd in have)
             + f" → 조후 **{sat_word}**.",
             f"[[한난조습]](寒暖燥濕): 온도 지수 {temp:+}, 건습 지수 {dry:+} → **{temp_word}**.",
-            ("조후가 급하면 억부보다 조후를 먼저 쓴다는 것이 이 책의 태도다. 이 사주는 계절의 치우침이 커서 조후 비중이 높다."
-             if abs(temp) >= 15 else "계절의 치우침이 크지 않아 조후는 보조로, 격국·억부를 주로 쓴다."),
+            ("조후가 급하면 억부보다 조후를 먼저 쓴다는 것이 이 책의 태도다. 이 사주는 온도의 치우침이 커서 조후 비중이 높다."
+             if abs(temp) >= 15 else "온도의 치우침이 크지 않아 조후는 보조로, 격국·억부를 주로 쓴다."),
         ],
         "modern": [
             f"조후는 현대적으로 **몸과 마음의 온도 관리**다. {temp_word.split(' — ')[0]} 체질은 " + (
@@ -573,7 +603,7 @@ def build(r, fx: dict) -> dict:
             f"필요한 조후 오행은 **{', '.join(johu_els)}**. 직업 환경·색·활동·사람으로 이 기운을 가까이 두는 것이 '현대식 조후'다.",
             ("조후 글자가 원국에 있다 — 스스로 온도를 맞출 줄 아는 사람이다." if sat_word == "충족(充足)" else
              "조후 글자가 부족하다 — 그 기운이 들어오는 대운에 컨디션과 일이 함께 풀리는 경향이 있다."),
-            "조후 기운이 들어오는 대운: " + (", ".join(f"{p.start_age}세({p.pillar.hanja})" for p in warm_dw[:6]) or "뚜렷하지 않음") + ".",
+            ("열을 식혀 주는 물 기운" if temp > 0 else "몸을 데워 주는 불 기운") + "이 들어오는 대운: " + (", ".join(f"{p.start_age}세({p.pillar.hanja})" for p in warm_dw[:6]) or "뚜렷하지 않음") + ".",
         ],
         "basis": [f"{season}생 {BRANCHES[mb]}월", temp_word.split(' — ')[0], f"조후 {''.join(keys)}", sat_word],
     }
@@ -583,20 +613,25 @@ def build(r, fx: dict) -> dict:
     sang_groups = {GROUP.get(x, x) for x in sang}
     yong_gk = sorted({ELEMENTS[grp_el(g)] for g in sang_groups if g in ("비겁", "식상", "재성", "관성", "인성")}, key=ELEMENTS.index)
     agree = [e for e in johu_els if e == yong_ab or e in yong_gk]
-    primary = ELEMENTS[STEM_ELEMENT[STEMS.index(keys[0])]]
-    if yong_ab == primary:
-        final = yong_ab
-        final_why = f"억부(적천수)와 조후(궁통보감)의 첫 글자가 모두 {jo(yong_ab, '을를')} 가리킨다 — 확신도가 높다."
-    elif abs(temp) >= 15:
-        final = primary
-        final_why = (f"계절 치우침(온도 지수 {temp:+})이 커서 조후의 첫 글자 {jo(keys[0] + '(' + primary + ')', '을를')} 먼저 쓰고, 억부 용신 {jo(yong_ab, '을를')} 그다음으로 본다"
-                     + (" — 억부 용신도 조후 글자에 들어 있어 방향은 서로 맞는다." if yong_ab in johu_els else "."))
-    elif yong_ab in johu_els:
-        final = yong_ab
-        final_why = f"억부 용신 {jo(yong_ab, '이가')} 조후 글자에도 들어 있다 — 두 관점이 맞물린다."
+    # 온도를 직접 바로잡는 글자: 더우면 수(壬癸), 추우면 화(丙丁). 계절 처방은 기본 용신(억부)을 덮어쓰지 않는다.
+    want = "수" if temp >= 15 else "화" if temp <= -15 else None
+    fix = next((k for k in keys if want and ELEMENTS[STEM_ELEMENT[STEMS.index(k)]] == want), None)
+    season_rx = want if fix else None
+    final = yong_ab
+    role = {a.yongshin: "용신", a.huishin: "희신", a.gishin: "기신", a.gushin: "구신", a.hanshin: "한신"}
+    if season_rx is None:
+        final_why = (f"온도 치우침(지수 {temp:+})이 크지 않아 기본 용신 {jo(yong_ab, '을를')} 그대로 쓴다. "
+                     f"조후 글자({''.join(keys)})는 생활 리듬을 다듬는 보조로 참고한다.")
+    elif season_rx == yong_ab:
+        final_why = f"기본 용신(억부)과 계절 처방(조후)이 모두 {jo(yong_ab, '을를')} 가리킨다 — 확신도가 높다."
     else:
-        final = yong_ab
-        final_why = f"계절 치우침이 크지 않아 억부 용신 {jo(yong_ab, '을를')} 중심으로 쓰고, 조후 {', '.join(johu_els)}는 보조로 참작한다."
+        final_why = (f"기본 보약은 **{yong_ab}**(몸의 균형), 계절 처방은 **{season_rx}**(온도 조절, {fix})다. "
+                     f"일상 개운은 {jo(yong_ab, '을를')} 중심으로 하고, "
+                     + ("여름·더운 환경에서는" if season_rx == "수" else "겨울·추운 환경에서는")
+                     + f" {season_rx} 기운을 더하라냥.")
+        if role.get(season_rx) in ("기신", "구신"):
+            final_why += (f" 다만 억부로 보면 {jo(season_rx, '은는')} 부담 쪽({role[season_rx]})이라, "
+                          "많이가 아니라 '온도를 맞출 만큼만' 쓰는 게 요령이다 — 두 책이 서로 견제하는 지점이다.")
     if yong_gk:
         final_why += f" 격국(자평진전)의 상신 오행은 {', '.join(yong_gk)}" + (" — 일치하는 부분이 있다." if final in yong_gk else " — 사회적 성공은 이 오행으로, 몸과 마음의 균형은 위 용신으로 잡는다.")
     # 대운·세운 3렌즈 표
@@ -605,8 +640,12 @@ def build(r, fx: dict) -> dict:
         bal = [el_tag(se_), el_tag(be_)]
         bal_s = (2 if "용신" in bal else 0) + (1 if "희신" in bal else 0) - (2 if "기신" in bal else 0) - (1 if "구신" in bal else 0)
         els = {se_, be_}
-        if els & set(johu_els):
-            th = "조후 보충(" + ("식혀 줌" if temp >= 0 else "데워 줌") + ")"
+        if "수" in els and temp > 0:
+            th = "식혀 줌"
+        elif "화" in els and temp < 0:
+            th = "데워 줌"
+        elif els & set(johu_els):
+            th = "조후 보조"
         elif temp >= 8 and "화" in els:
             th = "열 가중"
         elif temp <= -8 and "수" in els:
@@ -639,10 +678,10 @@ def build(r, fx: dict) -> dict:
         ],
         "용신비교": [
             {"관점": "억부(抑扶) — 적천수", "오행": a.yongshin, "뜻": "몸의 균형을 잡는 보약"},
-            {"관점": "조후(調候) — 궁통보감", "오행": ", ".join(johu_els), "뜻": "계절 온도를 맞추는 처방"},
+            {"관점": "조후(調候) — 궁통보감", "오행": (season_rx + f" ({fix})") if season_rx else ", ".join(johu_els) + " (보조)", "뜻": "계절 온도를 맞추는 처방"},
             {"관점": "격국 상신(相神) — 자평진전", "오행": ", ".join(yong_gk) or "운에서 옴", "뜻": "사회적 그릇을 받치는 기둥"},
         ],
-        "최종용신": final, "최종근거": final_why,
+        "최종용신": final, "계절처방": season_rx, "최종근거": final_why,
         "입체해석": [
             f"**그릇**: 이 사람은 《자평진전》으로 보면 **{g_name}**의 그릇이다. {info[2].split(' — ')[0]}. {verdict}.",
             f"**온도**: 《궁통보감》으로 보면 {season}에 태어난 {dmh}으로 **{temp_word}**의 사주다. {_plain(JOHU_WHY['목화토금수'[de]][season])}. 조후는 {sat_word}.",
