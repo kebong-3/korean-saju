@@ -390,3 +390,4 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .mon .more-row { margin-top: 4px; } .mon .more-btn { padding: 4px 10px; font-size: 12.5px; } .mon .more-box { padding: 8px 10px; } .mon .more-box p { font-size: 13.5px; }
 .sheet-story { margin-bottom: 12px; }
 .sheet-story .story-head h2 { font-size: 17px; }
+.one:last-child:nth-child(odd) { grid-column: span 2; }
