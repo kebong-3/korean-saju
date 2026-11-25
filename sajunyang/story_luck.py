@@ -94,7 +94,8 @@ def _ko(gz: str) -> str:
 
 
 class _Who:
-    def __init__(self, r, name: str):
+    def __init__(self, r, name: str, prof=None):
+        self.status, self.kids = _prof(prof)
         n = (name or "").strip() or (getattr(r.chart.birth, "name", "") or "").strip()
         self.you = not n
         self.name = n or "너"
@@ -581,9 +582,9 @@ def _hdesc(h: dict) -> str:
     return f"{h['시']}({h['시간']}시, {h['간지']}·{h['십성']} {h['점수']}점)"
 
 
-def today(r, day: dict, hours: dict, name: str = "") -> dict:
+def today(r, day: dict, hours: dict, name: str = "", prof=None) -> dict:
     """아무 날짜의 일진 이야기. day = fortune.day_fortune(), hours = fortune.hourly() (같은 날짜)."""
-    a, who = r.analysis, _Who(r, name)
+    a, who = r.analysis, _Who(r, name, prof)
     d = date.fromisoformat(day["date"])
     D = {r.today: "오늘", r.today + timedelta(days=1): "내일", r.today - timedelta(days=1): "어제"}.get(d, "이날")
     seed = f"{_fp(r)}|{d.isoformat()}"
@@ -643,9 +644,11 @@ def today(r, day: dict, hours: dict, name: str = "") -> dict:
 
     # P4 — 일·돈·연애·관계·컨디션
     gs, gb = GROUP[sg], GROUP[bg]
-    dom = [f"분야별로 보면, {DAY_DOMAIN[gs]['일']}", DAY_DOMAIN[gs]["돈"], DAY_DOMAIN[gb]["사람"], DAY_DOMAIN[gb]["몸"]]
+    saram = LOVE_STORY[who.status][gb] if who.status in LOVE_STORY else DAY_DOMAIN[gb]["사람"]
+    dom = [f"분야별로 보면, {DAY_DOMAIN[gs]['일']}", DAY_DOMAIN[gs]["돈"], saram, DAY_DOMAIN[gb]["몸"]]
     if _has_pos(rels, "일지", BAD_REL):
-        dom.append("특히 일지(배우자궁)가 흔들리니 가까운 사람에게 말 한마디를 더 다정하게 건네라냥.")
+        dom.append("특히 일지(배우자궁)가 흔들리니 " + {"기혼": "배우자에게", "연애중": "연인에게"}.get(who.status, "가까운 사람에게")
+                   + " 말 한마디를 더 다정하게 건네라냥.")
     elif _has_pos(rels, "일지", GOOD_REL):
         dom.append("특히 일지(배우자궁)와 손잡는 작용이 있어 가까운 사람과 정이 붙기 좋다냥.")
     elif _has_pos(rels, "월지", BAD_REL):
@@ -653,7 +656,10 @@ def today(r, day: dict, hours: dict, name: str = "") -> dict:
     elif _has_pos(rels, "월지", GOOD_REL):
         dom.append("월지(사회궁)와 합이 들어 동료와 손발이 잘 맞는다냥.")
     elif who.spouse in (gs, gb):
-        dom.append(f"게다가 전통 명리에서 {who.gender}에게 {_j(who.spouse, '은')} 연인·배우자의 별이라 인연 운이 살짝 고개를 든다냥.")
+        star, tail = STAR_TAIL[who.status]
+        dom.append(f"게다가 전통 명리에서 {who.gender}에게 {_j(who.spouse, '은')} {_j(star, '이라')} {tail}.")
+    if who.kids:
+        dom.append(CHILD_STORY[gs].format(k=_kid(who)))
     p4 = " ".join(dom)
 
     # P5 — 시간대 흐름
@@ -692,6 +698,8 @@ def today(r, day: dict, hours: dict, name: str = "") -> dict:
     core = f"{dw} {gz_full[:2]}일, {score}점짜리 {sg} 데이다냥. {_pick(WIT_DAY[sg], seed, 'w')}"
     lines = {k: DAY_LINE[k][gs if k in ("일", "돈") else gb].format(g=sg if k in ("일", "돈") else bg)
              for k in ("일", "돈", "연애", "관계", "컨디션")}
+    if who.status:
+        lines["연애"] = LOVE_LINE[who.status][gb].format(g=bg)
     gd = next((g for g in _group_rels(rels) if any(lab == "일지" for lab, _ in g["natal"])), None) if rels else None
     gm = next((g for g in _group_rels(rels) if any(lab == "월지" for lab, _ in g["natal"])), None) if rels else None
     def _chs(g, pos):
@@ -700,9 +708,10 @@ def today(r, day: dict, hours: dict, name: str = "") -> dict:
         return lc, nc
     if gd and _pol(gd) in (0, 1):
         lc, nc = _chs(gd, "일지")
-        lines["연애"] = (f"일진 {_j(lc, '이')} 배우자궁 {_j(nc, '을')} 쿵 들이받는 {_j(_rel_kind(gd), '이라')} 말은 솜사탕처럼 굴리라냥."
+        bt, gt = LOVE_TAIL[who.status]
+        lines["연애"] = (f"일진 {_j(lc, '이')} 배우자궁 {_j(nc, '을')} 쿵 들이받는 {_j(_rel_kind(gd), '이라')} {bt}"
                        if _pol(gd) == 1 else
-                       f"일진 {_j(lc, '이')} 배우자궁 {_j(nc, '과')} 찰칵 손잡는 {_j(_rel_kind(gd), '이라')} 정이 쫀득해진다냥.")
+                       f"일진 {_j(lc, '이')} 배우자궁 {_j(nc, '과')} 찰칵 손잡는 {_j(_rel_kind(gd), '이라')} {gt}")
     if gm and _pol(gm) in (0, 1):
         lc, nc = _chs(gm, "월지")
         lines["일"] = (f"일진 {_j(lc, '이')} 사회궁 {_j(nc, '을')} 덜컹 흔드는 {_j(_rel_kind(gm), '이라')} 일정에 여유 한 칸 남기라냥."
@@ -715,6 +724,13 @@ def today(r, day: dict, hours: dict, name: str = "") -> dict:
     tip = f"{TIP_SHORT[sg]} 행운 시간 {day_best['시']}" + (f"·행운 색 {color}!" if color else "!")
     if len(tip) > 60:
         tip = f"{TIP_SHORT[sg]} 행운 시간 {day_best['시']}!"
+    if who.kids:
+        gh = next((g for g in _group_rels(rels) if any(lab == "시지" for lab, _ in g["natal"])), None) if rels else None
+        if gh and _pol(gh) == 1:
+            lc, nc = _chs(gh, "시지")
+            lines["자녀"] = f"일진 {_j(lc, '이')} 자녀궁 {_j(nc, '을')} 톡 건드리니 오늘은 {_kid(who)} 말을 끝까지 들어 주라냥."
+        else:
+            lines["자녀"] = CHILD_LINE[gs].format(g=sg, k=_kid(who))
     return {"제목": title, "핵심": core, "분야": lines, "story": [p1, p2, p3, p4, p5s], "설화": p6, "tip": tip}
 
 
@@ -810,7 +826,7 @@ def _field_reasons(field: str, yf: dict, who: _Who, a) -> list[str]:
             down.append("월지(사회궁)가 자극을 받고")
     elif field == "연애운":
         if who.spouse in groups:
-            up.append(f"연인·배우자의 별인 {_j(who.spouse, '이')} 들어왔고")
+            up.append(f"{STAR_TAIL[who.status][0]}인 {_j(who.spouse, '이')} 들어왔고")
         if "식상" in groups:
             up.append("식상이 표현력을 더해 주고")
         if yf.get("일지합"):
@@ -910,14 +926,14 @@ def _month_core(r, m: dict) -> str:
     return f"{m['월']}월 {m['간지']} {sg} {m['점수']}점({TIER_WORD[_tier(m['점수'])]}) — {MONTH_WIT[sg][v]}"
 
 
-def month(r, m: dict, name: str = "") -> str:
-    """yf['월별']의 한 달 이야기(2~3문장)."""
-    return _month_story(r, m, _Who(r, name))
+def month(r, m: dict, name: str = "", prof=None) -> str:
+    """yf['월별']의 한 달 이야기(2~3문장). prof는 다른 함수와 맞추려고 받기만 한다."""
+    return _month_story(r, m, _Who(r, name, prof))
 
 
-def year(r, yf: dict, name: str = "") -> dict:
+def year(r, yf: dict, name: str = "", prof=None) -> dict:
     """신년운세 이야기. yf = fortune.year_fortune() (= bundle()['신년운세'])."""
-    a, who = r.analysis, _Who(r, name)
+    a, who = r.analysis, _Who(r, name, prof)
     Y = yf["연도"]
     seed = f"{_fp(r)}|y{Y}"
     tales = _Tales(seed)
@@ -957,7 +973,10 @@ def year(r, yf: dict, name: str = "") -> dict:
         t = _tier(sc)
         up, down = _field_reasons(f, yf, who, a)
         why = _why(f, sc, total, up, down)
-        para1 = " ".join([f"{f} {sc}점({_grade(sc)}) — {FIELD_TONE[f][t]}", why, FIELD_GROUP[f][GROUP[sg]]])
+        tone = LOVE_TONE[who.status][t] if f == "연애운" and who.status else FIELD_TONE[f][t]
+        grp = (LOVE_GROUP_YEAR[who.status][GROUP[sg]] if f == "연애운" and who.status in LOVE_GROUP_YEAR
+               else FIELD_GROUP[f][GROUP[sg]])
+        para1 = " ".join([f"{f} {sc}점({_grade(sc)}) — {tone}", why, grp])
 
         # 달 고르기 + 분야별 덧말
         if f == "건강운":
@@ -986,14 +1005,17 @@ def year(r, yf: dict, name: str = "") -> dict:
             else:
                 p2s.append(f"관성이 직접 보이지 않는 해라 자리를 노리기보다 {sg}의 강점으로 실력을 쌓는 해로 쓰면 된다냥.")
         elif f == "연애운":
+            star = STAR_TAIL[who.status][0]
+            yes, no = LOVE_STAR_YEAR[who.status]
             if who.spouse in groups:
-                p2s.append(f"전통 명리에서 {who.gender}에게 연인·배우자의 별은 {who.spouse}인데, {Y}년엔 그 별이 직접 들어와 있으니 인연의 문이 넓어진다냥.")
+                p2s.append(f"전통 명리에서 {who.gender}에게 {star}은 {who.spouse}인데, {Y}년엔 그 별이 직접 들어와 있으니 {yes}.")
             else:
-                p2s.append(f"전통 명리에서 {who.gender}에게 연인·배우자의 별은 {who.spouse}인데, {Y}년엔 그 별이 직접 보이지 않으니 인연은 기다리기보다 내가 만드는 해다냥.")
+                p2s.append(f"전통 명리에서 {who.gender}에게 {star}은 {who.spouse}인데, {Y}년엔 그 별이 직접 보이지 않으니 {no}.")
+            dc, dh = LOVE_DAYJI_YEAR[who.status]
             if yf.get("일지충"):
-                p2s.append("배우자궁(일지)이 흔들리는 해라 연애·동거·이사 같은 생활 변화가 생기기 쉬운데, 정리의 기회로 삼으면 된다냥.")
+                p2s.append(f"배우자궁(일지)이 흔들리는 해라 {dc}.")
             elif yf.get("일지합"):
-                p2s.append("배우자궁(일지)에 합이 드는 해라 좋은 인연이나 든든한 협력자가 들어오기 쉽다냥.")
+                p2s.append(f"배우자궁(일지)에 합이 드는 해라 {dh}.")
         elif f == "건강운":
             weak = min(a.element_weight, key=a.element_weight.get)
             if a.gishin in (se, be) or a.gushin in (se, be):
@@ -1020,7 +1042,8 @@ def year(r, yf: dict, name: str = "") -> dict:
                 p2s.append("원국과 크게 엮이는 글자가 없어 관계는 내가 먼저 움직이는 만큼 넓어진다냥.")
         para2 = " ".join(p2s)
         fields[f] = [para1, para2]
-        field_core[f] = f"{f} {sc}점, {FIELD_WIT[f][t]}"
+        wit = LOVE_WIT[who.status][t] if f == "연애운" and who.status else FIELD_WIT[f][t]
+        field_core[f] = f"{f} {sc}점, {wit}"
 
     # 월
     mstories = {m["월"]: _month_story(r, m, who) for m in months}
@@ -1039,8 +1062,52 @@ def year(r, yf: dict, name: str = "") -> dict:
                        f"{Y}년 {_j(gz[:2], '이')} 가져오는 {sg}의 바람도 그렇게 맞이하면 된다냥. 냐옹~"])
     core = f"{Y}년 {_j(gz[:2], '은')} 총운 {total}점, {_j(sg, '이')} 판을 짜는 '{yf['테마']}'다냥. {WIT_YEAR[sg]}"
     mcore = {m["월"]: _month_core(r, m) for m in months}
-    return {"핵심": core, "서문": preface, "분야": fields, "분야핵심": field_core, "월": mstories, "월핵심": mcore,
-            "맺음": [e1], "설화": tale_p}
+    out = {"핵심": core, "서문": preface, "분야": fields, "분야핵심": field_core, "월": mstories, "월핵심": mcore,
+           "맺음": [e1], "설화": tale_p}
+    if who.kids:
+        out["자녀"] = _year_child(r, yf, who, months)
+    return out
+
+
+def _year_child(r, yf: dict, who: _Who, months: list) -> dict:
+    """그해 세운이 자녀성(남=관성, 여=식상)과 시주(자녀궁)에 주는 영향 + 소통 팁."""
+    Y, k = yf["연도"], _kid(who)
+    sg, bg = yf["십성"].split("/")
+    cg = "식상" if who.female else "관성"
+    present = cg in {GROUP[sg], GROUP[bg]}
+    hits = [g for g in _group_rels(yf["작용"]) if any(lab in ("시지", "시간") for lab, _ in g["natal"])]
+    s1 = [f"전통 명리에서 {who.gender}에게 자녀의 별은 {cg}이고, 시주는 자녀궁이다냥."]
+    if present:
+        which = "천간" if GROUP[sg] == cg else "지지"
+        god = sg if which == "천간" else bg
+        s1.append(f"{Y}년엔 {which}의 {_j(god, '이')} 바로 그 자녀의 별이라 {k} 이야기가 부쩍 늘고, 함께 챙길 일도 많아지는 해다냥.")
+    else:
+        s1.append(f"{Y}년 천간 {sg}·지지 {bg}엔 자녀의 별이 직접 보이지 않으니, {k} 페이스를 믿고 한 발 뒤에서 지켜봐 주는 해다냥.")
+    if r.chart.hour is None:
+        s1.append("시주를 몰라 자녀궁까지는 살피지 못했다냥.")
+    elif hits:
+        g = hits[0]
+        lab, nc = min(((l, c) for l, c in g["natal"] if l in ("시지", "시간")), key=lambda x: x[0] != "시지")
+        lc = g["luck"][0][1] if g["luck"] else ""
+        s1.append(f"게다가 {Y}년의 {_j(lc, '이')} 자녀궁 {lab} {_j(nc, '과')} {_j(_rel_kind(g), '을')} 이루니 "
+                  f"{CHILD_EFFECT[_pol(g)].format(k=k)}.")
+    else:
+        s1.append(f"자녀궁(시주 {r.chart.hour.hanja})과는 크게 부딪히는 글자가 없어 집안 분위기가 무난하게 흘러간다냥.")
+    rel = [m for m in months if cg in m["그룹"]] or months
+    best = max(rel, key=lambda m: m["점수"])
+    s2 = [CHILD_YEAR_TIP[GROUP[sg]].format(k=k),
+          f"{k}와 새로운 걸 시작하거나 같이 놀러 가기 좋은 달은 {_month_ref(best)}이다냥."]
+    if who.kids >= 2:
+        s2.append("둘 이상이면 공평함보다 '한 명씩 단둘이 보내는 시간'이 더 큰 선물이다냥.")
+    if present and hits and _pol(hits[0]) == 1:
+        core = f"{Y}년엔 자녀의 별 {_j(cg, '이')} 뜨고 자녀궁도 덜컹, {k} 일정에 여유 한 칸 두라냥."
+    elif present:
+        core = f"{Y}년엔 자녀의 별 {_j(cg, '이')} 반짝 떠서 {k} 이야기가 부쩍 늘어나는 해다냥!"
+    elif hits and _pol(hits[0]) == 1:
+        core = f"{Y}년엔 자녀궁에 {_rel_kind(hits[0])} 덜컹, {k} 말을 끝까지 들어 주는 게 정답이다냥."
+    else:
+        core = f"{Y}년 {sg} 바람엔 {k} 페이스를 믿고 응원단장 모드가 딱이다냥."
+    return {"핵심": core, "story": [" ".join(s1), " ".join(s2)]}
 
 
 # ══════════════════════════════════════════════════════════════════ 3) 평생 대운
@@ -1265,6 +1332,166 @@ def _dw_wit(age: int, sg: str) -> str:
     return DW_WIT.get(ls, {}).get(sg) or DW_WIT["adult"][sg]
 
 
+# ══════════════════════════════════════════════════════════════════ 기초정보(결혼·자녀)별 문구
+STATUSES = ("미혼", "연애중", "기혼", "기타")
+LOVE_LINE = {  # today 분야 '연애' — 상태 → 십성 그룹
+    "미혼": {"비겁": "{g} 기운에 친구 같던 사이가 썸으로 번질지도, 자존심 대결만 금지다냥.",
+           "식상": "{g} 기운에 말발이 살아나니 썸 타는 사람에게 먼저 톡 보내 보라냥.",
+           "재성": "{g} 기운엔 모임·소개 자리에서 현실 감각 좋은 인연이 눈에 띈다냥.",
+           "관성": "{g} 기운엔 반듯한 첫인상이 무기, 약속 시간만 지켜도 호감 쾅이다냥.",
+           "인성": "{g} 기운엔 챙겨 주는 사람이 눈에 들어오니 고맙다는 말로 인연을 잇자냥."},
+    "연애중": {"비겁": "{g} 기운에 커플 싸움이 자존심 대결로 번지기 쉬우니 먼저 져 주라냥.",
+            "식상": "{g} 기운에 말이 술술 나오니 오늘 데이트 코스는 네가 짜 보라냥.",
+            "재성": "{g} 기운엔 같이 장 보고 밥 먹는 현실 데이트가 커플 케미를 키운다냥.",
+            "관성": "{g} 기운엔 연인과의 약속 시간 칼같이 지키는 게 최고의 플러팅이다냥.",
+            "인성": "{g} 기운에 챙김 받고 싶어지는 날, 연인을 먼저 챙기면 두 배로 온다냥."},
+    "기혼": {"비겁": "{g} 기운에 부부 고집 대결 주의, 리모컨은 양보하는 쪽이 이긴다냥.",
+           "식상": "{g} 기운엔 저녁 식탁 수다가 보약이니 오늘은 먼저 말을 걸라냥.",
+           "재성": "{g} 기운엔 가계부·장보기를 같이 하면 부부 팀워크가 착 붙는다냥.",
+           "관성": "{g} 기운엔 집안일 약속 하나 칼같이 지키는 게 최고의 애정 표현이다냥.",
+           "인성": "{g} 기운에 챙김 받고 싶어지니 배우자에게 고맙다는 말 먼저 건네라냥."},
+    "기타": {"비겁": "{g} 기운엔 사람 사이 기 싸움보다 한 발 양보가 운을 연다냥.",
+           "식상": "{g} 기운에 말이 잘 통하는 날이라 반가운 연락이 올 수도 있다냥.",
+           "재성": "{g} 기운엔 같이 밥 먹는 사람과 정이 붙는 날이다냥.",
+           "관성": "{g} 기운엔 약속을 지키는 것만으로 신뢰가 쌓인다냥.",
+           "인성": "{g} 기운엔 따뜻한 말 한마디가 사람 운을 부른다냥."},
+}
+LOVE_TAIL = {  # 일지(배우자궁) 작용 한 줄의 꼬리 — (부딪힘, 손잡음)
+    "": ("말은 솜사탕처럼 굴리라냥.", "정이 쫀득해진다냥."),
+    "미혼": ("썸 상대에겐 밀당 말고 다정함이다냥.", "인연 레이더가 찌릿한다냥."),
+    "연애중": ("연인에게 말은 솜사탕처럼 굴리라냥.", "연인과 정이 쫀득해진다냥."),
+    "기혼": ("부부 대화는 솜사탕처럼 굴리라냥.", "부부 정이 쫀득해진다냥."),
+    "기타": ("가까운 사람에게 말은 부드럽게 하라냥.", "가까운 사람과 정이 붙는다냥."),
+}
+LOVE_STORY = {  # today story 분야 문단의 연애·관계 문장 — 상태 → 지지 십성 그룹
+    "연애중": {"비겁": "연애에선 친구처럼 편한 커플 모드가 잘 통하지만, 고집 대결로 번지지 않게 한 번씩 져 주는 게 이기는 거다냥.",
+            "식상": "연애에선 말이 술술 통해 데이트가 즐거워지는데, 농담이 선을 넘지 않게만 조심하라냥.",
+            "재성": "연애에선 함께 밥 먹고 장 보는 소소한 현실이 정을 붙이고, 데이트 비용은 깔끔할수록 사이가 좋아진다냥.",
+            "관성": "연애에선 약속 시간 지키기 같은 반듯함이 점수가 되고, 인간관계에선 윗사람과 엮일 일이 생기기 쉽다냥.",
+            "인성": "연애에선 챙겨 주고 챙김 받는 따뜻함이 있지만, 서운한 마음은 말로 꺼내야 연인이 안다냥."},
+    "기혼": {"비겁": "부부 사이에선 친구처럼 편한 대화가 잘 통하지만, 고집 대결로 번지지 않게 한 번씩 져 주는 게 이기는 거다냥.",
+           "식상": "부부 사이에선 저녁 식탁 수다가 술술 풀리는 날인데, 농담이 선을 넘지 않게만 조심하라냥.",
+           "재성": "부부 사이에선 살림과 장보기를 함께하는 소소한 현실이 정을 붙이고, 돈 이야기는 깔끔할수록 좋다냥.",
+           "관성": "부부 사이에선 집안일 약속 지키기 같은 반듯함이 점수가 되고, 밖에선 윗사람과 엮일 일이 생기기 쉽다냥.",
+           "인성": "부부 사이에선 챙겨 주고 챙김 받는 따뜻함이 있지만, 고마운 마음은 말로 꺼내야 배우자가 안다냥."},
+    "기타": {"비겁": "사람 사이에선 편한 대화가 잘 통하지만, 기 싸움으로 번지지 않게 한 발 물러서면 된다냥.",
+           "식상": "사람 사이에선 말이 잘 통해 반가운 연락이 오가기 쉬운데, 농담 수위만 조절하라냥.",
+           "재성": "사람 사이에선 같이 밥 먹고 일상을 나누는 사람과 정이 붙고, 계산은 깔끔할수록 좋다냥.",
+           "관성": "사람 사이에선 약속을 지키는 반듯함이 신뢰가 되고, 윗사람과 엮일 일이 생기기 쉽다냥.",
+           "인성": "사람 사이에선 따뜻한 챙김이 오가니, 고마운 마음은 말로 꺼내라냥."},
+}
+STAR_TAIL = {"": ("연인·배우자의 별", "인연 운이 살짝 고개를 든다냥"), "미혼": ("연인의 별", "인연 운이 살짝 고개를 든다냥"),
+             "연애중": ("연인의 별", "둘 사이가 한결 달달해진다냥"), "기혼": ("배우자의 별", "부부 사이에 정이 도톰해진다냥"),
+             "기타": ("인연의 별", "반가운 사람 소식이 있을 수 있다냥")}
+CHILD_LINE = {  # today 분야 '자녀' — 일진 천간 십성 그룹 ({k}=아이/아이들)
+    "비겁": "{g} 기운에 {k} 고집도 MAX라 훈육은 짧게, 선택지는 두 개만 주라냥.",
+    "식상": "{g} 기운엔 같이 그림 그리고 노래하면 {k} 웃음이 팡팡 터진다냥.",
+    "재성": "{g} 기운엔 장보기 심부름 놀이로 {k}에게 돈 감각을 슬쩍 심어 주라냥.",
+    "관성": "{g} 기운엔 잔소리 대신 규칙 하나만 정해 칭찬 스티커로 밀라냥.",
+    "인성": "{g} 기운엔 잠자리 책 한 권이 {k}와 나누는 최고의 대화다냥.",
+}
+CHILD_STORY = {  # today story 분야 문단에 붙는 자녀 문장
+    "비겁": "{k}와는 고집이 맞부딪히기 쉬우니 훈육은 짧게 하고 스스로 고를 기회를 주라냥.",
+    "식상": "{k}와는 같이 만들고 노래하며 노는 시간이 오늘의 보약이다냥.",
+    "재성": "{k}와는 장보기·심부름처럼 생활 속 놀이로 대화의 문을 열면 좋다냥.",
+    "관성": "{k}에게는 잔소리 열 마디보다 분명한 규칙 하나와 칭찬이 더 잘 먹힌다냥.",
+    "인성": "{k}와는 같이 책을 읽거나 하루 이야기를 들어 주는 시간이 최고다냥.",
+}
+LOVE_TONE = {
+    "미혼": ["인연의 꽃이 활짝 피는 해라 만남의 자리에 부지런히 나가 볼 만하다냥.", "마음 통하는 인연이 곁에 오기 쉬운 해다냥.",
+           "급할 것 없이 인연을 기다려도 괜찮은 해다냥.", "설렘보다 현실 조건이 먼저 보이는 해라 서두르지 말라냥.",
+           "감정의 날씨가 오락가락하는 해라 급한 고백보다 천천히 알아 가라냥."],
+    "연애중": ["둘 사이가 활짝 피는 해라 다음 단계를 생각해 볼 만하다냥.", "커플 케미가 잘 맞는 해다냥.",
+            "잔잔하고 편안한 커플 흐름이다냥.", "둘 사이에 현실 문제가 먼저 끼어들기 쉬운 해라 서운함은 그때그때 풀어라냥.",
+            "커플 감정 날씨가 자주 바뀌는 해라 큰 결정은 서두르지 말고 대화를 늘려라냥."],
+    "기혼": ["부부 금슬이 꽃피는 해라 둘만의 계획을 세워 볼 만하다냥.", "부부 사이에 말이 잘 통하는 해다냥.",
+           "잔잔하고 편안한 부부 흐름이다냥.", "살림 같은 현실 문제가 앞서기 쉬운 해라 서운함은 그때그때 풀어라냥.",
+           "부부 사이 감정 날씨가 자주 바뀌는 해라 큰 결정은 서두르지 말고 대화를 늘려라냥."],
+    "기타": ["사람 운이 활짝 피는 해다냥.", "마음 통하는 사람이 곁에 머무는 해다냥.", "관계가 잔잔하고 편안한 해다냥.",
+           "가까운 사이에도 현실 문제가 끼어들기 쉬운 해라 서운함은 쌓아 두지 말라냥.", "마음의 날씨가 자주 바뀌는 해라 대화를 늘려라냥."],
+}
+LOVE_GROUP_YEAR = {
+    "기혼": {"비겁": "비겁의 해엔 부부가 친구처럼 지내기 좋지만 각자 고집이 앞서기 쉬우니 양보 한 번이 큰 점수다냥.",
+           "식상": "식상의 해엔 표현력이 좋아져 고마운 마음을 말로 전하기 쉽다냥.",
+           "재성": "재성의 해엔 살림·재테크 같은 현실 대화가 부부 팀워크를 다진다냥.",
+           "관성": "관성의 해엔 집안의 약속과 역할 분담을 또렷하게 정해 두면 편해진다냥.",
+           "인성": "인성의 해엔 서로 챙겨 주는 따뜻함이 커지지만, 기대만 하고 말 안 하면 서운함이 쌓인다냥."},
+    "기타": {"비겁": "비겁의 해엔 친구 같은 편한 관계가 늘어나는데 고집만 조심하면 된다냥.",
+           "식상": "식상의 해엔 마음을 표현하기 쉬워 관계가 부드러워진다냥.",
+           "재성": "재성의 해엔 현실적인 도움을 주고받는 관계가 생긴다냥.",
+           "관성": "관성의 해엔 약속과 예의가 관계를 지켜 준다냥.",
+           "인성": "인성의 해엔 따뜻하게 챙겨 주는 사람이 곁에 있다냥."},
+}
+LOVE_STAR_YEAR = {  # (별이 들어올 때, 안 보일 때)
+    "": ("인연의 문이 넓어진다냥", "인연은 기다리기보다 내가 만드는 해다냥"),
+    "미혼": ("인연의 문이 넓어진다냥", "인연은 기다리기보다 내가 만드는 해다냥"),
+    "연애중": ("둘 사이가 한 단계 깊어질 수 있다냥", "이벤트보다 일상의 꾸준함이 관계를 지키는 해다냥"),
+    "기혼": ("부부 사이에 힘이 붙는다냥", "기다리기보다 내가 먼저 다정하게 다가가는 해다냥"),
+    "기타": ("반가운 사람 운이 들어온다냥", "사람 운은 내가 먼저 움직이는 만큼 생기는 해다냥"),
+}
+LOVE_DAYJI_YEAR = {  # (일지충, 일지합)
+    "": ("연애·동거·이사 같은 생활 변화가 생기기 쉬운데, 정리의 기회로 삼으면 된다냥", "좋은 인연이나 든든한 협력자가 들어오기 쉽다냥"),
+    "미혼": ("연애·이사 같은 생활 변화가 생기기 쉬운데, 정리의 기회로 삼으면 된다냥", "좋은 인연이 들어오기 쉽다냥"),
+    "연애중": ("연애·동거·이사 같은 생활 변화가 생기기 쉬운데, 둘이 함께 정리하면 된다냥", "관계가 한결 단단해지기 쉽다냥"),
+    "기혼": ("이사·집안 리듬 같은 생활 변화가 생기기 쉬운데, 부부가 함께 정리하는 기회로 삼으면 된다냥", "부부 사이에 든든한 협력이 생기기 쉽다냥"),
+    "기타": ("생활 리듬에 변화가 생기기 쉬운데, 정리의 기회로 삼으면 된다냥", "든든한 협력자가 들어오기 쉽다냥"),
+}
+LOVE_WIT = {
+    "미혼": ["인연 꽃이 팡팡 터지니 소개 자리는 무조건 나가라냥!", "마음 통하는 인연이 슬금슬금 다가오는 중이다냥.",
+           "급할 것 없는 인연 대기 모드라 내 생활부터 반짝이라냥.", "설렘보다 조건표가 먼저 보이니 천천히 알아 가라냥.",
+           "감정 날씨가 오락가락하니 급고백은 보류하라냥."],
+    "연애중": ["둘 사이가 팡팡 피어나니 다음 단계를 꿈꿔도 된다냥!", "커플 케미가 착 붙는 해다냥.",
+            "잔잔한 커플 모드라 평화가 곧 행복이다냥.", "현실 문제가 먼저 노크하니 서운함은 그때그때 풀라냥.",
+            "커플 감정 날씨가 오락가락하니 대화량을 두 배로 늘리라냥."],
+    "기혼": ["부부 금슬이 쨍하니 둘만의 여행이라도 질러라냥!", "부부 대화가 술술 통하는 해다냥.",
+           "잔잔한 호수 같은 부부라 평화가 곧 행복이다냥.", "살림·육아가 먼저 노크하니 서운함은 그때그때 풀라냥.",
+           "부부 감정 날씨가 오락가락하니 대화량을 두 배로 늘리라냥."],
+    "기타": ["사람 복이 활짝 피는 해다냥!", "마음 통하는 사람이 곁에 머무는 해다냥.", "잔잔하고 편안한 마음의 해다냥.",
+           "가까운 사이에도 현실이 끼어드니 서운함은 쌓지 말라냥.", "마음 날씨가 오락가락하니 대화를 늘리라냥."],
+}
+CHILD_YEAR_TIP = {
+    "비겁": "비겁의 해엔 {k}도 부모도 고집이 세지기 쉬우니, 명령보다 '네 생각은 어때?'로 시작하면 대화가 풀린다냥.",
+    "식상": "식상의 해엔 {k}의 표현력이 쑥 자라니, 그림·글·말로 만든 것을 듬뿍 칭찬해 주라냥.",
+    "재성": "재성의 해엔 용돈·심부름 같은 생활 경제 놀이로 {k}와 현실 감각을 나누기 좋다냥.",
+    "관성": "관성의 해엔 규칙과 약속이 {k}에게도 힘이 되니, 집안 규칙 두세 개를 같이 정해 보라냥.",
+    "인성": "인성의 해엔 같이 책 읽고 배우는 시간이 {k}와의 최고의 소통이다냥.",
+}
+CHILD_EFFECT = ("{k}와 손발이 척척 맞고 함께할 일이 늘어나기 쉽다냥",
+                "{k} 쪽 일정·학교·진로에 변동이 생기기 쉬우니 미리 여유를 두라냥",
+                "{k} 마음이 예민해지기 쉬우니 이야기를 끝까지 들어 주라냥")
+FAMILY_DW = {  # life 현재 대운 — 기혼(자녀 없음)
+    "비겁": "가정에선 내 고집보다 배우자의 의견을 먼저 묻는 게 이 계절의 지혜다냥.",
+    "식상": "가정에선 고맙다는 말을 아끼지 않을수록 이 계절이 따뜻해진다냥.",
+    "재성": "가정에선 살림과 돈 계획을 부부가 함께 세우면 든든해진다냥.",
+    "관성": "바깥 책임이 무거운 계절이라 집에선 배우자와 보내는 짧은 시간의 밀도를 챙기라냥.",
+    "인성": "가정에선 서로 기대고 배우는 시간이 늘어나는 계절이다냥.",
+}
+FAMILY_DW_KID = {  # life 현재 대운 — 자녀 있음
+    "비겁": "집에선 {k}와 고집 대결 대신 선택권을 나눠 주는 게 이 계절의 지혜다냥.",
+    "식상": "집에선 {k}와 함께 만들고 노는 시간이 이 계절의 보약이다냥.",
+    "재성": "집에선 {k}와 용돈·살림 이야기를 나누며 현실 감각을 함께 키우라냥.",
+    "관성": "바깥 책임이 무거운 계절이라 집에선 {k}와 보내는 짧은 시간의 밀도를 챙기라냥.",
+    "인성": "집에선 {k}와 같이 배우고 읽는 시간이 늘수록 계절이 따뜻해진다냥.",
+}
+
+
+def _prof(prof) -> tuple[str, int]:
+    """prof → (결혼 상태, 자녀 수). None·빈 값은 ('', 0) = 기본(하위호환)."""
+    if not isinstance(prof, dict):
+        return "", 0
+    st = prof.get("결혼") or ""
+    st = st if st in STATUSES else ""
+    try:
+        kids = max(0, int(prof.get("자녀") or 0))
+    except (TypeError, ValueError):
+        kids = 0
+    return st, kids
+
+
+def _kid(who) -> str:
+    return "아이들" if who.kids >= 2 else "아이"
+
+
 def _age_now(r) -> int:
     c, t = r.chart, r.today
     return t.year - c.solar_date.year - ((t.month, t.day) < (c.solar_date.month, c.solar_date.day))
@@ -1281,9 +1508,9 @@ def _span(p: dict) -> str:
     return f"{p['나이']}~{p['나이'] + 9}세({p['시작']}~{p['시작'] + 9})"
 
 
-def life(r, life: dict, ahead: list, name: str = "") -> dict:
+def life(r, life: dict, ahead: list, name: str = "", prof=None) -> dict:
     """평생 대운 이야기. life = fortune.life_fortune(), ahead = fortune.years_ahead()."""
-    a, c, who = r.analysis, r.chart, _Who(r, name)
+    a, c, who = r.analysis, r.chart, _Who(r, name, prof)
     seed = f"{_fp(r)}|life"
     tales = _Tales(seed)
     pts = life["대운"]
@@ -1363,8 +1590,11 @@ def life(r, life: dict, ahead: list, name: str = "") -> dict:
             else:
                 p2.append("원국과 크게 부딪히거나 손잡는 글자가 없어서, 계절의 결이 담담하게 이어진다냥.")
             story.append(" ".join(p2))
+            fam = (FAMILY_DW_KID[GROUP[sg]].format(k=_kid(who)) if who.kids else
+                   FAMILY_DW[GROUP[sg]] if who.status == "기혼" else "")
             story.append(" ".join([GOD_DW_TODO[sg],
-                                   f"생활 속에선 용신 {a.yongshin} 기운({ELEMENT_ADVICE[a.yongshin]['활동']})을 곁에 두면 이 계절의 바람을 덜 탄다냥."]))
+                                   f"생활 속에선 용신 {a.yongshin} 기운({ELEMENT_ADVICE[a.yongshin]['활동']})을 곁에 두면 이 계절의 바람을 덜 탄다냥."]
+                                  + ([fam] if fam else [])))
             dw_tale = " ".join([_pick(TALE_IN, seed, "ci"), tales.take(TALES[sg], "cur"),
                                 f"{who.poss} {p['간지']} 대운에 깃든 {sg}도 바로 그런 기운이다냥."])
         elif i == next_i:

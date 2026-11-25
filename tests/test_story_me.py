@@ -84,7 +84,7 @@ class StoryMe(unittest.TestCase):
                 self.assertEqual(set(d), {"핵심", "한줄", "서문", "장", "맺음"})
                 self.assertTrue(2 <= len(d["서문"]) <= 3)
                 self.assertTrue(1 <= len(d["맺음"]) <= 2)
-                self.assertTrue(8 <= len(d["장"]) <= 10)
+                self.assertTrue(8 <= len(d["장"]) <= 11)
                 ids = [ch["id"] for ch in d["장"]]
                 self.assertEqual(len(ids), len(set(ids)))
                 self.assertEqual([i for i in ids if i in REQUIRED_IDS], REQUIRED_IDS)
@@ -235,6 +235,103 @@ class StoryMe(unittest.TestCase):
     def test_deterministic(self):
         r = _read(CASES[0])
         self.assertEqual(story_me.build(r, "정의형"), story_me.build(r, "정의형"))
+
+
+PROFS = [None, {"결혼": "미혼"}, {"결혼": "연애중"}, {"결혼": "기혼", "자녀": 2}, {"결혼": "기타"}]
+
+
+def _texts(d, with_tale=True):
+    out = [d["핵심"]] + list(d["한줄"].values()) + list(d["서문"]) + list(d["맺음"])
+    for ch in d["장"]:
+        out += ch["story"] + [ch["title"], ch["summary"], ch["tip"], ch["핵심"]]
+        if with_tale:
+            out.append(ch["설화"])
+    return out
+
+
+class ProfVariants(unittest.TestCase):
+    """기초정보(결혼·자녀)에 따라 풀이가 달라진다."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.runs = []
+        for case in CASES[:14]:
+            r = _read(case)
+            cls.runs.append((case, r, [story_me.build(r, case[-1], pf) for pf in PROFS]))
+
+    def test_backward_compatible(self):
+        for case, r, outs in self.runs[:4]:
+            base = story_me.build(r, case[-1])
+            self.assertEqual(outs[0], base)
+            self.assertEqual(story_me.build(r, case[-1], {}), base)
+            self.assertEqual(story_me.build(r, case[-1], {"결혼": "", "자녀": 0}), base)
+
+    def test_variants_differ(self):
+        for case, _, outs in self.runs:
+            with self.subTest(case=case):
+                love = [next(ch for ch in d["장"] if ch["id"] == "inyeon") for d in outs]
+                for i in range(len(love)):
+                    for j in range(i + 1, len(love)):
+                        self.assertNotEqual(love[i]["story"], love[j]["story"], (PROFS[i], PROFS[j]))
+                        self.assertNotEqual(love[i]["핵심"], love[j]["핵심"], (PROFS[i], PROFS[j]))
+                self.assertEqual(love[3]["title"], "부부와 가정")
+
+    def test_words_by_status(self):
+        for case, _, outs in self.runs:
+            for pf, d in zip(PROFS, outs):
+                st = (pf or {}).get("결혼", "")
+                with self.subTest(case=case, st=st):
+                    body = " ".join(_texts(d, with_tale=False))
+                    if st in ("미혼", "연애중", "기타"):
+                        hit = re.findall(r"(?<![가-힣])(남편|아내|배우자)", body)
+                        self.assertEqual(hit, [], hit)
+                    if st == "기혼":
+                        whole = " ".join(_texts(d))
+                        for w in ("썸", "소개팅"):
+                            self.assertNotIn(w, whole)
+                        self.assertIn("배우자궁", body)
+
+    def test_kids_chapter(self):
+        for case, r, outs in self.runs:
+            with self.subTest(case=case):
+                for pf, d in zip(PROFS, outs):
+                    ids = [ch["id"] for ch in d["장"]]
+                    self.assertEqual("janyeo" in ids, bool((pf or {}).get("자녀")))
+                ch = next(c for c in outs[3]["장"] if c["id"] == "janyeo")
+                self.assertEqual(outs[3]["장"][-1]["id"], "janyeo")
+                self.assertIn("자녀 2명", ch["summary"])
+                self.assertIn("궁합", ch["핵심"])
+                self.assertIn("궁합 탭", " ".join(ch["story"]))
+                if r.chart.hour is not None:
+                    self.assertIn(r.chart.hour.hanja, " ".join(ch["story"]))
+                else:
+                    self.assertIn("시를 몰라", " ".join(ch["story"]))
+                one = story_me.build(r, case[-1], {"결혼": "미혼", "자녀": 0})
+                self.assertNotIn("janyeo", [c["id"] for c in one["장"]])
+
+    def test_variant_format(self):
+        """모든 기초정보 조합에서도 형식·길이·냥이체·설화 규칙이 지켜진다."""
+        for case, _, outs in self.runs:
+            who = case[-1] or "너"
+            for pf, d in zip(PROFS, outs):
+                with self.subTest(case=case, pf=pf):
+                    self.assertEqual(set(d), {"핵심", "한줄", "서문", "장", "맺음"})
+                    for k, v in d["한줄"].items():
+                        self.assertTrue(v and len(v) <= 30, v)
+                    for t in _texts(d):
+                        for j in JUNK:
+                            self.assertNotIn(j, t)
+                    for ch in d["장"]:
+                        self.assertEqual(set(ch), CHAPTER_KEYS)
+                        self.assertTrue(3 <= len(ch["story"]) <= 4, ch["id"])
+                        self.assertTrue(50 <= len(ch["핵심"]) <= 110, ch["핵심"])
+                        self.assertIn("냥", ch["핵심"])
+                        self.assertLessEqual(len(ch["tip"]), 60, ch["tip"])
+                        for p in ch["story"] + [ch["설화"]]:
+                            self.assertTrue(1 <= p.count("냥") <= 4, p)
+                        self.assertNotIn(ch["설화"].split(". ")[0], " ".join(ch["story"]))
+                        last = ch["설화"].rsplit(". ", 1)[-1]
+                        self.assertIn(who, last)
 
 
 class Josa(unittest.TestCase):
