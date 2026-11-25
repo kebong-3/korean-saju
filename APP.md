@@ -11,15 +11,17 @@
 | 나에게 맞는 일·연애 스타일·띠·행운 색, 개운 처방전 | `sajunyang/fortune.py` | 무료 |
 | 고민 상담 (7개 주제 · 24개 고민, 본인 사주 데이터로 답변) | `sajunyang/counsel.py` | 무료 |
 | 쉬운 용어사전(97개), 냥이 옛이야기(8편), 캐릭터 설정 | `sajunyang/persona.py` | 무료 |
-| 1:1 자유 대화 상담 (프리미엄 후보) | Claude API, `ANTHROPIC_API_KEY`가 있을 때만 켜짐 | 유료 |
+| 오늘의 시간대별 운(12시진), 앞으로 5주 운세 달력, 좋은 날 TOP5 | `sajunyang/fortune.py` | 무료 |
+| 🐾 냥이 도사 대풀이 13종 — 평생 총평·오늘/내일/특정일·이번 주·이번 달·신년·연애·재물·직업·건강·대운·궁합·꿈해몽 | `sajunyang/readings.py` + Gemini (키 없으면 규칙 기반 서술형 풀이) | Gemini 요금 |
+| 1:1 자유 대화 상담 | Gemini(기본) 또는 Claude | Gemini 요금 |
 
 같은 생일을 넣으면 운세 점수는 항상 같습니다. AI는 점수를 만들지 않고, 위 계산 결과만 근거로 말하도록 되어 있습니다.
 
 ## 파일
 
 ```
-app.py              FastAPI 서버 (Vercel 엔트리포인트) — /api/saju, /api/compat, /api/meta, /api/status, /api/ai
-sajunyang/          운세 점수·상담 시나리오·사주냥이 페르소나·용어사전
+app.py              FastAPI 서버 (Vercel 엔트리포인트) — /api/saju, /api/compat, /api/meta, /api/status, /api/ai, /api/readings, /api/reading
+sajunyang/          운세 점수·상담 시나리오·사주냥이 페르소나·용어사전·대풀이(readings.py)·AI 연결(llm.py)
 public/             화면 (index.html, style.css, app.js, nyang.js=캐릭터 SVG)
 src/ksaju/          사주 엔진 (외부 의존성 0개, 기존 그대로)
 pyproject.toml      엔진 패키지 정보 + 웹앱 의존성(fastapi, anthropic) + Vercel 엔트리포인트
@@ -48,16 +50,20 @@ Vercel은 저장소 루트에 `pyproject.toml`이 있으면 `requirements.txt`�
 그래서 웹앱 의존성(fastapi, anthropic)을 `pyproject.toml`의 `dependencies`에 적고, 버전을 고정한 `uv.lock`을 함께 커밋했습니다.
 의존성을 바꾸면 `uv lock`을 다시 실행해 `uv.lock`도 같이 커밋하세요. `requirements.txt`는 로컬 실행용입니다.
 
-### AI 상담 켜기 (선택)
+### AI(냥이 도사) 켜기 — Gemini
 Vercel → Project → Settings → Environment Variables
 
 | 이름 | 값 | 설명 |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | `sk-ant-...` | 있으면 상담 탭 자유 입력이 AI 상담으로 바뀜 |
-| `SAJU_MODEL` | `claude-haiku-5-5` (선택) | 기본값은 `claude-opus-5-5`. Haiku로 바꾸면 비용이 약 1/30 |
+| `GEMINI_API_KEY` | `AIza...` | Google AI Studio 키. `Api_key`·`GOOGLE_API_KEY`·`API_KEY` 이름도 인식 |
+| `GEMINI_MODEL` (선택) | 예: `gemini-3.6-flash` | 없으면 `gemini-flash-latest` → `gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-2.5-flash` 순으로 시도 |
+| `ANTHROPIC_API_KEY` (선택) | `sk-ant-...` | Gemini 키가 없을 때만 Claude 사용 (`SAJU_MODEL`로 모델 지정) |
 
-키가 없으면 AI 관련 버튼은 숨겨지고 무료 시나리오 상담으로 동작합니다.
-결제·사용량 제한은 아직 없으므로, 키를 넣고 공개하기 전에 결제 연동이나 요청 제한(Vercel Firewall Rate Limit 등)을 먼저 붙이세요.
+환경변수를 추가·수정한 뒤에는 **반드시 다시 배포(Redeploy)** 해야 적용됩니다. 환경(Production/Preview)에 체크했는지도 확인하세요.
+연결 확인: `https://<도메인>/api/status` → `{"ai": true, "provider": "gemini", "key_from": "...", "key_format_ok": true}` (키 값은 노출하지 않음)
+
+키가 없으면 대풀이는 규칙 기반 서술형 풀이로, 상담은 무료 시나리오 상담으로 동작합니다.
+결제·사용량 제한은 아직 없으므로, 널리 공개하기 전에 요청 제한(Vercel Firewall Rate Limit 등)을 붙이세요.
 
 ## 고지
 사주는 성향과 흐름을 읽는 전통 해석 체계입니다. 냥이의 옛이야기는 개념 설명용 창작 설화입니다.
