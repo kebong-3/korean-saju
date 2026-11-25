@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parent
@@ -523,6 +523,36 @@ def map_member_delete(mid: str, pid: str, token: str = ""):
         return {"ok": share_store.remove_member(mid, pid, token)}
     except share_store.StoreError as e:
         raise HTTPException(403, str(e)) from e
+
+
+@app.get("/m/{mid}", response_class=HTMLResponse)
+def map_share_page(mid: str):
+    """공유 링크 미리보기: 카카오톡·SNS가 읽는 제목/설명을 지도마다 다르게, 사람은 앱으로 바로 이동."""
+    import html as _html
+    title, desc = "사주냥이 귀인 지도 🐾", "나는 이 사람에게 어떤 인연일까? 생일만 넣으면 바로 나와요."
+    safe = re.fullmatch(r"[A-Za-z0-9]{4,16}", mid) is not None
+    if safe and relation and share_store and share_store.configured():
+        try:
+            rec, ms = share_store.load(mid)
+            if rec:
+                name = rec["owner"].get("name") or "친구"
+                kinds = [e["view"]["나에게"]["키"] for e in ms.values()]
+                g = kinds.count("guiin")
+                title = f"{name}님의 귀인 지도 🌌 · {len(ms)}명"
+                desc = (f"귀인 {g}명이 받쳐 주는 지도예요. " if g else "") + f"나는 {name}님에게 어떤 사람일까? 생일만 넣으면 내 자리가 떠요."
+        except Exception:  # noqa: BLE001
+            pass
+    target = f"/?map={mid}" if safe else "/"
+    t, d_ = _html.escape(title), _html.escape(desc)
+    return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>{t}</title>
+<meta property="og:type" content="website"><meta property="og:site_name" content="사주냥이">
+<meta property="og:title" content="{t}"><meta property="og:description" content="{d_}">
+<meta property="og:image" content="https://korean-saju-six.vercel.app/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="refresh" content="0; url={target}"><link rel="canonical" href="https://korean-saju-six.vercel.app{target}">
+</head><body><a href="{target}">사주냥이 귀인 지도로 이동</a><script>location.replace({json.dumps(target)});</script></body></html>"""
 
 
 @app.delete("/api/map/{mid}")

@@ -284,6 +284,7 @@ function renderHome() {
       <div class="lesson">🐾 ${esc(st["교훈"])} <span class="sub">— ${T(st["개념"], true)}</span></div>
     </div>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
+      <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a><br>
       계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a> · 천문 계산 만세력 · 옛이야기는 창작 설화예요</p>`;
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
@@ -728,7 +729,7 @@ async function renderMapPane() {
     pane.innerHTML = `<div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">내 귀인 지도를 만들고 링크를 보내 봐! 친구가 <b>별명과 생일만</b> 넣으면 내 지도에 별로 떠오른다냥 🌌</div></div>
       <div class="card"><h2>🌌 내 귀인 지도 만들기</h2>
         <p class="sub">지도를 다시 계산하려고 <b>내 생년월일은 서버에 저장</b>돼요(지도 삭제 시 함께 삭제). 친구의 생년월일은 저장하지 않고, 계산된 관계 결과와 별명만 남아요.</p>
-        <label class="check consent"><input type="checkbox" id="map-consent"> 위 내용에 동의하고 만 14세 이상이에요</label>
+        <label class="check consent"><input type="checkbox" id="map-consent"> 위 내용과 <a href="/privacy.html" target="_blank">개인정보 처리방침</a>에 동의하고 만 14세 이상이에요</label>
         <button class="btn primary wide" type="button" id="map-create">지도 만들기 ✨</button></div>`;
     $("#map-create").addEventListener("click", async (e) => {
       if (!$("#map-consent").checked) { alert("동의에 체크해 달라냥"); return; }
@@ -746,7 +747,7 @@ async function renderMapPane() {
     if (S.share && ref && /찾을 수 없/.test(err.message)) { store.set("mapref", null); return renderMapPane(); }
     pane.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`; return;
   }
-  const link = S.share && ref ? `${location.origin}/?map=${ref.id}` : "";
+  const link = S.share && ref ? `${location.origin}/m/${ref.id}` : "";
   pane.innerHTML = mapBody(mapData, true) + (S.share ? `
     <div class="card tint-pink"><h2>🙋 친구에게 공유하기</h2><p>친구가 생일만 넣으면 나와 어떤 인연인지, 그 친구의 ${mapData["연도"]}년 한 줄까지 지도에 자동으로 떠요.</p>
       <div class="rd-cta"><button class="btn primary" type="button" id="map-share">📤 지도 링크 보내기</button><button class="ghost" type="button" id="map-copy">🔗 링크 복사</button></div>
@@ -798,10 +799,10 @@ async function guestMap(mid) {
       <label class="field"><span>이름 또는 별명 <em>지도에 보여요 · 별명 권장</em></span><input id="g-name" maxlength="12" placeholder="예) 고양이 집사"></label>
       <form id="form-g" class="form" autocomplete="off"></form>
       <p class="sub">내 생년월일은 <b>저장하지 않아요</b>. 계산된 관계 결과와 별명만 ${esc(owner)}님의 지도에 올라가요.</p>
-      <label class="check consent"><input type="checkbox" id="g-consent"> 만 14세 이상이며, 별명과 관계 결과를 지도에 올리는 데 동의해요</label>
+      <label class="check consent"><input type="checkbox" id="g-consent"> 만 14세 이상이며, 별명과 관계 결과를 지도에 올리는 데 동의해요(<a href="/privacy.html" target="_blank">개인정보 처리방침</a>)</label>
       <button class="btn primary wide" type="button" id="g-go">지도에 이름 올리기 ✨</button></div>
     <div id="g-result"></div>
-    <p class="foot">사주는 정답지가 아니라 지도다냥 · 언제든 내 별을 지울 수 있어요</p>`;
+    <p class="foot">사주는 정답지가 아니라 지도다냥 · 언제든 내 별을 지울 수 있어요<br><a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a></p>`;
   buildForm($("#form-g"), "g", "내 생일"); $("#form-g .form-title")?.remove(); { const nf = $("#form-g [name=nm]")?.closest(".field"); if (nf) nf.hidden = true; }
   bindMap(box, M, false, null);
   paintNyang(box);
