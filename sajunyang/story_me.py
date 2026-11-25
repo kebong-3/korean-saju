@@ -155,7 +155,7 @@ STEM_INFO = {
         "stress": "스트레스를 받으면 화끈하게 표현하고 금방 잊는 편인데, 문제는 상대는 아직 안 잊었다는 거지. 열이 오를 때 한 박자 쉬는 연습이 큰 도움이 돼.",
         "tale": "1988년 서울의 한 시장 골목에서 떡볶이 포장마차를 하던 아주머니가 丙이었다냥. 손님 이름을 다 불러 주고 크게 웃어서, "
                 "비 오는 날에도 줄이 끊기지 않았지. 냥이도 그 집 어묵 국물을 자주 얻어먹었어.",
-        "tip": "벌여 놓은 일 중 하나를 골라 '끝'을 찍는 날을 만들라냥. 태양도 지는 시간이 있어야 다음 날 다시 뜬다냥.",
+        "tip": "벌인 일 중 하나에 '끝' 도장을 찍는 날을 만들라냥. 태양도 져야 다시 뜬다냥.",
     },
     "丁": {
         "img": "어둠을 밝히는 촛불", "on": "촛불 빛 어린", "yy": "음(陰)의 불", "trait": "속이 뜨거운 촛불",
@@ -732,7 +732,7 @@ DOMAIN_S = {
 }
 REL_TALE = {
     "clash": "개항기 제물포의 한 인력거꾼이 충이 많은 사주였다냥. 하루에도 몇 번씩 일을 바꾸고 동네를 옮겨 다녀 '바람 같은 사람'이라 불렸지. "
-             "그런데 그 부지런한 발이 결국 항구에서 제일 큰 운송 조합을 만들었어. 흔들리는 사주는 멈추지 않을 때 강하다냥.",
+             "그런데 그 부지런한 발이 결국 항구에서 제일 큰 운송 조합을 만들었어.",
     "harmony": "고려 개경 장터의 중매쟁이 할멈이 합이 많은 사주였다냥. 장사꾼과 장사꾼, 총각과 처녀, 원수지간까지 엮어 주는 재주가 있었지. "
                "다만 남의 일만 엮다가 정작 자기 장사는 늦게 챙겼다더라.",
     "mixed": "1990년대 서울의 한 밴드 리더가 합과 충을 함께 지닌 사주였다냥. 멤버들과 매일 티격태격하면서도 무대에만 오르면 누구보다 손발이 잘 맞았지. "
@@ -975,11 +975,11 @@ def _ch_ohaeng(x: _Ctx) -> dict:
     fill = [e for e in lack if x.role.get(e) in ("용신", "희신")]
     if fill:
         e = fill[0]
-        tip = f"부족한 {jo(E(e), '은/는')} {ELEMENT_ADVICE[e]['활동']} 같은 생활 습관으로 채워 보라냥. 작은 습관이 빈자리를 메운다냥."
+        tip = f"부족한 {jo(E(e), '은/는')} {jo(ELEMENT_ADVICE[e]['활동'].split('·')[0], '으로/로')} 매일 조금씩 채우라냥."
     elif ew[top] >= 35 and x.role.get(top) not in ("용신", "희신"):
         tip = ELEM_OVER_TIP[top]
     else:
-        tip = "잠·밥·움직임, 이 세 가지 루틴만 지켜도 지금의 오행 균형이 잘 유지된다냥."
+        tip = "잠·밥·움직임, 이 세 루틴만 지켜도 오행 균형이 유지된다냥."
     summ = f"가장 짙은 {top} {pct(ew[top])}" + (f" · 빈자리 {'·'.join(lack[:2])}" if lack else " · 다섯 기운 고루")
     return {"id": "ohaeng", "icon": "🌈", "title": "다섯 가지 양념, 오행 밸런스", "term": "오행",
             "summary": summ, "story": story, "tip": tip}
@@ -1187,7 +1187,8 @@ def _ch_sinsal(x: _Ctx) -> dict:
                 "summary": "신살 없는 담백한 사주",
                 "story": [p1, p2, p3, "고려 개경 장터의 한 두부 장수는 신살이 하나도 없는 사주였다냥. 남들은 '특별한 게 없네' 했지만, "
                           "그는 매일 새벽 같은 맛의 두부를 사십 년 동안 만들었지. 화려한 도장 대신 성실이라는 도장을 스스로 찍은 셈이야."],
-                "tip": "도장이 없으면 네가 찍으면 된다냥. 매일 지키는 작은 습관 하나가 너만의 신살이 된다냥."}
+                "tip": "도장이 없으면 네가 찍으면 된다냥. 매일 지키는 작은 습관이 너만의 신살이다냥.",
+                "_meta": {"names": [], "found": {}}}
     nlist = "·".join(names)
     p1 = ("신살은 사주에 찍힌 특별한 도장이야. 운명을 정하는 판결문이 아니라 '이런 색깔이 있다'는 보조 표시 정도로 보면 된다냥. "
           f"네 사주엔 {nlist}, {NUM_KO.get(len(names), str(len(names)))} 가지 도장이 보여.")
@@ -1221,12 +1222,19 @@ def _ch_sinsal(x: _Ctx) -> dict:
         paras[-1] += f" 그 밖에 {'·'.join(rest)}도 있는데, 보조 참고로 가볍게 봐 두면 돼."
     first = names[0]
     tale = SINSAL_TALE.get(first, "2천 년 동안 이런 도장을 지닌 사람을 여럿 봤다냥. 대개는 그 도장을 무서워하기보다 제 색깔로 삼았을 때 가장 빛났지.")
+    if len(paras) < 3 and "공망" not in found:
+        paras.append(f"참고로 네 공망(비어 있는 자리) 글자는 {gm}인데, 원국의 다른 기둥엔 걸린 데가 없어. "
+                     "빈자리 걱정 없이 있는 그대로의 네 힘으로 승부하면 된다냥.")
+    if len(paras) < 3:
+        paras.append("신살은 양념이지 주식이 아니다냥. 같은 도장도 쓰는 사람에 따라 복이 되기도 하고 짐이 되기도 하니, "
+                     "일간·격국·용신 이야기를 먼저 챙기고 신살은 네 색깔 정도로 즐기면 돼.")
     paras.append(tale)
     term = first if first in GLOSS_SINSAL else "신살"
     summ = "·".join(names[:2]) + (f" 외 {len(names) - 2}개" if len(names) > 2 else "") + " 도장"
     return {"id": "sinsal", "icon": "⭐", "title": "사주에 찍힌 특별한 도장, 신살", "term": term,
             "summary": summ, "story": paras[:5],
-            "tip": SINSAL_TIP.get(first, "도장은 참고일 뿐, 네 하루하루가 진짜 팔자를 만든다냥.")}
+            "tip": SINSAL_TIP.get(first, "도장은 참고일 뿐, 네 하루하루가 진짜 팔자를 만든다냥."),
+            "_meta": {"names": names, "found": found}}
 
 
 def _parse_member(m: str) -> tuple:
@@ -1356,7 +1364,8 @@ def _ch_hapchung(x: _Ctx) -> dict:
         p3 = ("속이 시끄럽지 않아 감정 기복이 적고, 큰 흔들림 없이 꾸준히 가는 힘이 있지. "
               "대신 변화는 원국 안이 아니라 대운·세운이 들어올 때 찾아오니, 그때 생기는 합과 충은 운세 탭에서 살펴보라냥.")
         return {"id": "hapchung", "icon": "🔗", "title": "글자들의 악수와 부딪힘, 합충", "term": "합",
-                "summary": "합충 없는 평온한 사주", "story": [intro, p2, p3, REL_TALE["none"]], "tip": REL_TIP["none"]}
+                "summary": "합충 없는 평온한 사주", "story": [intro, p2, p3, REL_TALE["none"]], "tip": REL_TIP["none"],
+                "_meta": {"kind": "none", "gname": "", "n": 0, "nh": 0, "nc": 0, "nf": 0}}
     cnt = []
     cnt.append(f"합이 {nh}쌍" if nh else "합은 없고")
     cnt.append(f"충이 {nc}쌍" if nc else "충은 없고")
@@ -1408,7 +1417,8 @@ def _ch_hapchung(x: _Ctx) -> dict:
     top = gl[0]
     summ = f"{gname(top)} 등 · 합 {nh} · 충 {nc}" if len(gl) > 1 else f"{gname(top)} · 합 {nh} · 충 {nc}"
     return {"id": "hapchung", "icon": "🔗", "title": "글자들의 악수와 부딪힘, 합충", "term": term,
-            "summary": summ, "story": [intro, p2, p3, REL_TALE[kind]], "tip": REL_TIP[kind]}
+            "summary": summ, "story": [intro, p2, p3, REL_TALE[kind]], "tip": REL_TIP[kind],
+            "_meta": {"kind": kind, "gname": gname(top), "n": top["n"], "nh": nh, "nc": nc, "nf": nf + ns}}
 
 
 def _ch_inyeon(x: _Ctx) -> dict:
@@ -1481,7 +1491,8 @@ def _ch_inyeon(x: _Ctx) -> dict:
     return {"id": "inyeon", "icon": "💞", "title": "연애와 인간관계 스타일", "term": g,
             "summary": f"배우자 별 {g} {pct(v)} · " + {"none": "운에서 뜨는 별", "quiet": "조용히 깊어지는 인연",
                                                   "balanced": "균형 잡힌 인연", "many": "인연이 넉넉한 별"}[state],
-            "story": [p1, p2, p3, LOVE_TALE[state]], "tip": LOVE_TIP[state]}
+            "story": [p1, p2, p3, LOVE_TALE[state]], "tip": LOVE_TIP[state],
+            "_meta": {"state": state, "g": g, "v": v}}
 
 
 def _seomun(x: _Ctx) -> list:
@@ -1535,9 +1546,252 @@ def _maeum(x: _Ctx) -> list:
     return [p1, p2]
 
 
+
+# ============================================================================ 핵심(짧고 유쾌한 한 방)·한줄·설화 마무리
+WIT_ILGAN = {
+    "甲": "{S} 일간이라 마음속에 '직진' 버튼만 달려 있다냥. 굽히라고 하면 대나무처럼 쭉— 더 뻗어 버리는 게 함정!",
+    "乙": "{S} 일간이라 어디든 덩굴처럼 스르륵 스며드는 처세 만렙이다냥. 다 맞춰 주다 정작 네 화분 물 주는 걸 까먹는 게 함정!",
+    "丙": "{S} 일간이라 들어서기만 해도 방이 환해지는 인간 조명이다냥. 문제는 전원 끄는 스위치가 어디 있는지 아무도 모른다는 거!",
+    "丁": "{S} 일간이라 겉은 잔잔한 촛불, 속은 활활 용광로다냥. 누가 한마디 툭 던지면 밤새 그 불씨를 꾹꾹 돌보는 게 함정!",
+    "戊": "{S} 일간이라 존재 자체가 듬직한 산이다냥. 다들 기대러 오는데, 정작 산은 '나도 좀 눕고 싶다' 생각 중!",
+    "己": "{S} 일간이라 뭘 심어도 키워 내는 금손 텃밭이다냥. 남의 밭은 꼼꼼히 매 주면서 네 밭엔 잡초가 쑥쑥!",
+    "庚": "{S} 일간이라 맞는 말을 돌직구로 쾅! 던지는 바위다냥. 의리도 강철인데 말투도 강철이라 가끔 상대가 멍든다!",
+    "辛": "{S} 일간이라 마감 1초 전까지 광을 내는 보석이다냥. 남의 흠보다 네 흠을 먼저 찾아내는 셀프 검사관이 함정!",
+    "壬": "{S} 일간이라 머릿속에 바다가 펼쳐진 스케일 대장이다냥. 계획은 태평양급인데 실행은 '내일부터'인 게 함정!",
+    "癸": "{S} 일간이라 눈치가 레이더급이다냥. 남의 기분은 다 읽는데 정작 네 마음엔 '읽음 표시'만 뜨는 게 함정!",
+}
+WIT_ILJU = {
+    "비견": "'내 인생 내가 산다' 현수막이 걸려 있다냥. 연애도 2인3각보다 나란히 달리기가 편한 타입!",
+    "겁재": "지기 싫은 불씨가 늘 켜져 있다냥. 연인이랑 보드게임 하다 진심 모드 되는 거, 너 맞지?",
+    "식신": "맛집 지도가 깔려 있다냥. 사랑도 '같이 밥 맛있게 먹는 사람'이면 반은 합격!",
+    "상관": "할 말 저장소가 꽉 차 있다냥. 말다툼하면 논리로 이기고 분위기로 지는 타입!",
+    "편재": "'어디 재밌는 데 없나' 레이더가 뱅뱅 돈다냥. 데이트 코스가 늘 여행 브이로그급!",
+    "정재": "엑셀 가계부가 열려 있다냥. 기념일은 칼같이 챙기는데 즉흥 여행엔 살짝 버퍼링!",
+    "편관": "호루라기 든 엄한 코치가 산다냥. 쉬는 날에도 '이래도 되나' 삑— 소리가 나는 게 문제!",
+    "정관": "'약속은 지킨다' 도장이 쾅 찍혀 있다냥. 연애도 정장 입고 시작하는 반듯함이 매력!",
+    "편인": "아무도 모르는 비밀 서재가 있다냥. 혼자 있는 시간이 충전기라, 연인에겐 가끔 '로그아웃'이 필요!",
+    "정인": "포근한 담요가 깔려 있다냥. 챙겨 주는 사람에게 약하고, 칭찬 한마디에 하루가 사르르 녹는다!",
+}
+WIT_GANG = {
+    "극신강": "돕는 기운 {p}, 극신강이다냥. 수레를 한 손으로 번쩍 드는 장사라 가만있으면 오히려 몸살 나는 타입!",
+    "신강": "돕는 기운 {p}, 신강이라 웬만한 짐은 '이 정도쯤이야' 하고 번쩍 든다냥. 남의 짐까지 들다 팔 저린 게 함정!",
+    "중화강": "돕는 기운 {p}, 중화다냥. 저울이 살짝 힘 쪽으로 기운 균형 장인이라 짐 하나쯤 더 얹어도 끄떡없다!",
+    "중화약": "돕는 기운 {p}, 중화다냥. 평소엔 수레가 술술 굴러가는데, 일이 한꺼번에 몰리면 바퀴가 삐걱— 미리 쉬어 주기!",
+    "신약": "돕는 기운 {p}, 신약이라 혼자 끌면 헉헉, 같이 끌면 슝— 날아가는 수레다냥. '도와줘' 한마디가 터보 버튼!",
+    "극신약": "돕는 기운 {p}, 극신약이다냥. 노 젓기보다 물살 타기에 재능 있는 서퍼라, 좋은 파도만 고르면 끝!",
+}
+WIT_OH = {
+    "목": ("팔자에 숲이 우거졌다냥.", "새 다이어리 첫 장만 열 권째인 거, 다 안다!"),
+    "화": ("팔자가 후끈후끈하다냥.", "좋아하는 얘기만 나오면 말에 불이 붙는다!"),
+    "토": ("팔자가 묵직한 산이다냥.", "단골집 메뉴는 십 년째 같은 거, 맞지?"),
+    "금": ("팔자에서 쨍! 쇳소리가 난다냥.", "서랍 정리가 취미인 거 다 들켰다!"),
+    "수": ("팔자가 촉촉한 바다다냥.", "새벽 2시에 인생 고민 정주행하는 거 다 안다!"),
+}
+WIT_LACK = {"목": "새싹이 귀해서 첫발 떼기가 살짝 뻑뻑!", "화": "불씨가 약해서 자기 자랑은 수줍음 모드!",
+            "토": "땅 없이 둥둥 떠 있는 꼴이라 생활 리듬부터 붙잡자!", "금": "가위가 없어서 '아니요'가 잘 안 잘린다!",
+            "수": "물이 귀해서 쉬는 법을 자꾸 까먹는다!"}
+WIT_GYEOK = {
+    "식신": "{G} 일 시키면 결과물 대신 '작품'을 들고 오는 장인형이다냥. 마감만 지키면 완벽, 안 지키면 예술!",
+    "상관": "{G} 회의 때 '근데 왜요?' 한마디로 판을 뒤집는 혁신가다냥. 말투만 둥글면 사장님도 네 편!",
+    "편재": "{G} 돈 냄새, 사람 냄새를 킁킁 먼저 맡는 사업가 코다냥. 지갑에 브레이크만 달면 무적!",
+    "정재": "{G} 통장엔 적금이, 주변엔 신용이 차곡차곡 쌓인다냥. 별명이 '걸어 다니는 가계부'일걸?",
+    "정관": "{G} 규칙 안에서 반짝반짝 빛나는 모범생 그릇이다냥. 결재 서류도 각 맞춰 올리는 거 다 안다!",
+    "편관": "{G} 위기만 오면 눈빛이 번쩍! 살아나는 해결사다냥. 평화로운 날엔 오히려 심심해하는 게 문제!",
+    "정인": "{G} 공부한 만큼 자신감이 쑥쑥 붙는 학자 그릇이다냥. 자격증 하나 더 따면 마음이 편해지지?",
+    "편인": "{G} 남들 안 가는 골목에서 보물을 캐는 덕후 장인이다냥. '그걸 왜 알아?' 소리 자주 듣지?",
+    "건록": "{G} 누구 덕 없이 제 힘으로 우뚝 서는 자수성가형이다냥. '내 판'만 깔리면 날아간다!",
+    "양인": "{G} 결단력이 칼처럼 쨍! 하는 승부사다냥. 칼을 칼집에 잘 넣어 두는 게 진짜 고수!",
+    "월겁": "{G} 라이벌만 보면 엔진이 부릉부릉 걸린다냥. 경쟁이 곧 너의 에너지 드링크라, 혼자 뛰면 오히려 졸린다!",
+    None: "{G} 정해진 틀에 안 담기는 자유로운 그릇이다냥. 모양을 바꿔 가며 제 길을 내는 타입!",
+}
+WIT_TOP = {"비겁": "의리 빼면 시체, 친구 부탁엔 일단 '오케이'부터!",
+           "식상": "입과 손이 쉬지 않는 재능 분수대, 표현 안 하면 몸이 근질근질!",
+           "재성": "'그래서 남는 게 뭐지?' 계산기가 자동으로 켜진다!",
+           "관성": "책임감이 정장 입고 다니는 수준, 마감은 칼같이!",
+           "인성": "검색창부터 켜는 탐구파, 이해가 돼야 엉덩이가 움직인다!"}
+TOP_SHORT = {"비겁": "의리 빼면 시체인", "식상": "입과 손이 쉬지 않는", "재성": "계산기가 자동으로 켜지는",
+             "관성": "정장 입은 책임감", "인성": "검색창부터 켜는"}
+WIT_WEAK = {"비겁": "고집 대신 배려가 기본값!", "식상": "속마음 출력은 살짝 버퍼링!", "재성": "돈 관리는 자동이체에 맡기기!",
+            "관성": "마감은 스스로 정해야 굴러간다!", "인성": "책보다 부딪히며 배우는 실전파!"}
+WIT_YONG = {"목": "화분에 물 주고 동네 한 바퀴만 돌아도 기운이 쑥쑥 자란다냥.",
+            "화": "커튼 활짝 열고 햇볕 10분이면 기운이 후끈 충전된다냥.",
+            "토": "밥때만 잘 지켜도 흔들리던 기운이 꾹꾹 다져진다냥.",
+            "금": "흰 셔츠 입고 서랍 한 칸만 정리해도 기운이 쨍! 하고 충전된다냥.",
+            "수": "30분 일찍 자는 것만으로도 기운이 촤르륵 채워진다냥."}
+GI_WIT = {"목": "일 벌이기", "화": "밤샘·욱하기", "토": "걱정 쌓기", "금": "날 선 잔소리", "수": "새벽 생각 폭주"}
+WIT_SINSAL = {
+    "천을귀인": "막다른 골목마다 누군가 '도와드릴까요?' 하고 나타나는 VIP 패스다냥.",
+    "천덕귀인": "넘어져도 '쿵' 대신 '폭신' 하고 떨어지는 에어백 장착이다냥. 큰일도 무릎만 살짝!",
+    "월덕귀인": "꼬인 실타래도 스르륵 풀리는 달빛 보호막 장착이다냥. 덕은 쌓을수록 두꺼워진다!",
+    "문창귀인": "기획서·시험지 앞에서 펜이 술술 춤추는 글 요정이다냥. 단톡방 공지도 네가 쓰면 명문!",
+    "금여록": "곁에 있는 사람 덕을 톡톡히 보는 황금 수레 탑승권이다냥. 옆자리에 잘하면 수레가 더 빨라진다!",
+    "괴강살": "한번 마음먹으면 끝장 보는 보스 기질이다냥. 고집 볼륨만 살짝 줄이기!",
+    "양인살": "결단이 칼처럼 쨍! 빠른 승부사다냥. 운전대 잡을 땐 칼을 칼집에 쏙 넣어 두기!",
+    "백호대살": "흰 호랑이급 에너지가 어흥! 넘친다냥. 그 힘은 운동과 전문 기술로 빼기!",
+    "역마살": "엉덩이에 바퀴가 달렸다냥. 한곳에 오래 앉혀 두면 시들시들, 출장만 가면 쌩쌩!",
+    "도화살": "가만있어도 시선이 슝슝 꽂히는 인간 복숭아꽃이다냥. 인기 관리는 선 긋기부터!",
+    "홍염살": "꾸미지 않아도 분위기가 풀풀 나는 은근한 매력파다냥. 무심한 듯 시크하게가 필살기!",
+    "화개살": "혼자 파고들 때 진가가 나오는 동굴 속 예술가다냥. 동굴 문은 가끔 열어 두기!",
+    "공망": "빈자리가 있어 오히려 채우는 재미가 있는 사주다냥. 비어 있는 칸은 꿈으로 채우기!",
+}
+WIT_LOVE = {
+    "none": "배우자 별 {g} 0%! 원국 대신 운에서 '짠' 하고 등장하는 늦깎이 주인공형 인연이다냥.",
+    "quiet": "배우자 별 {g} {p}, 요란한 불꽃놀이보다 은은한 무드등 연애가 취향이다냥. 고백은 장문의 편지파일 확률 높음!",
+    "balanced": "배우자 별 {g} {p}, 연애와 내 생활의 밸런스 게임 고수다냥. 데이트도 내 시간도 둘 다 안 놓치는 멀티플레이어!",
+    "many": "배우자 별 {g} {p}, 인기가 넘쳐 고르는 게 일이다냥. 기준은 두근두근 설렘보다 소파처럼 편안함!",
+}
+STEM_VERB = {"甲": "곧게 뻗어 나가지만", "乙": "부드럽게 휘어 가지만", "丙": "환하게 다 비추지만", "丁": "은은하게 타오르지만",
+             "戊": "묵직하게 버티지만", "己": "포근하게 품어 주지만", "庚": "단단하게 버티지만", "辛": "섬세하게 반짝이지만",
+             "壬": "넓게 흘러가지만", "癸": "조용히 스며들지만"}
+BRANCH_PUNCH = {0: "속으로는 계산기가 쉬지 않는다!", 1: "속엔 곳간이 두둑하다!", 2: "발밑엔 호랑이가 웅크리고 있다!",
+                3: "발밑엔 새싹이 쑥쑥 올라온다!", 4: "속엔 용 한 마리가 꿈틀댄다!", 5: "속엔 화롯불이 몰래 지글지글!",
+                6: "속엔 한여름 태양이 쨍쨍!", 7: "속엔 뚝심이 꾹꾹 눌려 있다!", 8: "결정할 땐 원숭이처럼 재빠르다!",
+                9: "결정할 땐 칼같이 쨍!", 10: "지킬 건 끝까지 지키는 의리파!", 11: "속엔 생각의 바다가 출렁출렁!"}
+CHIP_STEM = {"甲": "직진 본능 큰 나무", "乙": "처세 만렙 덩굴꽃", "丙": "전원 안 꺼지는 인간 조명", "丁": "겉잔잔 속활활 촛불",
+             "戊": "다들 기대는 듬직한 산", "己": "뭐든 키워 내는 금손 텃밭", "庚": "돌직구 장착 의리 바위",
+             "辛": "광택 집착 완벽주의 보석", "壬": "스케일 태평양급 큰 강", "癸": "눈치 레이더 만렙 이슬비"}
+CHIP_GYEOK = {"식신": "결과물이 작품으로 나옴", "상관": "판 뒤집는 아이디어", "편재": "돈 냄새 맡는 사업가 코",
+              "정재": "걸어 다니는 가계부", "정관": "믿고 맡기는 모범생", "편관": "위기에 강한 해결사",
+              "정인": "공부가 곧 무기", "편인": "대체 불가 덕후력", "건록": "자수성가 체력", "양인": "칼 같은 결단력",
+              "월겁": "라이벌 만나면 부스터", None: "틀 밖의 자유로움"}
+CHIP_OVER = {"목": "일 벌이기 주의", "화": "욱 버튼 주의", "토": "걱정 과적 주의", "금": "말끝 날 주의", "수": "새벽 생각 폭주 주의"}
+CHIP_YONG = {"목": "화분+동네 산책", "화": "햇볕 10분+땀 운동", "토": "밥때 지키기", "금": "흰 셔츠+서랍 정리", "수": "30분 일찍 자기"}
+
+
+def _core(x: _Ctx, ch: dict) -> str:
+    a, i = x.a, ch["id"]
+    meta = ch.get("_meta", {})
+    if i == "ilgan":
+        return WIT_ILGAN[STEMS[x.ds]].replace("{S}", STEMS[x.ds] + EH[x.my])
+    if i == "ilju":
+        return f"{x.c.day.hanja} 일주라 속마음에 " + WIT_ILJU[a.ten_gods["일"]["지지"]]
+    if i == "gangyak":
+        return WIT_GANG[x.skey].replace("{p}", pct(a.strength_score))
+    if i == "ohaeng":
+        top = max(ELEMENTS, key=lambda e: x.ew[e])
+        s1, s2 = WIT_OH[top]
+        lack = [e for e in sorted(ELEMENTS, key=lambda e: x.ew[e]) if x.ew[e] < 8]
+        head = f"{E(top)} 기운이 {jo(pct(x.ew[top]), '으로/로')} {s1}"
+        if lack:
+            return f"{head} 근데 {jo(E(lack[0]), '은/는')} {pct(x.ew[lack[0]])}, {WIT_LACK[lack[0]]}"
+        return f"{head} {s2}"
+    if i == "gyeokguk":
+        return WIT_GYEOK[_gyeok_key(a.gyeokguk)].replace("{G}", jo(a.gyeokguk, "이라/라"))
+    if i == "sipseong":
+        top = max(GROUPS, key=lambda g: x.gw[g])
+        weak = min(GROUPS, key=lambda g: (x.gw[g], GROUPS.index(g)))
+        t = f"마음속 무대 주연은 {jo(f'{top}({pct(x.gw[top])})', '이다냥/다냥')}. {WIT_TOP[top]}"
+        if x.gw[weak] < 8:
+            t = (f"마음속 무대 주연은 {TOP_SHORT[top]} {jo(f'{top}({pct(x.gw[top])})', '이다냥/다냥')}. "
+                 f"근데 {jo(weak, '은/는')} {pct(x.gw[weak])}라 {WIT_WEAK[weak]}")
+        return t
+    if i == "yongshin":
+        return f"보약은 {E(a.yongshin)}, {WIT_YONG[a.yongshin]} 대신 {E(a.gishin)}은 {GI_WIT[a.gishin]} 과식 주의!".replace(
+            f"{E(a.gishin)}은", jo(E(a.gishin), "은/는"))
+    if i == "sinsal":
+        names = meta.get("names", [])
+        if not names:
+            return "신살 도장 0개, 군더더기 없는 담백한 사주다냥. 도장은 네가 직접 쾅 찍으면 그만!"
+        n = names[0]
+        where = meta["found"].get(n, [])
+        ws = [p for p in POS_ORDER if p in where]
+        stamp = ("네 기둥 전부에 쾅쾅쾅쾅!" if len(ws) >= 4 else
+                 f"{ws[0]} 기둥에 쾅!" if len(ws) == 1 else f"{'·'.join(ws)} 기둥에 쾅쾅!") if ws else "쾅!"
+        body = WIT_SINSAL.get(n, "사주에 찍힌 특별한 색깔이다냥.")
+        t = f"{jo(n, '이/가')} {stamp.strip()} {body}"
+        return t
+    if i == "hapchung":
+        k, gname, n = meta.get("kind", "none"), meta.get("gname", ""), meta.get("n", 0)
+        boom = f"{NUM_KO.get(n, '')} 갈래로 쾅쾅!" if n > 1 else "쾅!"
+        return {
+            "clash": f"{jo(gname, '이/가')} {boom} 부딪히는 역동형 사주다냥. 한자리에 오래 있으면 좀이 쑤셔서 가구 배치라도 바꾸는 거, 맞지?",
+            "harmony": f"{gname}처럼 손잡는 글자가 많은 인싸 사주다냥. 다 엮어 주다 정작 네 몫 챙기는 걸 깜빡!",
+            "mixed": f"합 {meta.get('nh', 0)}쌍·충 {meta.get('nc', 0)}쌍, 싸우면서 정드는 시트콤형 사주다냥. 티격태격하다가도 마지막 회는 꼭 화해 엔딩!",
+            "friction": f"{gname} 같은 잔마찰이 콕콕, 큰 사고 없이 서류 한 장에 속 끓이는 타입이다냥. 두 번 확인이면 끝!",
+            "none": "원국에 합도 충도 0쌍, 잔잔한 호수 같은 평온형이다냥. 파도는 원국 대신 운에서 철썩 찾아온다!",
+        }[k]
+    if i == "inyeon":
+        return WIT_LOVE[meta["state"]].replace("{g}", meta["g"]).replace("{p}", pct(meta["v"]))
+    return ch["summary"]
+
+
+def _tale_link(x: _Ctx, ch: dict) -> str:
+    a, i, you = x.a, ch["id"], x.you
+    meta = ch.get("_meta", {})
+    if i == "ilgan":
+        return f"같은 {jo(STEMS[x.ds] + EH[x.my], '을/를')} 타고난 {you}에게도 그 '{STEM_INFO[STEMS[x.ds]]['trait']}'의 힘이 흐르고 있다냥."
+    if i == "ilju":
+        return f"일지에 똑같이 {jo(a.ten_gods['일']['지지'], '을/를')} 깔고 앉은 {you}에게도 그런 집 그림이 잘 어울린다냥."
+    if i == "gangyak":
+        return f"돕는 기운 {pct(a.strength_score)}인 {you}의 수레도 그렇게 굴리면 된다냥."
+    if i == "ohaeng":
+        top = max(ELEMENTS, key=lambda e: x.ew[e])
+        return f"{top} 기운이 {pct(x.ew[top])}인 {you}도 그 기운을 '고르는 힘'과 같이 쓰면 된다냥."
+    if i == "gyeokguk":
+        return f"같은 {a.gyeokguk}인 {you}의 그릇도 그렇게 빛날 수 있다냥."
+    if i == "sipseong":
+        top = max(GROUPS, key=lambda g: x.gw[g])
+        return f"{top}이 {pct(x.gw[top])}로 주연인 {you}의 손에도 같은 대본이 쥐어져 있다냥."
+    if i == "yongshin":
+        return f"{a.yongshin}이 보약인 {you}도 오늘 작은 것 하나부터 해 보라냥.".replace(
+            f"{a.yongshin}이 보약", jo(a.yongshin, "이/가") + " 보약")
+    if i == "sinsal":
+        names = meta.get("names", [])
+        if not names:
+            return f"도장 없는 {you}도 마찬가지, 네 습관이 곧 네 도장이다냥."
+        return f"{jo(names[0], '을/를')} 지닌 {you}에게도 그 복이 이미 와 있다냥."
+    if i == "hapchung":
+        k = meta.get("kind", "none")
+        return {"clash": f"충이 {meta.get('nc', 0)}쌍인 {you}도 멈추지만 않으면 그 흔들림이 엔진이 된다냥.",
+                "harmony": f"합이 {meta.get('nh', 0)}쌍인 {you}도 엮는 재주만큼 네 몫을 꼭 챙기라냥.",
+                "mixed": f"합과 충을 함께 지닌 {you}도 부딪힌 뒤 손잡는 쪽이다냥.",
+                "friction": f"잔마찰이 {meta.get('nf', 0)}쌍인 {you}도 '두 번 확인'이면 충분하다냥.",
+                "none": f"합충 없는 {you}도 누군가에겐 그 툇마루 같은 사람이다냥."}[k]
+    if i == "inyeon":
+        g, v = meta["g"], pct(meta["v"])
+        return {"none": f"배우자 별이 0%인 {you}의 별도 때가 되면 운에서 뜰 거다냥.",
+                "quiet": f"배우자 별이 {v}인 {you}에게도 그런 느린 인연이 잘 맞는다냥.",
+                "balanced": f"배우자 별이 {v}인 {you}도 그 균형을 지키면 된다냥.",
+                "many": f"배우자 별이 {v}인 {you}에게도 고르는 눈이 제일 큰 복이다냥."}[meta["state"]].replace("배우자 별이", f"배우자 별 {jo(g, '이/가')}")
+    return ""
+
+
+def _top_core(x: _Ctx) -> str:
+    c = x.c
+    st = STEMS[x.ds]
+    img = f"{STEM_INFO[st]['on']} {BRANCH_NOUN[c.day.branch]}"
+    who = f"{x.name}의" if x.name else "너의"
+    return f"{who} 사주는 한마디로 '{jo(img, '이다냥/다냥')}'. {STEM_VERB[st]} {BRANCH_PUNCH[c.day.branch]}".replace(
+        f"'{jo(img, '이다냥/다냥')}'", f"'{img}'" + ("이다냥" if _final(img)[0] else "다냥"))
+
+
+def _chips(x: _Ctx) -> dict:
+    a = x.a
+    st = STEMS[x.ds]
+    key = _gyeok_key(a.gyeokguk)
+    gname = a.gyeokguk.split("(")[0]
+    over = [e for e in ELEMENTS if x.ew[e] >= 35 and x.role.get(e) not in ("용신", "희신")]
+    if over:
+        e = max(over, key=lambda k: x.ew[k])
+        care = f"{e} {pct(x.ew[e])} 과다 · {CHIP_OVER[e]}"
+    else:
+        care = f"기신 {a.gishin} · {GI_WIT[a.gishin]} 과식 주의"
+    return {"성격": f"{st}{EH[x.my]} · {CHIP_STEM[st]}",
+            "강점": f"{gname} · {CHIP_GYEOK[key]}",
+            "조심": care,
+            "보약": f"{E(a.yongshin)} · {CHIP_YONG[a.yongshin]}"}
+
+
 def build(r, name: str = "") -> dict:
     """SajuReading → 「내 사주」 이야기책. 형식은 모듈 docstring 참고."""
     x = _Ctx(r, name)
     chapters = [_ch_ilgan(x), _ch_ilju(x), _ch_gangyak(x), _ch_ohaeng(x), _ch_gyeokguk(x), _ch_sipseong(x),
                 _ch_yongshin(x), _ch_sinsal(x), _ch_hapchung(x), _ch_inyeon(x)]
-    return {"서문": _seomun(x), "장": chapters, "맺음": _maeum(x)}
+    for ch in chapters:
+        meta_core = _core(x, ch)
+        tale = ch["story"].pop() if len(ch["story"]) > 1 else ""
+        link = _tale_link(x, ch) if tale else ""
+        ch["설화"] = f"{tale} {link}".strip()
+        ch["핵심"] = meta_core
+        ch.pop("_meta", None)
+    return {"핵심": _top_core(x), "한줄": _chips(x), "서문": _seomun(x), "장": chapters, "맺음": _maeum(x)}

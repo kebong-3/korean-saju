@@ -57,6 +57,17 @@ def texts(obj):
             yield from texts(v)
 
 
+def short(tc, txt, limit, where, max_sent=2):
+    """짧은 핵심 한 줄: 길이·문장 수·냥체·찌꺼기."""
+    tc.assertIsInstance(txt, str, where)
+    tc.assertTrue(txt.strip(), f"빈 핵심 {where}")
+    tc.assertLessEqual(len(txt), limit, f"{where} {len(txt)}자 > {limit}: {txt}")
+    tc.assertIn("냥", txt, f"{where} 냥체 없음: {txt}")
+    n = len(SENT.findall(txt)) or 1
+    tc.assertLessEqual(n, max_sent, f"{where} 문장 {n}개: {txt}")
+    tc.assertIsNone(JUNK.search(txt), f"{where} 찌꺼기: {txt}")
+
+
 class Base(unittest.TestCase):
     def clean(self, obj, where=""):
         for t in texts(obj):
@@ -84,15 +95,32 @@ class Base(unittest.TestCase):
 
 
 class TodayStory(Base):
+    def check_today_short(self, out, day, hours, where):
+        short(self, out["핵심"], 110, f"{where} 핵심")
+        self.assertIn(day["일진"][:2], out["핵심"])
+        self.assertIn(f"{day['점수']}점", out["핵심"])
+        self.assertEqual(list(out["분야"]), ["일", "돈", "연애", "관계", "컨디션", "시간"])
+        for k, v in out["분야"].items():
+            short(self, v, 70, f"{where} 분야 {k}")
+        names = {h["시"] for h in hours["시진"]}
+        self.assertTrue(sum(n in out["분야"]["시간"] for n in names) >= 2, out["분야"]["시간"])
+        self.assertRegex(out["분야"]["시간"], r"\d\d~\d\d시")
+        self.assertTrue(out["설화"].strip())
+        for p in out["story"]:
+            self.assertNotIn(out["설화"][:40], p)
+        self.assertTrue(any(t[:20] in out["설화"] for ts in S.TALES.values() for t in ts))
+
     def test_format_all_births(self):
         for i in range(len(BIRTHS)):
             r, fx = load(i)
             for key, hk in (("오늘운세", "시간대"),):
                 out = S.today(r, fx[key], fx[hk], "")
-                self.assertEqual(set(out), {"제목", "story", "tip"})
+                self.assertEqual(set(out), {"제목", "핵심", "분야", "story", "설화", "tip"})
                 self.assertIsInstance(out["제목"], str)
                 self.assertIsInstance(out["tip"], str)
-                self.paras(out["story"], 4, 6, f"today#{i}")
+                self.assertLessEqual(len(out["tip"]), 60, out["tip"])
+                self.paras(out["story"], 4, 5, f"today#{i}")
+                self.check_today_short(out, fx[key], fx[hk], f"today#{i}")
                 self.clean(out, f"today#{i}")
                 self.no_dup_sentences(out, f"today#{i}")
                 self.assertIn(fx[key]["일진"], out["story"][0])
@@ -105,7 +133,8 @@ class TodayStory(Base):
                 d = date.fromisoformat(c["date"])
                 df, hr = F.day_fortune(r, d), F.hourly(r, d)
                 out = S.today(r, df, hr, "냥집사")
-                self.paras(out["story"], 4, 6, f"cal#{i} {d}")
+                self.paras(out["story"], 4, 5, f"cal#{i} {d}")
+                self.check_today_short(out, df, hr, f"cal#{i} {d}")
                 self.clean(out, f"cal#{i} {d}")
                 self.assertIn(c["간지"], out["story"][0])
                 for a in df["작용"][:4]:
@@ -122,6 +151,16 @@ class TodayStory(Base):
         b = S.today(r2, f2["오늘운세"], f2["시간대"], "")
         self.assertNotEqual(a["story"], b["story"])
         self.assertNotEqual(a["story"][1], b["story"][1])
+        self.assertNotEqual(a["핵심"], b["핵심"])
+        self.assertNotEqual(a["분야"], b["분야"])
+
+    def test_dates_differ(self):
+        r, fx = load(19)
+        cores = set()
+        for c in fx["달력"][:10]:
+            d = date.fromisoformat(c["date"])
+            cores.add(S.today(r, F.day_fortune(r, d), F.hourly(r, d))["핵심"])
+        self.assertEqual(len(cores), 10)
 
     def test_name_and_default(self):
         r, fx = load(19)
@@ -138,7 +177,21 @@ class YearStory(Base):
             r, fx = load(i)
             yf = fx["신년운세"]
             out = S.year(r, yf, "")
-            self.assertEqual(set(out), {"서문", "분야", "월", "맺음"})
+            self.assertEqual(set(out), {"핵심", "서문", "분야", "분야핵심", "월", "월핵심", "맺음", "설화"})
+            short(self, out["핵심"], 120, f"year핵심#{i}")
+            self.assertIn(f"{yf['총운']}점", out["핵심"])
+            self.assertEqual(list(out["분야핵심"]), list(out["분야"]))
+            for k, v in out["분야핵심"].items():
+                short(self, v, 80, f"분야핵심{k}#{i}")
+                self.assertIn(f"{yf['분야'][k]}점", v)
+            self.assertEqual(set(out["월핵심"]), set(out["월"]))
+            for m in yf["월별"]:
+                mc = out["월핵심"][m["월"]]
+                short(self, mc, 45, f"월핵심{m['월']}#{i}", max_sent=1)
+                self.assertIn(m["간지"], mc)
+            self.assertTrue(out["설화"].strip())
+            body = " ".join(texts([out["서문"], out["분야"], out["맺음"]]))
+            self.assertNotIn(out["설화"][40:90], body)
             self.paras(out["서문"], 2, 3, f"year서문#{i}")
             self.assertEqual(list(out["분야"]), ["재물운", "직업운", "연애운", "건강운", "학업운", "인간관계"])
             for k, v in out["분야"].items():
@@ -162,6 +215,8 @@ class YearStory(Base):
         (r1, f1), (r2, f2) = load(19), load(10)
         a, b = S.year(r1, f1["신년운세"]), S.year(r2, f2["신년운세"])
         self.assertNotEqual(a["서문"], b["서문"])
+        self.assertNotEqual(a["핵심"], b["핵심"])
+        self.assertNotEqual(a["월핵심"], b["월핵심"])
         self.assertNotEqual(a["분야"]["재물운"], b["분야"]["재물운"])
 
     def test_low_score_never_called_great(self):
@@ -181,12 +236,21 @@ class LifeStory(Base):
             r, fx = load(i)
             lf, ah = fx["평생운"], fx["앞으로10년"]
             out = S.life(r, lf, ah, "")
-            self.assertEqual(set(out), {"서문", "대운", "지금", "전성기"})
+            self.assertEqual(set(out), {"핵심", "지금핵심", "서문", "대운", "지금", "전성기", "설화"})
+            short(self, out["핵심"], 120, f"life핵심#{i}")
+            short(self, out["지금핵심"], 110, f"지금핵심#{i}")
+            self.assertTrue(out["설화"].strip())
+            self.assertNotIn(out["설화"][40:90], " ".join(out["서문"]))
             self.paras(out["서문"], 2, 3, f"life서문#{i}")
             self.assertEqual(len(out["대운"]), len(lf["대운"]))
             cur = next((k for k, p in enumerate(lf["대운"]) if p["현재"]), None)
             for k, (d, p) in enumerate(zip(out["대운"], lf["대운"])):
-                self.assertEqual(set(d), {"나이", "간지", "제목", "story"})
+                self.assertTrue({"나이", "간지", "제목", "핵심", "story"} <= set(d) <= {"나이", "간지", "제목", "핵심", "story", "설화"})
+                short(self, d["핵심"], 80, f"대운핵심#{i}")
+                self.assertIn(p["간지"], d["핵심"])
+                if "설화" in d:
+                    self.assertTrue(d["설화"].strip())
+                    self.assertNotIn(d["설화"][40:90], " ".join(d["story"]))
                 self.assertEqual(d["나이"], p["나이"])
                 self.assertEqual(d["간지"], p["간지"])
                 self.assertIsInstance(d["나이"], int)
@@ -195,6 +259,7 @@ class LifeStory(Base):
                     self.paras(d["story"], 1, 1, f"past#{i}")
                 elif k == cur:
                     self.paras(d["story"], 3, 4, f"cur#{i}")
+                    self.assertIn("설화", d)
                 elif cur is not None and k == cur + 1:
                     self.paras(d["story"], 2, 3, f"next#{i}")
                 else:
@@ -215,6 +280,8 @@ class LifeStory(Base):
         b = S.life(r2, f2["평생운"], f2["앞으로10년"])
         self.assertNotEqual(a["서문"], b["서문"])
         self.assertNotEqual([d["story"] for d in a["대운"]], [d["story"] for d in b["대운"]])
+        self.assertNotEqual(a["핵심"], b["핵심"])
+        self.assertNotEqual(a["지금핵심"], b["지금핵심"])
 
     def test_deterministic(self):
         r, fx = load(5)

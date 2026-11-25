@@ -123,61 +123,61 @@ def _br(b: int) -> str:
 # =============================================================================
 # 일간 10간: 짧은 이미지, 긴 이미지, 본성, 사랑법, 필요한 것, 다툴 때, 풀릴 때
 STEM_INFO = {
-    0: {"img": "큰 나무", "full": "하늘로 곧게 뻗는 큰 나무",
+    0: {"short": "체면 세워 주기", "img": "큰 나무", "full": "하늘로 곧게 뻗는 큰 나무",
         "nature": "곧고 시원시원해서 한번 마음먹으면 위로 쭉쭉 뻗어 가는 사람",
         "love": "좋아하면 앞장서서 길을 내 주는 개척자 타입",
         "need": "자존심을 세워 주는 한마디",
         "fight": "정면으로 따져서 옳고 그름부터 가리려 하고",
         "calm": "체면을 지켜 주면 생각보다 금방 누그러진다"},
-    1: {"img": "들꽃", "full": "바람에 휘어도 꺾이지 않는 들꽃과 덩굴",
+    1: {"short": "다정한 한마디", "img": "들꽃", "full": "바람에 휘어도 꺾이지 않는 들꽃과 덩굴",
         "nature": "부드럽게 휘어지면서도 끝내 원하는 곳까지 뻗어 가는 사람",
         "love": "상대 곁에 살며시 감겨 오래오래 머무는 덩굴형",
         "need": "작은 관심과 다정한 표현",
         "fight": "겉으론 웃으며 넘기지만 마음속 수첩에는 꼭 적어 두고",
         "calm": "먼저 다가와 손을 내밀어 주면 스르르 풀린다"},
-    2: {"img": "태양", "full": "세상을 환하게 비추는 한낮의 태양",
+    2: {"short": "빵 터지는 리액션", "img": "태양", "full": "세상을 환하게 비추는 한낮의 태양",
         "nature": "숨김없이 밝고 뜨거워서 있는 자리를 환하게 만드는 사람",
         "love": "좋으면 온 동네가 다 알게 표현하는 직진형",
         "need": "반응과 칭찬",
         "fight": "확 타올라 큰소리가 나지만 그만큼 빨리 식고",
         "calm": "같이 웃을 거리 하나만 생기면 언제 그랬냐는 듯 돌아온다"},
-    3: {"img": "촛불", "full": "어둠 속에서 한 사람을 비추는 촛불과 별빛",
+    3: {"short": "진심 사과 한 줄", "img": "촛불", "full": "어둠 속에서 한 사람을 비추는 촛불과 별빛",
         "nature": "조용하지만 속은 뜨겁고, 한 사람과 한 가지 일에 깊이 집중하는 사람",
         "love": "한 사람만 오래 비추는 헌신형",
         "need": "작은 정성을 알아봐 주는 눈길",
         "fight": "말수가 줄어들고 속으로 조용히 타들어 가고",
         "calm": "진심이 담긴 사과 한 줄이면 촛불이 다시 켜진다"},
-    4: {"img": "큰 산", "full": "비바람에도 그 자리를 지키는 큰 산",
+    4: {"short": "재촉 없이 기다려 주기", "img": "큰 산", "full": "비바람에도 그 자리를 지키는 큰 산",
         "nature": "묵직하고 믿음직해서 옆에 있으면 저절로 기대고 싶어지는 사람",
         "love": "말보다 늘 그 자리에 있어 주는 것으로 마음을 보여 주는 듬직형",
         "need": "믿고 맡겨 주는 마음",
         "fight": "입을 꾹 닫고 산처럼 버티고",
         "calm": "재촉하지 않고 시간을 주면 스스로 내려온다"},
-    5: {"img": "논밭", "full": "씨앗을 받아 길러 내는 기름진 논밭",
+    5: {"short": "'고마워' 한마디", "img": "논밭", "full": "씨앗을 받아 길러 내는 기름진 논밭",
         "nature": "꼼꼼하게 챙기고 돌보며 사람과 일을 길러 내는 사람",
         "love": "밥은 먹었는지, 아픈 데는 없는지 먼저 챙기는 돌봄형",
         "need": "고맙다는 말",
         "fight": "걱정이 잔소리로 바뀌어 쏟아져 나오고",
         "calm": "그 걱정이 사실은 사랑이었다는 걸 알아주면 풀린다"},
-    6: {"img": "바위", "full": "단단한 바위이자 갓 캐낸 원석",
+    6: {"short": "깔끔한 인정", "img": "바위", "full": "단단한 바위이자 갓 캐낸 원석",
         "nature": "의리 있고 결단이 빨라 한번 내 사람이면 끝까지 지키는 사람",
         "love": "투박하지만 행동으로 지켜 주는 보디가드형",
         "need": "돌려 말하지 않는 솔직함",
         "fight": "짧고 굵게 직설을 날리고",
         "calm": "깔끔하게 인정하고 정리하면 뒤끝 없이 털어 낸다"},
-    7: {"img": "보석", "full": "곱게 세공된 보석이자 날 선 칼날",
+    7: {"short": "둘만의 조용한 대화", "img": "보석", "full": "곱게 세공된 보석이자 날 선 칼날",
         "nature": "섬세하고 기준이 높아서 작은 차이도 알아보는 완벽주의자",
         "love": "기념일과 분위기를 소중히 여기는 로맨티스트",
         "need": "존중받고 있다는 느낌",
         "fight": "정확한 말로 콕 집어 말하고, 들은 상처는 오래 기억하고",
         "calm": "자존심이 다치지 않게 둘만 있을 때 조용히 이야기하면 풀린다"},
-    8: {"img": "큰 강", "full": "넓게 흘러가는 큰 강과 바다",
+    8: {"short": "같이 바람 쐬기", "img": "큰 강", "full": "넓게 흘러가는 큰 강과 바다",
         "nature": "그릇이 크고 생각이 깊어 웬만한 일은 품어 버리는 사람",
         "love": "자유롭게 흐르다가도 결국 같은 바다로 돌아오는 바다형",
         "need": "숨 쉴 공간과 자유",
         "fight": "아무렇지 않은 척 흘려보내다가 한 번에 넘치고",
         "calm": "같이 바람 쐬러 나가면 물길이 다시 잔잔해진다"},
-    9: {"img": "빗물", "full": "조용히 스며드는 이슬과 빗물",
+    9: {"short": "'무슨 일 있어?' 한마디", "img": "빗물", "full": "조용히 스며드는 이슬과 빗물",
         "nature": "감수성이 깊고 눈치가 빨라 상대 마음에 소리 없이 스며드는 사람",
         "love": "티 나지 않게 챙기고 오래 곱씹는 감성형",
         "need": "마음을 먼저 물어봐 주는 다정한 말",
@@ -727,7 +727,7 @@ def _ch_nature(p1: _P, p2: _P, key: str) -> dict:
             dyn = (f"두 사람은 같은 {ELEMENT_NAME(p1.de)} 기운인데 음양이 달라서, 서로에게 '겁재', 자극을 주는 라이벌 친구다냥. "
                    f"{_nya(scene)}. 같은 목표를 보면 무서운 한 팀이 되지만, 비교가 시작되면 은근한 경쟁심이 고개를 든다냥.")
         summary = f"같은 {ELEMENT_NAME(p1.de)} 기운끼리 만난 거울 같은 사이 — 통하는 게 많고, 양보가 숙제다냥."
-        tip = "결정할 일이 생기면 '이번엔 네 방식, 다음엔 내 방식'처럼 순번을 정해 두면 거울끼리 부딪힐 일이 줄어든다냥."
+        tip = "결정할 땐 '이번엔 네 방식, 다음엔 내 방식' 순번제로 가라냥."
         tale = _pick(TALES["same"], key, "nature")
     elif kind in ("생12", "생21"):
         g, rcv = (p1, p2) if kind == "생12" else (p2, p1)
@@ -739,7 +739,7 @@ def _ch_nature(p1: _P, p2: _P, key: str) -> dict:
                   if same_yy else
                   "주는 쪽은 아낌없이 챙기고 싶어지고, 받는 쪽은 엄마 품처럼 푹 기대게 된다냥."))
         summary = f"{jo(g.name, '이가')} {jo(rcv.name, '을를')} 키워 주는 상생의 사이 — 주는 기쁨과 받는 고마움이 오가는 관계다냥."
-        tip = f"{jo(rcv.name, '은는')} 받은 만큼 '덕분이야'를 자주 말해 주고, {jo(g.name, '은는')} 가끔 기대는 연습을 하면 샘물이 마르지 않는다냥."
+        tip = f"{jo(rcv.name, '은는')} '덕분이야'를 자주, {jo(g.name, '은는')} 가끔 기대 보라냥."
         tale = _pick(TALES["gen"], key, "nature")
     elif kind in ("극12", "극21", "충"):
         if kind == "충":
@@ -752,14 +752,14 @@ def _ch_nature(p1: _P, p2: _P, key: str) -> dict:
                    f"음양까지 같아서 정면으로 마주 서는 '천간충'이다냥. 그림으로 그리면 {_nya(scene)}. "
                    f"생각하는 방식과 옳다고 믿는 것이 서로 달라서 처음엔 자주 부딪히지만, 바로 그 다름 때문에 서로가 서로의 빈 곳을 비춰 준다냥.")
             summary = f"하늘 글자가 정면으로 마주 선 천간충 — 가치관이 달라 부딪히지만, 그래서 서로를 넓혀 주는 사이다냥."
-            tip = "부딪힐 땐 '누가 옳은가' 대신 '우리 둘 다 원하는 게 뭔가'를 먼저 적어 보라냥. 생각이 다를 뿐, 바라는 건 같은 경우가 많다냥."
+            tip = "'누가 옳아?' 대신 '뭐가 걱정됐어?'부터 물어보라냥."
             tale = _pick(TALES["chung"], key, "nature")
         else:
             dyn = (f"오행으로 보면 {ctl.name}의 {ELEMENT_NAME(ctl.de)} 기운이 {tgt.name}의 {ELEMENT_NAME(tgt.de)} 기운을 다스리는 상극(相剋) 관계다냥. "
                    f"그림으로 그리면 {_nya(scene)}. 다듬어 주는 관계라서 {jo(ctl.name, '이가')} 방향을 잡고 {jo(tgt.name, '이가')} 그 틀 안에서 단단해지는데, "
                    f"힘 조절을 잘못하면 '다듬는다'가 '누른다'로 느껴질 수 있다냥.")
             summary = f"{jo(ctl.name, '이가')} 방향을 잡고 {jo(tgt.name, '이가')} 단단해지는 다듬음의 사이 — 힘 조절이 관건이다냥."
-            tip = f"{jo(ctl.name, '은는')} 지적보다 질문으로('이건 어떻게 하고 싶어?'), {jo(tgt.name, '은는')} 서운함을 그때그때 말로 꺼내면 균형이 맞는다냥."
+            tip = f"{jo(ctl.name, '은는')} 지적 대신 질문, {jo(tgt.name, '은는')} 서운함은 바로 말로 하라냥."
             tale = _pick(TALES["ctrl"], key, "nature")
     else:  # 합
         pair = frozenset((p1.ds, p2.ds))
@@ -769,7 +769,7 @@ def _ch_nature(p1: _P, p2: _P, key: str) -> dict:
                f"그중에서도 {_nya(hname)}. {_nya(hdesc)}. 두 글자가 합하면 {ELEMENT_NAME(hel)}({ELEMENTS[hel]}) 기운으로 변하려는 성질이 생기는데, "
                f"그만큼 서로에게 강하게 끌리고 함께 있으면 둘이 아닌 하나의 새 기운을 만든다냥.")
         summary = f"하늘 글자가 손을 맞잡은 천간합({hname.split('(')[0]}) — 설명 없이도 끌리는 사이다냥."
-        tip = "합은 서로에게 묶이는 힘이라, 가끔은 각자의 시간과 친구도 챙겨 줘야 합이 답답한 끈이 아니라 따뜻한 손이 된다냥."
+        tip = "꼭 붙어 다니되, 각자 친구 만나는 날도 챙겨 주라냥."
         tale = _pick(TALES["hap"], key, "nature")
 
     para2 = dyn + " 그리고 " + yy + "."
@@ -881,13 +881,13 @@ def _ch_attraction(p1: _P, p2: _P, key: str) -> dict:
         cline = "두 사람 다 도화·홍염 같은 '첫눈의 별'은 두드러지지 않아서, 첫눈보다 알아 갈수록 빠져드는 끌림이다냥. 오래 보아야 예쁜 사이라냥."
     para2 = rel + " " + yline
     if kind in ("육합", "삼합", "같음"):
-        tip = "첫 단추가 쉽게 끼워진 사이일수록 '처음 만났을 때 뭐가 좋았는지'를 가끔 꺼내 이야기하면 설렘이 오래간다냥."
+        tip = "가끔 '처음 만났을 때 뭐가 좋았어?' 하고 물어보라냥."
     elif kind == "무관":
-        tip = "띠가 담백한 사이는 함께한 시간이 곧 인연이니, 작은 기념일을 하나씩 만들어 쌓아 가라냥."
+        tip = "작은 기념일을 하나씩 만들어 쌓아 가라냥."
     elif kind in ("해", "파"):
-        tip = "띠의 작은 어긋남은 '방금 그 말, 이런 뜻이지?' 하고 웃으며 되묻는 습관이면 충분하다냥. 약속 장소와 시간은 꼭 문자로 한 번 더!"
+        tip = "약속 장소와 시간은 문자로 한 번 더 확인하라냥."
     else:
-        tip = "첫인상이 삐걱댄 사이는 격식 차린 자리보다 편한 자리에서 더 잘 통한다냥. 가족 모임도 처음엔 짧고 가볍게 시작하라냥."
+        tip = "가족 모임은 처음엔 짧고 가볍게 시작하라냥."
     return {"id": "attraction", "icon": "💘", "title": "끌림과 첫인상", "summary": summary,
             "story": [para1 + " " + cline, para2, tale], "tip": tip}
 
@@ -920,7 +920,7 @@ def _ch_room(p1: _P, p2: _P, key: str) -> dict:
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 육합(六合)이다냥! 육합은 두 땅 글자가 1:1로 손을 꼭 잡는 관계라, 한 방에 들어서면 문을 닫고 둘만의 세계를 만든다냥. "
                f"합해서 {ELEMENT_NAME(d['el'])}({ELEMENTS[d['el']]}) 기운이 새로 생기니, 둘이 함께 있을 때만 나오는 분위기가 있다는 뜻이다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 육합 — 두 안방이 손을 꼭 잡은, 가장 아늑한 배우자 자리 궁합이다냥."
-        tip = "합이 강한 안방은 둘만의 세계가 너무 단단해져서 바깥 사람에게 소홀해질 수 있으니, 서로의 친구와 가족도 가끔 이 방에 초대하라냥."
+        tip = "둘만의 세계도 좋지만, 친구와 가족도 가끔 초대하라냥."
         tale = _pick(TALES["room_hap"], key, "room")
     elif kind == "삼합":
         wang = ("가운데 왕지(旺地)가 들어 있는 반합이라 힘이 제대로 실린다냥" if d["wang"] else
@@ -929,57 +929,57 @@ def _ch_room(p1: _P, p2: _P, key: str) -> dict:
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]}, 삼합({ELEMENTS[d['el']]}국)의 일부로 이어져 있다냥. 마주 보기보다 나란히 서서 같은 {season} 길을 바라보는 동지의 인연이다냥. "
                f"{wang}.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 삼합({ELEMENTS[d['el']]}국) — 같은 방향을 바라보는 동지의 안방이다냥."
-        tip = "삼합은 '같은 목표'가 있을 때 가장 빛나니, 1년에 한 번은 둘이 함께 이루고 싶은 것을 종이에 적어 붙여 두라냥."
+        tip = "1년에 한 번, 같이 이룰 목표를 종이에 적어 붙여 두라냥."
         tale = _pick(TALES["room_samhap"], key, "room")
     elif kind == "충":
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 충(衝)이다냥. 시계로 치면 정반대 자리에 있는 글자라, 한 방은 {el1} 기운이고 한 방은 {el2} 기운으로 생활 리듬이 반대다냥. "
                f"충은 '깨진다'가 아니라 '흔들어서 움직인다'는 뜻이다냥. 처음엔 강하게 끌리고, 같이 살면 사소한 습관에서 부딪히는데, 그 흔들림 덕에 둘 다 혼자서는 못 갈 곳까지 간다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 충 — 정반대 리듬의 두 안방, 흔들리며 넓어지는 사이다냥."
-        tip = "리듬이 반대인 안방은 '꼭 같이 하는 시간' 하나만 정하고 나머지는 각자의 리듬을 존중하면 충이 활력으로 바뀐다냥."
+        tip = "꼭 같이 하는 시간 하나만 정하고 나머진 각자 리듬대로 가라냥."
         tale = _pick(TALES["room_chung"], key, "room")
     elif kind == "원진":
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 원진(怨嗔)이다냥. 옛말에 '{d['saying']}'고 했듯, 이유 없이 서운한 감정이 쌓이기 쉬운 사이다냥. "
                f"하지만 냥이가 2천 년 동안 본 원진 부부들은 대개 서로를 제일 잘 아는 사람이 되어 있었다냥. 미운 정이 들 만큼 가까이 있다는 뜻이니까.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 원진 — 미운 정 고운 정이 함께 드는 안방이다냥."
-        tip = "원진은 쌓아 두면 커지고 바로 꺼내면 작아진다냥. '서운한 건 그날 안에 한 문장으로' 규칙을 만들어 보라냥."
+        tip = "서운한 건 그날 안에 한 문장으로 꺼내라냥."
         tale = _pick(TALES["room_wonjin"], key, "room")
     elif kind == "형":
         pn = PUNISH_NAME.get(d["name"], (d["name"], "서로를 깎아 내는 마찰이 있는 형"))
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 형(刑), 그중에서도 {_nya(pn[0])}. {pn[1]}냥. "
                f"형은 돌을 깎는 정과 같아서, 아프게 부딪히지만 잘 쓰면 서로를 보석으로 세공해 준다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 형 — 서로를 다듬는 마찰이 있는 안방, 역할 분담이 열쇠다냥."
-        tip = "형이 있는 안방은 '누구 탓'보다 '누가 맡을지'를 정하는 게 빠르다냥. 집안일·돈 관리처럼 자주 부딪히는 일은 담당을 나눠 두라냥."
+        tip = "자주 부딪히는 집안일·돈 관리는 담당을 정해 두라냥."
         tale = _pick(TALES["room_hyung"], key, "room")
     elif kind == "해":
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 해(害)다냥. 해는 옆방에서 들리는 소리를 잘못 알아듣는 것 같은 관계라, 큰 싸움보다 은근한 오해와 서운함이 문제다냥. "
                f"'그런 뜻 아니었어'라는 말이 자주 나온다면 바로 이 글자 탓이다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 해 — 은근한 오해만 조심하면 되는 안방이다냥."
-        tip = "해가 있는 안방은 추측 대신 확인이 약이다냥. '혹시 이런 뜻이야?' 하고 한 번 더 물어보는 습관이면 충분하다냥."
+        tip = "추측 말고 '이런 뜻이야?' 하고 한 번 더 물어보라냥."
         tale = _pick(TALES["room_hae"], key, "room")
     elif kind == "파":
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 파(破)다냥. 파는 문짝이 살짝 어긋난 것처럼 계획과 약속이 틀어지기 쉬운 관계다냥. "
                f"마음이 안 맞는 게 아니라 타이밍이 엇갈리는 거라서, 일정과 약속을 눈에 보이게 정리하면 대부분 해결된다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 파 — 마음보다 타이밍이 엇갈리는 안방이다냥."
-        tip = "둘만의 공유 달력 하나면 파의 절반은 사라진다냥. 중요한 약속은 꼭 적어 두라냥."
+        tip = "둘만의 공유 달력 하나면 파의 절반이 사라진다냥."
         tale = _pick(TALES["room_pa"], key, "room")
     elif kind == "귀문":
         rel = (f"두 방은 {BRANCHES[b1]}{BRANCHES[b2]} 귀문(鬼門)이다냥. 귀문은 촉과 직감의 문이라, 말하지 않아도 상대 기분을 알아채는 신기한 통함이 있다냥. "
                f"대신 둘 다 예민해지는 날엔 그 촉이 서로를 찌르기도 하니, 잠과 휴식이 이 방의 보약이다냥.")
         summary = f"{BRANCHES[b1]}{BRANCHES[b2]} 귀문 — 촉으로 통하는 안방, 휴식이 보약이다냥."
-        tip = "귀문이 있는 사이는 피곤할 때 중요한 이야기를 하지 않는 것만 지켜도 다툼이 확 준다냥."
+        tip = "피곤한 밤엔 중요한 이야기를 미루라냥."
         tale = _pick(TALES["room_gwimun"], key, "room")
     elif kind == "같음":
         extra = (f" 다만 {jo(BRANCHES[b1], '은는')} 같은 글자끼리 만나면 '자형(自刑)'이 되는 글자라, 서로의 단점도 거울처럼 똑같이 비춘다냥. 내 모습이 보여 답답할 땐 웃어넘기라냥."
                  if d.get("self") else "")
         rel = (f"두 방은 똑같은 {_br(b1)}, 쌍둥이 방이다냥. 생활 패턴과 편안해하는 분위기가 비슷해서 함께 있으면 긴장이 풀린다냥.{extra}")
         summary = f"같은 {BRANCHES[b1]} 안방 — 닮은 방 두 개, 편안함이 무기다냥."
-        tip = "쌍둥이 방은 편한 대신 새로움이 부족하기 쉬우니, 한 달에 한 번은 둘 다 안 해 본 일을 같이 해 보라냥."
+        tip = "한 달에 한 번은 둘 다 안 해 본 일을 같이 해 보라냥."
         tale = _pick(TALES["room_same"], key, "room")
     else:
         rel = (f"두 방, {jo(_br(b1), '와과')} {_br(b2)} 사이엔 특별한 합도 충도 없다냥. 서로의 방에 놀러 가도 가구를 옮길 일은 없는 사이라, "
                f"무리 없이 각자의 방식을 지키면서 천천히 친해진다냥. 이 방을 무엇으로 채울지는 두 사람 몫이다냥.")
         summary = f"{jo(BRANCHES[b1], '와과')} {BRANCHES[b2]} — 합충 없이 담백한 안방, 채우는 건 두 사람 몫이다냥."
-        tip = "담백한 안방엔 둘만의 의식을 하나 만들어 두라냥. 주말 아침 커피, 잠들기 전 하루 이야기 같은 거면 충분하다냥."
+        tip = "주말 아침 커피 같은 둘만의 의식을 하나 만들라냥."
         tale = _pick(TALES["room_none"], key, "room")
 
     extras = _branch_extra(b1, b2, kind)
@@ -1031,18 +1031,16 @@ def _ch_tonic(p1: _P, p2: _P, key: str) -> dict:
     if good1 and good2:
         summary = f"서로의 창고에 서로의 보약이 있는 사이 — 함께 있을수록 둘 다 건강해진다냥."
         tale = _pick(TALES["tonic_both"], key, "tonic")
-        tip = "서로 채워 주는 사이는 '네 덕분에 요즘 힘이 난다'는 말을 아끼지 않을 때 보약 효과가 두 배가 된다냥."
+        tip = "'네 덕분에 힘이 난다'는 말을 아끼지 말라냥."
     elif good1 or good2:
         giver, taker = (p2, p1) if good1 else (p1, p2)
         summary = f"{jo(giver.name, '이가')} {taker.name}의 보약 창고가 되어 주는 사이 — 받은 쪽은 다른 방식으로 갚으면 된다냥."
         tale = _pick(TALES["tonic_one"], key, "tonic")
-        tip = (f"{jo(taker.name, '은는')} 받은 기운을 웃음과 표현으로 돌려주고, {jo(giver.name, '은는')} 자기 보약인 "
-               f"{giver.yong} 기운을 둘이 함께 밖에서 채우는 데이트를 늘려 보라냥.")
+        tip = f"{jo(taker.name, '은는')} 받은 기운을 웃음으로 돌려주면 정산 끝이다냥."
     else:
         summary = "보약을 서로에게서 찾기보다 둘이 함께 밖에서 구해 오는 사이 — 같이 하는 습관이 보약이다냥."
         tale = _pick(TALES["tonic_none"], key, "tonic")
-        tip = ((f"두 사람 모두의 보약인 {p1.yong} 기운을" if p1.yong == p2.yong else f"{n1}의 {p1.yong}, {n2}의 {p2.yong} 기운을")
-               + " 채워 주는 장소와 활동을 함께 정해 두라냥. 아래 '개운' 장에 적어 두었다냥.")
+        tip = f"{p1.yong}·{p2.yong} 기운 채우는 데이트 장소를 같이 정해 두라냥." if p1.yong != p2.yong else f"둘의 보약 {p1.yong} 기운 데이트를 정해 두라냥."
     johu_bits = []
     for p in (p1, p2):
         if not p.johu:
@@ -1105,26 +1103,26 @@ def _ch_rhythm(p1: _P, p2: _P, key: str) -> dict:
         body = ("둘 다 엔진이 센 사람이라 각자 운전대를 잡고 싶어한다냥. 추진력이 둘이니 함께 하면 무엇이든 빨리 해내지만, "
                 "누가 결정하느냐로 부딪히기 쉽다냥. 분야를 나눠 '이건 네가 대장, 저건 내가 대장'을 정해 두면 엔진 두 개짜리 배가 된다냥.")
         tale = _pick(TALES["rhythm_strong"], key, "rhythm")
-        tip = "결정권을 분야별로 나눠 두라냥. 여행은 누가, 돈 관리는 누가 — 이렇게 정해 두면 엔진끼리 싸울 일이 없다냥."
+        tip = "여행은 누가, 돈은 누가 — 대장 분야를 나눠 두라냥."
         summary = "엔진이 둘인 배 — 추진력은 두 배, 운전대는 나눠 잡아야 하는 사이다냥."
     elif c1 == "W" and c2 == "W":
         body = ("둘 다 섬세한 타입이라 서로의 마음을 잘 알아주고 다정하다냥. 대신 둘 다 결정을 미루거나 남 눈치를 보다가 기회를 놓칠 수 있다냥. "
                 "큰일은 믿을 만한 어른이나 전문가에게 한 번 물어보고, 작은 일은 '하루 자고 정하기' 규칙을 두면 좋다냥.")
         tale = _pick(TALES["rhythm_soft"], key, "rhythm")
-        tip = "섬세한 둘은 결정 마감일을 정해 두는 게 보약이다냥. '금요일까지 정하기'처럼 날짜를 박아 두라냥."
+        tip = "'금요일까지 정하기'처럼 결정 마감일을 박아 두라냥."
         summary = "섬세한 두 사람 — 다정함은 넘치고, 결정에는 마감일이 필요한 사이다냥."
     elif (c1, c2) in (("S", "W"), ("W", "S")):
         st, wk = (p1, p2) if c1 == "S" else (p2, p1)
         body = (f"{jo(st.name, '은는')} 힘센 엔진, {jo(wk.name, '은는')} 섬세한 내비게이션이다냥. {jo(st.name, '이가')} 끌고 나가고 {jo(wk.name, '이가')} 길을 세심하게 살피면 "
                 f"최고의 팀이 된다냥. 다만 {jo(st.name, '은는')} 속도를 조금 늦춰 {wk.name}의 의견을 먼저 묻고, {jo(wk.name, '은는')} 참지 말고 원하는 걸 분명히 말해야 균형이 맞는다냥.")
         tale = _pick(TALES["rhythm_lead"], key, "rhythm")
-        tip = f"중요한 결정 전엔 {wk.name}에게 먼저 묻는 순서를 정해 두라냥. 힘센 쪽이 먼저 말하면 섬세한 쪽은 삼켜 버리기 쉽다냥."
+        tip = f"중요한 결정 전엔 {wk.name}에게 먼저 물어보라냥."
         summary = f"{st.name}의 엔진과 {wk.name}의 내비게이션 — 끄는 힘과 살피는 눈이 만난 사이다냥."
     elif c1 == "M" and c2 == "M":
         body = ("둘 다 힘이 고르게 잡힌 중화 사주라, 주고받는 박자가 자연스럽다냥. 누가 크게 끌고 가지 않아도 알아서 균형이 맞는 편이다냥. "
                 "다만 둘 다 무난함을 좋아해서 큰 변화 앞에선 서로 미루기 쉬우니, 변화가 필요할 땐 먼저 말 꺼내는 사람을 칭찬해 주라냥.")
         tale = _pick(TALES["rhythm_even"], key, "rhythm")
-        tip = "균형 잡힌 둘은 새로운 도전 하나를 같이 정해 두면 관계에 활기가 돈다냥."
+        tip = "새로운 도전 하나를 같이 정하면 활기가 돈다냥."
         summary = "균형 잡힌 두 사람 — 박자가 자연스러운, 서두를 것 없는 사이다냥."
     else:
         mid, oth = (p1, p2) if c1 == "M" else (p2, p1)
@@ -1137,7 +1135,7 @@ def _ch_rhythm(p1: _P, p2: _P, key: str) -> dict:
                     f"{jo(oth.name, '은는')} 그 곁에서 섬세한 장점을 마음껏 펼친다냥. 다만 {mid.name}도 지칠 때가 있으니 기댈 차례를 바꿔 주는 것도 잊지 말라냥.")
             summary = f"{mid.name}의 든든함과 {oth.name}의 섬세함 — 기둥과 창문 같은 사이다냥."
         tale = _pick(TALES["rhythm_lead"], key, "rhythm")
-        tip = "힘의 크기가 다른 두 사람은 '오늘은 누가 기댈 차례?' 하고 가볍게 묻는 것만으로도 균형이 잡힌다냥."
+        tip = "'오늘은 누가 기댈 차례?' 하고 가볍게 물어보라냥."
     para3 = sline1 + " " + body
     return {"id": "rhythm", "icon": "⏰", "title": "생활 리듬", "summary": summary,
             "story": [para1, para2, para3, tale], "tip": tip}
@@ -1244,17 +1242,15 @@ def _ch_conflict(p1: _P, p2: _P, res: dict, key: str) -> dict:
         labels = [CONFLICT_LABEL[k] for k in use]
         summary = f"조심할 곳은 {'·'.join(labels)} — 어디서 부딪히는지 알면 피해 가는 길도 보인다냥."
         if i1["need"] == i2["need"]:
-            tip = (f"싸운 뒤엔 둘 다 {_quote(i1['need'], '을를')} 받을 때 가장 빨리 풀린다냥. "
-                   f"먼저 건네는 사람이 이기는 거라고 정해 두라냥.")
+            tip = f"화해 치트키는 둘 다 {jo(i1['short'], '이다')}냥."
         else:
-            tip = (f"싸운 뒤엔 {jo(n1, '은는')} {_quote(i1['need'], '을를')}, {jo(n2, '은는')} {_quote(i2['need'], '을를')} 받을 때 가장 빨리 풀린다냥. "
-                   f"이걸 서로 알고 있는 것만으로 화해 시간이 절반이 된다냥.")
+            tip = f"화해 치트키: {n1}에겐 {i1['short']}, {n2}에겐 {jo(i2['short'], '이다')}냥."
     else:
         paras.append("그런데 사주 글자끼리는 크게 부딪히는 자리가 거의 없다냥! 본성, 안방, 띠, 생활 환경 어디에도 충·원진·형 같은 날카로운 글자가 없다냥. "
                      "이런 사이의 진짜 적은 싸움이 아니라 '권태'다냥. 너무 편해서 고마움을 말하지 않게 되고, 새로운 걸 같이 하지 않게 되는 거다냥.")
         tale = _pick(TALES["boredom"], key, "fight")
         summary = "크게 부딪히는 글자가 없는 사이 — 진짜 조심할 건 싸움이 아니라 권태다냥."
-        tip = "석 달에 한 번은 둘 다 처음 해 보는 일을 같이 해 보라냥. 잘 맞는 사이일수록 새 바람이 보약이다냥."
+        tip = "석 달에 한 번은 처음 해 보는 데이트를 하라냥."
     paras.append(tale)
     paras.append("그리고 2천 년 동안 냥이가 본 가장 오래가는 커플들의 공통점은 하나였다냥. 싸움에서 이기려 하지 않고, 싸움이 끝난 뒤 '우리'로 돌아오는 길을 먼저 찾았다는 거다냥. "
                  "상대를 바꾸려 하기보다, 상대가 편하게 돌아올 문을 열어 두라냥.")
@@ -1302,7 +1298,7 @@ def _ch_date(p1: _P, p2: _P, key: str) -> dict:
     para3 = (f"{nums} 기념일 날짜나 비밀번호 대신, "
              f"둘이 만나는 요일이나 데이트 코스 번호로 장난스럽게 써 보라냥. 운은 기분 좋은 습관에 먼저 붙는다냥.")
     tale = _pick(TALES["date"], key, "date")
-    tip = f"이번 달엔 '{ideas[0]}' 하나만 실천해 보라냥. 보약은 한 번에 많이보다 꾸준히가 좋다냥."
+    tip = f"이번 달엔 '{ideas[0]}' 하나만 해 보라냥."
     return {"id": "date", "icon": "🎐", "title": "함께 가면 좋은 일·데이트·개운", "summary": summary,
             "story": [core, para2, para3, tale], "tip": tip}
 
@@ -1388,12 +1384,10 @@ def _ch_flow(p1: _P, p2: _P, key: str) -> dict:
             summary = f"두 사람 다 '{LUCK_GROUP[g1][0]}'을 지나는 중 — 같은 고민을 나누는 동지의 시기다냥."
         else:
             summary = f"두 사람의 지금 계절 — {jo(n1, '은는')} {LUCK_GROUP[g1][0]}, {jo(n2, '은는')} {_nya(LUCK_GROUP[g2][0])}."
-        tip = ("같은 계절을 지날 땐 서로의 짐 무게를 잘 알아 주니, '오늘 하루 어땠어?'를 잊지 말라냥. 그 질문 하나가 10년을 같이 걷게 한다냥."
-               if same else
-               "서로의 대운 계절이 다를 땐 '요즘 네 계절은 어때?' 하고 물어봐 주라냥. 그 질문 하나가 10년을 같이 걷게 한다냥.")
+        tip = ("'오늘 하루 어땠어?' 한마디를 잊지 말라냥." if same else "'요즘 네 계절은 어때?' 하고 물어봐 주라냥.")
     else:
         summary = "두 사람이 서로 다른 출발선에서 계절을 맞는 시기 — 속도가 달라도 괜찮다냥."
-        tip = "한 사람이 아직 첫 계절을 기다리는 중이라면, 지금은 서로의 원래 모습을 알아 가는 데 집중하라냥."
+        tip = "지금은 서로의 원래 모습을 알아 가는 데 집중하라냥."
     return {"id": "flow", "icon": "🧭", "title": "앞으로의 흐름", "summary": summary, "story": paras, "tip": tip}
 
 
@@ -1549,6 +1543,431 @@ def _closing(p1: _P, p2: _P, res: dict, chapters: list[dict]) -> list[str]:
 
 
 # =============================================================================
+# 짧고 유쾌한 핵심 (기본 화면용) — 길이 제한은 _fit 이 지킨다
+# =============================================================================
+_EH = "木火土金水"
+
+SAME_WIT = {
+    0: "같이 쑥쑥 자라는 나무 친구다냥. 다만 둘 다 고집 뿌리가 깊어서 '내 말이 맞아' 대결은 늘 무승부다냥.",
+    1: "같이 있으면 분위기가 화르륵 불꽃놀이다냥. 다만 동시에 타오르면 말싸움도 활활, 소화기는 냥이가 들고 있겠다냥.",
+    2: "바위처럼 든든한 듀오다냥. 다만 둘 다 꿈쩍을 안 해서 '네가 먼저 연락해'가 사흘 갈 수도 있다냥.",
+    3: "말이 칼같이 착착 통한다냥. 다만 둘 다 정확해서 맞춤법 지적 배틀이 열릴 수 있다냥.",
+    4: "대화가 물 흐르듯 술술~ 다만 둘 다 생각이 많아서 '저녁 뭐 먹지'로 30분 회의 가능성 있다냥.",
+}
+SAME_SHORT = {0: "같이 쑥쑥 크는데, '내 말이 맞아' 대결은 늘 무승부다냥.",
+              1: "같이 있으면 화르륵 불꽃놀이, 소화기는 냥이가 든다냥.",
+              2: "든든함은 두 배인데, '네가 먼저 연락해'가 사흘 간다냥.",
+              3: "말이 칼같이 통하는데, 맞춤법 배틀도 칼같이 열린다냥.",
+              4: "대화가 술술 흐르는데, '저녁 뭐 먹지' 회의는 30분 걸린다냥."}
+WONJIN_SHORT = {
+    frozenset((0, 7)): "쥐는 양 뿔이 싫다", frozenset((1, 6)): "소는 노는 말이 밉다",
+    frozenset((2, 9)): "호랑이는 닭 부리가 밉다", frozenset((3, 8)): "토끼는 원숭이가 얄밉다",
+    frozenset((4, 11)): "용은 돼지 얼굴이 싫다", frozenset((5, 10)): "뱀은 개 짖는 소리에 놀란다",
+}
+FIX_SHORT = {
+    "천간충": "'누가 옳아' 대신 '뭐가 걱정돼'다냥", "극": "지적 말고 '어떻게 하고 싶어?'다냥",
+    "충": "불 끄는 시간만 정하면 평화다냥", "원진": "서운함은 그날 한 문장으로 털기다냥",
+    "형": "담당표 한 장이면 재방송 끝이다냥", "해": "'이런 뜻이야?' 한 번 더 묻기다냥",
+    "파": "공유 달력 하나면 반은 해결이다냥", "귀문": "피곤한 밤엔 중요한 얘기 금지다냥",
+    "띠": "집안 일은 각자 자기 집 담당이다냥", "월지": "바쁜 주간은 미리 예고하기다냥",
+    "기신": "각자 충전 시간은 당당하게 갖기다냥", "권태": "석 달에 한 번 처음 해 보는 데이트다냥",
+}
+
+
+def _fit(cands, hi: int, lo: int = 0) -> str:
+    """후보 중 lo~hi 글자에 맞는 첫 문장. 없으면 hi 이하 중 가장 긴 것, 그것도 없으면 가장 짧은 것."""
+    cands = [c for c in cands if c]
+    for c in cands:
+        if lo <= len(c) <= hi:
+            return c
+    under = [c for c in cands if len(c) <= hi]
+    if under:
+        return max(under, key=len)
+    return min(cands, key=len)
+
+
+def _el_stem(p: _P) -> str:
+    return f"{STEMS[p.ds]}{_EH[p.de]}"
+
+
+def _stem_pair_roles(p1: _P, p2: _P):
+    """(종류, 주는/이끄는 쪽, 받는/따르는 쪽)."""
+    k = _stem_kind(p1.ds, p2.ds)
+    if k in ("생12", "극12"):
+        return k[:1], p1, p2
+    if k in ("생21", "극21"):
+        return k[:1], p2, p1
+    if k == "충":
+        a, b = (p1, p2) if (p2.de - p1.de) % 5 == 2 else (p2, p1)
+        return "충", a, b
+    return k, p1, p2
+
+
+def _same_label(p1: _P, p2: _P) -> str:
+    if p1.ds == p2.ds:
+        return _el_stem(p1)
+    return f"{_el_stem(p1)}·{_el_stem(p2)}"
+
+
+def _nature_short(p1: _P, p2: _P) -> list:
+    k, a, b = _stem_pair_roles(p1, p2)
+    if k == "같음":
+        lab = _same_label(p1, p2)
+        return [f"둘 다 {jo(lab, '이라')} {SAME_SHORT[p1.de]}"]
+    if k == "생":
+        return [f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 키우는 상생이라 {jo(a.name, '이가')} 퍼 주는 맛에 산다냥.",
+                f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 키우는 상생이라 주는 맛, 받는 맛이 있다냥."]
+    if k == "극":
+        return [f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 다듬는 사이라 {jo(a.name, '이가')} 핸들, {jo(b.name, '이가')} 조수석이다냥.",
+                f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 다듬는 사이라 핸들과 조수석이 정해져 있다냥."]
+    if k == "충":
+        return [f"{jo(_el_stem(p1), '와과')} {jo(_el_stem(p2), '이가')} 마주 선 천간충이라 토론만 하면 불꽃이 튄다냥."]
+    return [f"{jo(_el_stem(p1), '와과')} {jo(_el_stem(p2), '이가')} 천간합이라 자석처럼 철컥 붙는다냥."]
+
+
+def _top_core(p1: _P, p2: _P, res: dict) -> str:
+    score, grade = res.get("score", 0), res.get("grade", "")
+    g = f" '{grade}'" if grade else ""
+    if score >= 85:
+        heads = [f"{score}점{g}, 냥이 수염이 바짝 섰다냥.", f"{score}점, 냥이 수염이 바짝 섰다냥."]
+    elif score >= 72:
+        heads = [f"{score}점{g}, 서로 힘이 되는 쪽이 확실히 많다냥.", f"{score}점, 힘이 되는 쪽이 더 많다냥."]
+    elif score >= 58:
+        heads = [f"{score}점{g}, 달라서 배울 게 많은 사이다냥.", f"{score}점, 달라서 배울 게 많다냥."]
+    else:
+        heads = [f"{score}점이지만 겁먹지 마라냥, 설명서만 읽으면 되는 사이다냥.", f"{score}점, 설명서만 읽으면 되는 사이다냥."]
+    cands = [h + " " + t for h in heads for t in _nature_short(p1, p2)]
+    return _fit(cands, 120)
+
+
+def _ch_core(cid: str, p1: _P, p2: _P, res: dict) -> str:
+    n1, n2 = p1.name, p2.name
+    c = []
+    if cid == "nature":
+        k, a, b = _stem_pair_roles(p1, p2)
+        if k == "같음":
+            c.append(f"둘 다 {jo(_same_label(p1, p2), '이라')} {SAME_WIT[p1.de]}")
+        elif k == "생":
+            c += [f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 키우는 상생이라 {jo(a.name, '이가')} 퍼 주고 {jo(b.name, '이가')} 받는 구조다냥. "
+                  f"받는 쪽의 '고마워' 한마디가 이 집 월세다냥.",
+                  f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 키우는 상생이라 한쪽이 퍼 주는 구조다냥. '고마워' 한마디가 이 집 월세다냥."]
+        elif k == "극":
+            c += [f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 꽉 잡는 사이라 {jo(a.name, '이가')} 핸들, {jo(b.name, '이가')} 조수석이다냥. "
+                  f"핸들 쥔 쪽이 '여기서 좌회전?' 하고 물어만 봐도 승차감이 확 좋아진다냥.",
+                  f"{jo(_el_stem(a), '이가')} {jo(_el_stem(b), '을를')} 꽉 잡는 사이라 핸들과 조수석이 정해져 있다냥. 핸들 쥔 쪽이 물어만 봐도 승차감이 좋아진다냥."]
+        elif k == "충":
+            c.append(f"{jo(_el_stem(p1), '와과')} {jo(_el_stem(p2), '이가')} 정면으로 마주 선 천간충이라 회의만 하면 불꽃이 팍팍 튄다냥. "
+                     f"대신 그 불꽃 덕에 서로 시야가 두 배로 넓어진다냥.")
+        else:
+            c.append(f"{jo(_el_stem(p1), '와과')} {jo(_el_stem(p2), '이가')} 천간합이라 자석처럼 철컥 붙는 사이다냥. "
+                     f"너무 붙어 다녀서 친구들이 '둘이 또 같이 왔어?' 할 수 있다냥.")
+    elif cid == "attraction":
+        k, d = _branch_kind(p1.yb, p2.yb)
+        t = f"{p1.animal}띠와 {p2.animal}띠" if p1.yb != p2.yb else f"둘 다 {p1.animal}띠"
+        c.append({
+            "육합": f"{jo(t, '은는')} 육합이라 첫 만남부터 '어디서 봤더라?' 모드다냥. 양가 어른들도 금방 '우리 애가~' 하며 친해진다냥.",
+            "삼합": f"{jo(t, '은는')} 삼합이라 만날수록 같은 편이 되는 팀플 체질이다냥. 첫 데이트보다 세 번째 데이트가 더 재밌다냥.",
+            "충": f"{jo(t, '은는')} 정면 충이라 첫 만남부터 번쩍, 스파크다냥. 확 반하거나 어리둥절하거나, 둘 중 하나는 확실하다냥.",
+            "원진": f"{jo(t, '은는')} 원진이라 괜히 얄미운데 자꾸 생각나는 사이다냥. 옛말로 '{WONJIN_SHORT.get(frozenset((p1.yb, p2.yb)), '')}' 급이니 귀엽게 봐 주라냥.",
+            "형": f"{jo(t, '은는')} 형이라 첫인상에 살짝 각이 진다냥. 모서리 조심, 대신 예의만 챙기면 오래가는 각이다냥.",
+            "해": f"{jo(t, '은는')} 해라 '그 말이 그 뜻이 아니었는데~'가 가끔 나온다냥. 자막 켜고 대화하면 해결이다냥.",
+            "파": f"{jo(t, '은는')} 파라 약속 장소를 서로 다르게 알아듣는 해프닝이 예약돼 있다냥. 그것도 나중엔 웃긴 추억이다냥.",
+            "귀문": f"{jo(t, '은는')} 귀문이라 첫눈에 '이 사람 뭔가 있다' 촉이 찌릿 온다냥. 대신 기분 변화도 찌릿찌릿 다 느낀다냥.",
+            "같음": f"{jo(t, '이라')} 추억의 노래만 나오면 동시에 떼창하는 동창 케미다냥. 유행어도 같은 시절 거라 통역이 필요 없다냥.",
+            "무관": f"{jo(t, '은는')} 합도 충도 없는 담백한 첫인상이다냥. 진짜 승부는 마음의 안방 글자에서 갈린다냥.",
+        }[k])
+    elif cid == "room":
+        k, d = _branch_kind(p1.db, p2.db)
+        b = f"{BRANCHES[p1.db]}{BRANCHES[p2.db]}"
+        el = ELEMENTS[d.get("el", 0)]
+        c.append({
+            "육합": f"안방 글자 {jo(b, '이가')} 육합이라 문 닫으면 둘만의 세계, 딸깍 잠금이다냥. 옆에서 보면 꿀 떨어지는 소리가 들린다냥.",
+            "삼합": f"안방 글자 {jo(b, '은는')} 삼합({el}국)이라 같은 방향을 보는 동지다냥. 둘이 계획만 세우면 추진력이 부스터급이다냥.",
+            "충": f"안방 글자 {jo(b, '이가')} 충이라 한 명은 아침형, 한 명은 밤형일 확률이 높다냥. 불 끄는 시간으로 하루 한 번 줄다리기 각이다냥.",
+            "원진": f"안방 글자 {jo(b, '이가')} 원진이라 '왜 치약을 중간부터 짜?'로 삐질 수 있다냥. 그래도 아플 땐 제일 먼저 약 챙겨 주는 사이다냥.",
+            "형": f"안방 글자 {jo(b, '이가')} 형이라 같은 주제로 투닥투닥, 시즌 2·3까지 간다냥. 담당만 정하면 시리즈 조기 종영이다냥.",
+            "해": f"안방 글자 {jo(b, '이가')} 해라 '알아서 해'를 진짜 알아서 해 버리는 오해 주의다냥. 한 번 더 물어보면 끝나는 문제다냥.",
+            "파": f"안방 글자 {jo(b, '이가')} 파라 세워 둔 계획표가 자주 찢어진다냥. 공유 달력 하나면 반은 다시 붙는다냥.",
+            "귀문": f"안방 글자 {jo(b, '이가')} 귀문이라 말 안 해도 기분을 척척 안다냥. 대신 둘 다 피곤하면 예민 레이더가 삐삐 울린다냥.",
+            "같음": f"둘 다 안방 글자가 {jo(BRANCHES[p1.db], '이라')} 쌍둥이 방이다냥. 같은 취향, 같은 이불 각도, 같은 고집까지 세트 구성이다냥.",
+            "무관": f"안방 글자 {BRANCHES[p1.db]}·{jo(BRANCHES[p2.db], '은는')} 합도 충도 없는 담백한 사이다냥. 인테리어는 지금부터 둘이 고르면 된다냥.",
+        }[k])
+    elif cid == "tonic":
+        def sup(me, other):
+            f = _fills(me, other)
+            if f["yong_rich"]:
+                return me.yong, other.weight(me.yong)
+            plain = [e for e in f["filled"] if e != me.gi]
+            return (plain[0], other.weight(plain[0])) if plain else None
+        s1, s2 = sup(p1, p2), sup(p2, p1)
+        if s1 and s2:
+            c += [f"{n1}에겐 {n2}의 {s1[0]} {_pct(s1[1])}, {n2}에겐 {n1}의 {s2[0]} {jo(_pct(s2[1]), '이가')} 보약이다냥. 서로가 서로의 걸어 다니는 영양제다냥.",
+                  f"서로의 창고에 서로의 보약({s1[0]}·{s2[0]})이 들어 있다냥. 둘이 서로의 걸어 다니는 영양제다냥."]
+        elif s1 or s2:
+            giver, taker, sp = (p2, p1, s1) if s1 else (p1, p2, s2)
+            c += [f"{giver.name}의 {sp[0]} {jo(_pct(sp[1]), '이가')} {taker.name}에겐 딱 맞는 보약이다냥. {jo(taker.name, '은는')} 고마운 만큼 맛있는 거 사 주면 정산 끝이다냥.",
+                  f"{giver.name}의 {sp[0]} 기운이 상대에겐 딱 맞는 보약이다냥. 고마운 만큼 맛있는 거 사 주면 정산 끝이다냥."]
+        else:
+            yy = f"둘 다 보약이 {p1.yong}인데" if p1.yong == p2.yong else f"서로의 보약({p1.yong}·{p2.yong})이"
+            c.append(f"{yy} 상대 창고엔 넉넉하지 않다냥. 그러니 보약은 데이트에서 같이 사 먹는 걸로 하자냥, 냠냠.")
+    elif cid == "rhythm":
+        a, b = p1.scat, p2.scat
+        if a == "S" and b == "S":
+            c.append(f"둘 다 엔진이 센 {p1.strength}·{p2.strength} 조합이라 운전대 쟁탈전 주의다냥. 여행은 네가, 맛집은 내가, 구역만 나누면 평화다냥.")
+        elif a == "W" and b == "W":
+            c.append(f"둘 다 섬세한 {p1.strength}·{p2.strength} 조합이라 '네가 정해~' '아니 네가~' 무한 루프 주의다냥. 결정 마감일이 구세주다냥.")
+        elif {a, b} == {"S", "W"}:
+            st, wk = (p1, p2) if a == "S" else (p2, p1)
+            c.append(f"{st.name}({st.strength}){'이' if _last_sound(st.name)[0] else '가'} 엔진, {wk.name}({wk.strength}){'이' if _last_sound(wk.name)[0] else '가'} 내비다냥. 엔진은 과속 주의, 내비는 '여기서 우회전!'을 크게 외치기다냥.")
+        elif a == "M" and b == "M":
+            c.append("둘 다 중화라 시소가 딱 수평이다냥. 너무 평화로워서 가끔은 새 일 하나를 벌여야 심심하지 않다냥.")
+        else:
+            mid, oth = (p1, p2) if a == "M" else (p2, p1)
+            if oth.scat == "S":
+                c.append(f"{oth.name}({oth.strength}){'이' if _last_sound(oth.name)[0] else '가'} 엑셀, {mid.name}(중화){'이' if _last_sound(mid.name)[0] else '가'} 브레이크 담당이다냥. 둘이 합치면 승차감 좋은 드라이브다냥.")
+            else:
+                c.append(f"{mid.name}(중화){'이' if _last_sound(mid.name)[0] else '가'} 든든한 기둥, {oth.name}({oth.strength}){'이' if _last_sound(oth.name)[0] else '가'} 섬세한 창문이다냥. 기둥도 가끔 기대고 싶다는 거 잊지 말라냥.")
+        c.append(f"{jo(n1, '은는')} {p1.strength}, {jo(n2, '은는')} {p2.strength}이라 힘의 크기가 다르다냥. 오늘 누가 기댈 차례인지 가볍게 물어보면 된다냥.")
+    elif cid == "conflict":
+        k = _conflict_keys(p1, p2, res)
+        if not k:
+            c.append("크게 부딪히는 글자가 없다냥! 대신 너무 편해서 잠옷 차림 집 데이트만 무한 반복되는 '권태'를 조심하라냥.")
+        else:
+            c.append(_conflict_wit(k[0], p1, p2))
+    elif cid == "date":
+        y1, y2 = ELEMENTS.index(p1.yong), ELEMENTS.index(p2.yong)
+        col = ELEMENT_ADVICE[p1.yong]["색"].split("·")[0]
+        if y1 == y2:
+            c.append(f"둘 다 보약이 {jo(p1.yong, '이라')} {col} 커플템 하나만 맞춰도 개운 끝이다냥. 첫 코스는 {DATE_IDEAS[y1][0]}, 손은 꼭 잡고 가라냥.")
+        elif (y2 - y1) % 5 in (1, 4):
+            g, t = (p1, p2) if (y2 - y1) % 5 == 1 else (p2, p1)
+            ig, it_ = ELEMENTS.index(g.yong), ELEMENTS.index(t.yong)
+            c.append(f"{g.name}의 보약 {jo(g.yong, '이가')} {t.name}의 보약 {jo(t.yong, '을를')} 살리는 보약 릴레이다냥. "
+                     f"{DATE_IDEAS[ig][0]} 갔다가 {jo(DATE_IDEAS[it_][0], '으로')} 마무리하면 둘 다 충전 완료다냥.")
+            c.append(f"보약 {jo(g.yong, '이가')} {jo(t.yong, '을를')} 살리는 릴레이라 한 사람 좋은 곳이 둘 다 좋은 곳이다냥. 첫 코스는 {_nya(DATE_IDEAS[ig][0])}.")
+        else:
+            ctl = y1 if (y2 - y1) % 5 == 2 else y2
+            br = (ctl + 1) % 5
+            c.append(f"보약 {p1.yong}·{jo(p2.yong, '이가')} 상극이라 데이트 장소 고르기가 은근 밀당이다냥. "
+                     f"다리 역할 {ELEMENTS[br]} 기운의 {jo(DATE_IDEAS[br][0], '이라')}면 둘 다 웃는다냥.")
+            c.append(f"보약 {p1.yong}·{jo(p2.yong, '이가')} 상극이라 중간 다리 {ELEMENTS[br]} 기운이 필요하다냥. "
+                     f"{jo(DATE_IDEAS[br][0], '이라')}면 둘 다 웃는다냥.")
+    elif cid == "flow":
+        g1 = TEN_GOD_GROUP[p1.cur.stem_god] if p1.cur else None
+        g2 = TEN_GOD_GROUP[p2.cur.stem_god] if p2.cur else None
+        if g1 and g2 and g1 == g2:
+            c.append(f"둘 다 지금 '{LUCK_GROUP[g1][0]}'이라 퇴근 후 한숨 타이밍까지 똑같다냥. 서로의 '오늘 어땠어?'가 최고의 보약이다냥.")
+        elif g1 and g2:
+            c.append(f"{jo(n1, '은는')} '{LUCK_GROUP[g1][0]}', {jo(n2, '은는')} '{LUCK_GROUP[g2][0]}' 중이라 요즘 속도가 다를 수 있다냥. "
+                     f"마음이 식은 게 아니라 계절이 다른 거다냥.")
+            c.append(f"두 사람의 대운 계절이 달라 요즘 속도가 다를 수 있다냥. 마음이 식은 게 아니라 계절이 다른 거다냥.")
+        else:
+            c.append("한 사람은 아직 첫 대운이 오기 전이라 출발선이 다르다냥. 속도 차이는 귀엽게 봐 주고 서로의 원래 모습부터 알아 가자냥.")
+    return _fit(c, 110, 50)
+
+
+def _conflict_keys(p1: _P, p2: _P, res: dict) -> list:
+    out = []
+    sk = _stem_kind(p1.ds, p2.ds)
+    if sk == "충":
+        out.append("천간충")
+    elif sk in ("극12", "극21"):
+        out.append("극")
+    dk, _ = _branch_kind(p1.db, p2.db)
+    if dk in BRANCH_REL_SHORT:
+        out.append(dk)
+    for it in res.get("items", []):
+        nm, sc = str(it.get("항목", "")), it.get("점수", 0)
+        if sc < 0 and nm.startswith("띠") and _branch_kind(p1.yb, p2.yb)[0] in BRANCH_REL_SHORT:
+            out.append("띠")
+        elif sc < 0 and nm.startswith("월지") and _branch_kind(p1.mb, p2.mb)[0] in BRANCH_REL_SHORT:
+            out.append("월지")
+    if _fills(p1, p2)["gi_rich"] or _fills(p2, p1)["gi_rich"]:
+        out.append("기신")
+    return out
+
+
+def _conflict_wit(k: str, p1: _P, p2: _P) -> str:
+    b = f"{BRANCHES[p1.db]}{BRANCHES[p2.db]}"
+    if k == "천간충":
+        return (f"싸움 주제는 늘 '누가 옳냐'다냥({_el_stem(p1)}↔{_el_stem(p2)} 천간충). "
+                f"판결은 냥이도 안 내니까 '뭐가 걱정됐어?'부터 묻자냥.")
+    if k == "극":
+        _, a, t = _stem_pair_roles(p1, p2)
+        return (f"{_el_stem(a)}의 {a.name} 조언이 {t.name}에겐 잔소리 ASMR로 들릴 수 있다냥. "
+                f"부탁형 말투로 바꾸면 볼륨이 확 줄어든다냥.")
+    if k == "띠":
+        kind, _ = _branch_kind(p1.yb, p2.yb)
+        return (f"{p1.animal}띠·{p2.animal}띠 {jo(kind, '이라')} 명절에 미묘한 공기가 흐를 수 있다냥. "
+                f"각자 자기 집 담당하면 깔끔하게 해결이다냥.")
+    if k == "월지":
+        kind, _ = _branch_kind(p1.mb, p2.mb)
+        return (f"월지 {BRANCHES[p1.mb]}{BRANCHES[p2.mb]} {jo(kind, '이라')} '일이 먼저야, 내가 먼저야?' 질문이 나올 수 있다냥. "
+                f"바쁜 주간은 미리 예고하자냥.")
+    if k == "기신":
+        who = p1 if _fills(p1, p2)["gi_rich"] else p2
+        oth = p2 if who is p1 else p1
+        return (f"{who.name}에겐 {oth.name}의 {who.gi} 기운이 살짝 과식이라 붙어 있으면 이유 없이 방전된다냥. "
+                f"각자 충전 시간은 사랑이 식은 게 아니다냥.")
+    return {
+        "충": f"안방 {jo(b, '이가')} 충이라 에어컨 온도, 불 끄는 시간으로 투닥투닥이다냥. 각자 구역만 정하면 휴전 협정 체결이다냥.",
+        "원진": f"안방 {jo(b, '이가')} 원진이라 서운함이 적금처럼 차곡차곡 쌓인다냥. 만기 전에 그날그날 인출하는 게 비결이다냥.",
+        "형": f"안방 {jo(b, '이가')} 형이라 같은 싸움 재방송 주의보다냥. 담당표 한 장 붙이면 재방송 편성이 끝난다냥.",
+        "해": f"안방 {jo(b, '이가')} 해라 말 한마디가 자동 번역 오류가 나기 쉽다냥. '이런 뜻이야?' 되묻기가 최고의 번역기다냥.",
+        "파": f"안방 {jo(b, '이가')} 파라 약속 시간과 장소가 삐끗삐끗 어긋난다냥. 공유 달력 하나면 싸움 절반이 증발한다냥.",
+        "귀문": f"안방 {jo(b, '이가')} 귀문이라 피곤한 밤엔 예민 레이더가 삐삐 울린다냥. 중요한 얘기는 아침 커피 다음으로 미루자냥.",
+    }[k]
+
+
+def _branch_line(kind: str, lab: str, d: dict, where: str) -> str:
+    """띠·월지·안방 한 줄 (점수 없이)."""
+    if where == "room":
+        return {
+            "육합": f"안방 {lab} 육합, 문 닫으면 둘만의 세계 딸깍이다냥",
+            "삼합": f"안방 {lab} 삼합({ELEMENTS[d.get('el', 0)]}국), 같은 꿈 꾸는 동지다냥",
+            "충": f"안방 {lab} 충, 아침형·밤형 줄다리기 각이다냥",
+            "원진": f"안방 {lab} 원진, 치약 짜는 법으로도 삐질 수 있다냥",
+            "형": f"안방 {lab} 형, 같은 싸움 재방송 주의다냥",
+            "해": f"안방 {lab} 해, 말 한마디 번역 오류 주의다냥",
+            "파": f"안방 {lab} 파, 약속이 삐끗삐끗 어긋난다냥",
+            "귀문": f"안방 {lab} 귀문, 텔레파시도 예민함도 공유다냥",
+            "같음": f"쌍둥이 안방 {lab[:1]}, 취향도 고집도 복붙이다냥",
+            "무관": f"안방 {lab[:1]}·{lab[1:]}, 합충 없는 담백한 원룸 두 개다냥",
+        }[kind]
+    if where == "tti":
+        return {
+            "육합": f"{lab} 육합, '어디서 봤더라?' 케미다냥",
+            "삼합": f"{lab} 삼합, 만날수록 같은 편이다냥",
+            "충": f"{lab} 충, 첫 만남부터 번쩍 스파크다냥",
+            "원진": f"{lab} 원진, 얄미운데 자꾸 생각난다냥",
+            "형": f"{lab} 형, 첫인상에 살짝 각이 진다냥",
+            "해": f"{lab} 해, 가끔 말에 자막 오류가 난다냥",
+            "파": f"{lab} 파, 약속 장소 엇갈림 해프닝 예약이다냥",
+            "귀문": f"{lab} 귀문, 촉이 찌릿찌릿 통한다냥",
+            "같음": f"{lab}, 추억의 노래 떼창 가능이다냥",
+            "무관": f"{lab}, 띠로는 담백한 첫인상이다냥",
+        }[kind]
+    return {
+        "육합": f"월지 {lab} 육합, 상대 가족과도 금방 친해진다냥",
+        "삼합": f"월지 {lab} 삼합, 집안 가치관이 한 방향이다냥",
+        "충": f"월지 {lab} 충, 일하는 스타일이 정반대다냥",
+        "원진": f"월지 {lab} 원진, 상대 집 문화가 살짝 낯설다냥",
+        "형": f"월지 {lab} 형, 생활 규칙 협상 테이블이 필요하다냥",
+        "해": f"월지 {lab} 해, 바쁜 사정 몰라 서운할 수 있다냥",
+        "파": f"월지 {lab} 파, 일정 엇갈림엔 공유 달력이다냥",
+        "귀문": f"월지 {lab} 귀문, 바쁜 철엔 서로 예민해진다냥",
+        "같음": f"월지가 둘 다 {lab[:1]}, 생활 습관 판박이다냥",
+        "무관": f"월지 {lab[:1]}·{lab[1:]}, 서로의 생활을 무난히 존중한다냥",
+    }[kind]
+
+
+def _stem_line(p1: _P, p2: _P) -> str:
+    k, a, b = _stem_pair_roles(p1, p2)
+    if k == "같음":
+        return f"둘 다 {_same_label(p1, p2)}, 말 안 해도 통하는 거울 친구다냥"
+    if k == "생":
+        return f"{_el_stem(a)}→{_el_stem(b)} 상생, {jo(a.name, '이가')} 퍼 주는 맛집이다냥"
+    if k == "극":
+        return f"{_el_stem(a)}→{_el_stem(b)} 상극, {a.name} 핸들·{b.name} 조수석이다냥"
+    if k == "충":
+        return f"{_el_stem(p1)}↔{_el_stem(p2)} 천간충, 토론 배틀 개막이다냥"
+    return f"{_el_stem(p1)}·{_el_stem(p2)} 천간합, 자석처럼 철컥이다냥"
+
+
+def _side_line(me: _P, other: _P) -> str:
+    f = _fills(me, other)
+    if f["yong_rich"]:
+        return f"{jo(other.name, '이가')} {me.name}의 보약 {jo(me.yong, '을를')} {_pct(other.weight(me.yong))}나 쥐고 있다냥"
+    plain = [e for e in f["filled"] if e != me.gi]
+    if plain:
+        return f"{jo(other.name, '이가')} {me.name}의 빈칸 {jo(plain[0], '을를')} 채워 준다냥"
+    if f["gi_rich"] or me.gi in f["filled"]:
+        return f"{other.name}의 {me.gi} 기운이 {me.name}에겐 살짝 과식이다냥"
+    return f"{me.name}의 보약 {jo(me.yong, '은는')} 둘이 밖에서 채우자냥"
+
+
+def _item_line(item: dict, p1: _P, p2: _P) -> str:
+    name, sc = str(item.get("항목", "")), int(item.get("점수", 0))
+    tail = f"({_pt(sc)})"
+    if name == "일간 관계":
+        body = _stem_line(p1, p2)
+    elif name.startswith("일지"):
+        k, d = _branch_kind(p1.db, p2.db)
+        body = _branch_line(k, f"{BRANCHES[p1.db]}{BRANCHES[p2.db]}", d, "room")
+    elif name.startswith("띠"):
+        k, d = _branch_kind(p1.yb, p2.yb)
+        lab = f"같은 {p1.animal}띠" if k == "같음" else f"{p1.animal}띠·{p2.animal}띠"
+        body = _branch_line(k, lab, d, "tti")
+    elif name.startswith("월지"):
+        k, d = _branch_kind(p1.mb, p2.mb)
+        body = _branch_line(k, f"{BRANCHES[p1.mb]}{BRANCHES[p2.mb]}", d, "month")
+    elif "입장" in name:
+        me, other = (p1, p2) if name.startswith("1번") else (p2, p1)
+        body = _side_line(me, other)
+    else:
+        body = f"{name.replace('1번', p1.name).replace('2번', p2.name)}, 냥이도 고개를 끄덕였다냥"
+    return _fit([body + tail, body], 60)
+
+
+def _one_liners(p1: _P, p2: _P, res: dict) -> dict:
+    items = res.get("items", [])
+    pos = [it for it in items if it.get("점수", 0) > 0]
+    neg = [it for it in items if it.get("점수", 0) < 0]
+
+    def short_of(it, good: bool) -> list:
+        name = str(it.get("항목", ""))
+        if name == "일간 관계":
+            k, a, b = _stem_pair_roles(p1, p2)
+            if k == "같음":
+                return [f"둘 다 {_same_label(p1, p2)}, 말 안 해도 통한다냥", f"둘 다 {_EH[p1.de]} 기운, 말 안 해도 통한다냥"]
+            if k == "생":
+                return [f"{_el_stem(a)}→{_el_stem(b)}, {jo(a.name, '이가')} 퍼 주는 맛집이다냥", f"{_el_stem(a)}→{_el_stem(b)} 상생, 퍼 주는 맛집이다냥"]
+            if k == "합":
+                return [f"{_el_stem(p1)}·{_el_stem(p2)} 천간합, 자석처럼 철컥이다냥"]
+            if k == "충":
+                return [f"{_el_stem(p1)}↔{_el_stem(p2)} 충, 토론하면 불꽃 팍팍이다냥"]
+            return [f"{a.name}의 조언이 잔소리로 들릴 때다냥", f"{_el_stem(a)}→{_el_stem(b)}, 조언이 잔소리로 들릴 때다냥"]
+        if name.startswith("일지"):
+            k, d = _branch_kind(p1.db, p2.db)
+            return [_branch_line(k, f"{BRANCHES[p1.db]}{BRANCHES[p2.db]}", d, "room")]
+        if name.startswith("띠"):
+            k, d = _branch_kind(p1.yb, p2.yb)
+            lab = f"같은 {p1.animal}띠" if k == "같음" else f"{p1.animal}띠·{p2.animal}띠"
+            return [_branch_line(k, lab, d, "tti"), _branch_line(k, f"{BRANCHES[p1.yb]}{BRANCHES[p2.yb]}띠", d, "tti")]
+        if name.startswith("월지"):
+            k, d = _branch_kind(p1.mb, p2.mb)
+            return [_branch_line(k, f"{BRANCHES[p1.mb]}{BRANCHES[p2.mb]}", d, "month")]
+        if "입장" in name:
+            me, other = (p1, p2) if name.startswith("1번") else (p2, p1)
+            if good:
+                return [f"{jo(other.name, '은는')} {me.name}의 걸어 다니는 {me.yong} 보약이다냥",
+                        f"{jo(other.name, '은는')} 걸어 다니는 {me.yong} 보약이다냥", "서로가 걸어 다니는 보약이다냥"]
+            return [f"{other.name}의 {me.gi} 기운, 가끔 과식이다냥", f"{me.gi} 기운 과식, 가끔 방전된다냥"]
+        return [f"{name.replace('1번', p1.name).replace('2번', p2.name)}, 냥이 인정이다냥"]
+
+    best = max(pos, key=lambda it: it["점수"]) if pos else None
+    worst = min(neg, key=lambda it: it["점수"]) if neg else None
+    good = _fit(short_of(best, True) + ["달라서 할 얘기가 끝없는 사이다냥"], 35) if best else "달라서 할 얘기가 끝없는 사이다냥"
+    if worst:
+        bad = _fit(short_of(worst, False) + ["작은 엇박자가 가끔 온다냥"], 35)
+    else:
+        bad = "싸울 일이 없어서 권태가 몰래 온다냥"
+    keys = _conflict_keys(p1, p2, res)
+    fix = FIX_SHORT[keys[0]] if keys else FIX_SHORT["권태"]
+    return {"찰떡": good, "삐걱": bad, "비결": fix}
+
+
+def _split_tale(ch: dict) -> dict:
+    """story 에서 커플 설화 문단을 빼 '설화'로 옮긴다."""
+    tales = {t for lst in TALES.values() for t in lst}
+    story = [p for p in ch["story"] if p not in tales]
+    found = [p for p in ch["story"] if p in tales]
+    ch["story"] = story
+    ch["설화"] = found[0] if found else ""
+    return ch
+
+
+# =============================================================================
 # 공개 함수
 # =============================================================================
 def build(r1, r2, res: dict, names: list) -> dict:
@@ -1576,11 +1995,17 @@ def build(r1, r2, res: dict, names: list) -> dict:
     ]
     if p1.cur is not None or p2.cur is not None:
         chapters.append(_ch_flow(p1, p2, key))
+    for ch in chapters:
+        _split_tale(ch)
+        ch["핵심"] = _ch_core(ch["id"], p1, p2, res)
     items = []
     for it in res.get("items", []):
         nm = str(it.get("항목", "")).replace("1번", p1.name).replace("2번", p2.name)
-        items.append({"항목": nm, "점수": int(it.get("점수", 0)), "이야기": _item_story(it, p1, p2)})
+        items.append({"항목": nm, "점수": int(it.get("점수", 0)), "이야기": _item_story(it, p1, p2),
+                      "한줄": _item_line(it, p1, p2)})
     return {
+        "핵심": _top_core(p1, p2, res),
+        "한줄": _one_liners(p1, p2, res),
         "제목": _title(p1, p2),
         "서문": _intro(p1, p2, res, key),
         "장": chapters,

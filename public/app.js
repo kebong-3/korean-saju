@@ -38,26 +38,44 @@ function md(src, auto = false) {
   return html + (list ? "</ul>" : "");
 }
 
-// ───────────────────────── 냥이 도사 이야기 블록 (규칙 기반 서술형 — 서버 sajunyang/story_*.py)
-const paras = (arr) => (arr || []).filter(Boolean).map((x) => `<p>${esc(x).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")}</p>`).join("");
-function chapter(ch, open = false) {
-  if (!ch || !ch.story?.length) return "";
-  return `<details class="chap" ${open ? "open" : ""}><summary><i>${ch.icon || "🐾"}</i><div><b>${esc(ch.title)}</b>${ch.summary ? `<small>${esc(ch.summary)}</small>` : ""}</div></summary>
-    <div class="chap-body">${paras(ch.story)}${ch.tip ? `<div class="chap-tip"><span data-nyang="wink" data-size="38"></span><div><small>냥이 도사의 한마디</small>${esc(ch.tip)}</div></div>` : ""}</div></details>`;
+// ───────────────────────── 냥이 도사 이야기 블록 (규칙 기반 — 서버 sajunyang/story_*.py)
+// 원칙: 기본은 짧고 유쾌한 '핵심'만. 자세히 풀이·냥이 설화는 눌렀을 때만 펼친다.
+const paras = (arr) => (Array.isArray(arr) ? arr : [arr]).filter(Boolean).map((x) => `<p>${esc(x).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")}</p>`).join("");
+let TG = 0;
+/** 버튼 여러 개 + 펼침 상자. items: [[라벨, html], ...]  group이면 하나만 열린다 */
+function moreSet(items, group = false) {
+  items = items.filter(([, h]) => h);
+  if (!items.length) return "";
+  const g = group ? "g" + (++TG) : "";
+  const ids = items.map(() => "tg" + (++TG));
+  return `<div class="more-row">${items.map(([l], i) => `<button type="button" class="more-btn" data-tg="${ids[i]}" ${g ? `data-group="${g}"` : ""}>${l}</button>`).join("")}</div>
+    ${items.map(([, h], i) => `<div class="more-box" id="${ids[i]}" ${g ? `data-group="${g}"` : ""} hidden>${h}</div>`).join("")}`;
 }
-function storyCard(title, intro, mood = "happy", more = "") {
+const tipBox = (tip, label = "냥이 도사의 한마디") => (tip ? `<div class="chap-tip"><span data-nyang="wink" data-size="38"></span><div><small>${label}</small>${esc(tip)}</div></div>` : "");
+const taleHtml = (t) => (t ? `<div class="tale">${paras(t)}</div>` : "");
+function chapter(ch) {
+  if (!ch) return "";
+  const head = ch["핵심"] || ch.summary || "";
+  const body = ch["핵심"] ? `${tipBox(ch.tip)}${moreSet([["📖 자세히 풀이", paras(ch.story)], ["🏮 냥이 설화", taleHtml(ch["설화"])]])}`
+    : `${paras(ch.story)}${tipBox(ch.tip)}`;
+  return `<details class="chap"><summary><i>${ch.icon || "🐾"}</i><div><b>${esc(ch.title)}</b>${head ? `<small>${esc(head)}</small>` : ""}</div></summary>
+    <div class="chap-body">${body}</div></details>`;
+}
+function storyCard(title, intro, mood = "happy") {
   if (!intro?.length) return "";
-  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="${mood}" data-size="58"></span><h2>${title}</h2></div>
-    <div class="story-text">${paras(intro)}</div>${more}</div>`;
+  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="${mood}" data-size="54"></span><h2>${title}</h2></div>
+    <div class="story-text">${paras(intro)}</div></div>`;
 }
-/** 첫 n문단만 보여주고 나머지는 '이어서 듣기'로 접는다 */
-function foldParas(arr, n = 2, label = "이야기 이어서 듣기") {
-  if (!arr?.length) return "";
-  if (arr.length <= n) return paras(arr);
-  return paras(arr.slice(0, n)) + `<details class="fold"><summary>${label} ▾</summary>${paras(arr.slice(n))}</details>`;
+/** 핵심 말풍선 카드 + (선택) 더 보기 버튼들 */
+function punchCard(title, punch, mood = "happy", extras = []) {
+  if (!punch) return "";
+  return `<div class="card punch"><div class="say"><span class="who" data-nyang="${mood}" data-size="54"></span>
+    <div class="bubble"><small class="sub">${title}</small><br>${esc(punch)}</div></div>${moreSet(extras)}</div>`;
 }
+const oneLiners = (obj, icons = {}) => (obj ? `<div class="one-grid">${Object.entries(obj).map(([k, v]) =>
+  `<div class="one"><b>${icons[k] || "🐾"} ${esc(k)}</b><span>${esc(v)}</span></div>`).join("")}</div>` : "");
 
-// ───────────────────────── 바텀시트
+// ───────────────────────── 바텀시트// ───────────────────────── 바텀시트
 function openSheet(html) {
   $("#sheet-content").innerHTML = html;
   paintNyang($("#sheet-content"));
@@ -86,6 +104,16 @@ document.addEventListener("click", (e) => {
   if (t) { e.preventDefault(); openTerm(t.dataset.t); return; }
   const a = e.target.closest("[data-ask]");
   if (a) { closeSheet(); askNyang(a.dataset.ask); return; }
+  const tg = e.target.closest("[data-tg]");
+  if (tg) {
+    const box = document.getElementById(tg.dataset.tg);
+    if (!box) return;
+    const open = box.hidden;
+    if (tg.dataset.group) $$(`[data-group="${tg.dataset.group}"]`).forEach((el) => { if (el.classList.contains("more-box")) el.hidden = true; else el.classList.remove("on"); });
+    box.hidden = !open; tg.classList.toggle("on", open);
+    if (open) paintNyang(box);
+    return;
+  }
   const rd = e.target.closest("[data-read]");
   if (rd) { e.preventDefault(); closeSheet(); readFrom(rd.dataset.read, rd.dataset.day); return; }
   const go = e.target.closest("[data-go]");
@@ -177,12 +205,17 @@ function renderAll() {
 function ring(score, label, cls = "", color = "var(--pink)") {
   return `<div class="ring ${cls}" style="--p:${score};--c:${color}"><div><span><b>${score}</b><small>${esc(label)}</small></span></div></div>`;
 }
-function todayStory(st) {
-  if (!st?.story?.length) return "";
-  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="normal" data-size="58"></span>
-      <div><small class="sub">냥이 도사의 오늘 이야기</small><h2>${esc(st["제목"])}</h2></div></div>
-    <div class="story-text">${foldParas(st.story, 2)}</div>
-    ${st.tip ? `<div class="chap-tip"><span data-nyang="wink" data-size="38"></span><div><small>오늘의 한마디</small>${esc(st.tip)}</div></div>` : ""}</div>`;
+const TODAY_IC = { 일: "💼", 돈: "💰", 연애: "💗", 관계: "🤝", 컨디션: "🌿", 시간: "⏰" };
+function todayStory(st, label = "냥이 도사의 오늘 한마디") {
+  if (!st) return "";
+  const punch = st["핵심"] || st.story?.[0] || "";
+  const dom = st["분야"] ? moreSet(Object.entries(st["분야"]).map(([k, v]) => [`${TODAY_IC[k] || "🐾"} ${k}`, `<p>${esc(v)}</p>`]), true) : "";
+  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="normal" data-size="54"></span>
+      <div><small class="sub">${label}</small><h2>${esc(st["제목"])}</h2></div></div>
+    <p class="punch-text">${esc(punch)}</p>
+    ${dom ? `<p class="sub" style="margin:8px 0 6px">궁금한 분야를 콕 눌러 봐 👇</p>${dom}` : ""}
+    ${tipBox(st.tip, "오늘의 한마디")}
+    ${moreSet([["📖 자세히 풀이", paras(st["핵심"] ? st.story : st.story?.slice(1))], ["🏮 냥이 설화", taleHtml(st["설화"])]])}</div>`;
 }
 function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
@@ -242,7 +275,7 @@ function renderLuck() {
     const cls = y["좋은달"].includes(m["월"]) ? "good" : y["조심할달"].includes(m["월"]) ? "bad" : "";
     return `<div class="mon ${cls}"><div class="m">${m["월"]}월</div><div class="gz">${esc(m["절기"])} ${esc(m["시작"])}~ · ${esc(m["간지"])}</div>
       <span class="s">${m["점수"]}</span><div class="track"><div class="fill" style="width:${m["점수"]}%"></div></div>
-      <p>${esc(SY["월"]?.[m["월"]] || m["한마디"])}</p><p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
+      <p>${esc(SY["월핵심"]?.[m["월"]] || m["한마디"])}</p>${SY["월"]?.[m["월"]] ? moreSet([["더 보기", `<p>${esc(SY["월"][m["월"]])}</p>`]]) : ""}<p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
   }).join("");
   $("#tab-luck").innerHTML = `
     <div class="segtabs" role="tablist"><button data-sub="cal" type="button">운세 달력</button><button data-sub="new" type="button">${y["연도"]} 신년</button><button data-sub="month" type="button">월별 운세</button><button data-sub="life" type="button">평생 총운</button></div>
@@ -255,17 +288,17 @@ function renderLuck() {
           <div class="sub">${chip("세운")} 12운성 ${chip(y["12운성"])}</div></div></div>
         <div class="say" style="margin-top:14px"><span class="who" data-nyang="wink" data-size="54"></span><div class="bubble">${T(y["총평"])}</div></div>
       </div>
-      ${storyCard(`${y["연도"]}년, 냥이 도사의 이야기`, SY["서문"], "wink")}
+      ${punchCard(`${y["연도"]}년 한 줄 요약`, SY["핵심"], "wink", [["📖 자세히 풀이", paras(SY["서문"])], ["🐾 마무리", paras(SY["맺음"])], ["🏮 냥이 설화", taleHtml(SY["설화"])]])}
       <div class="card"><h2>분야별 운세</h2><div class="dom">
         ${Object.entries(y["분야"]).map(([k, v]) => { const row = `<div class="dom-row"><span class="ic">${DOM_IC[k]}</span><span class="n">${k}</span>
           <div class="track"><div class="fill" style="width:${v}%"></div></div><span class="v">${v}</span></div>`;
-          return SY["분야"]?.[k]?.length ? `<details class="dom-story"><summary>${row}</summary><div class="story-text">${paras(SY["분야"][k])}</div></details>` : row; }).join("")}</div>
+          const short = SY["분야핵심"]?.[k];
+          return short || SY["분야"]?.[k]?.length ? `<details class="dom-story"><summary>${row}</summary><div class="story-text">${short ? `<p>${esc(short)}</p>${moreSet([["📖 더 자세히", paras(SY["분야"]?.[k])]])}` : paras(SY["분야"][k])}</div></details>` : row; }).join("")}</div>
         ${SY["분야"] ? `<p class="sub" style="margin:10px 0 0">분야를 누르면 냥이 도사가 자세히 이야기해 준다냥 👆</p>` : ""}
         <p class="sub" style="margin:12px 0 0">점수는 올해 기운이 내 ${chip("용신")}과 맞는지, 원국과 ${chip("합")}·${chip("충")}이 생기는지로 계산한 '순풍/역풍' 지표다냥.</p></div>
       <div class="card"><h2>냥이의 ${y["연도"]}년 조언</h2><ul class="tips">${y["조언"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>
         ${y["작용"].length ? `<h3 style="margin-top:16px">원국과 만나는 작용</h3><div class="chips">${y["작용"].map((x) => `<span class="chip">${T(x, true)}</span>`).join("")}</div>` : ""}
         <p class="sub" style="margin:14px 0 0">좋은 달 <b>${y["좋은달"].join("·")}월</b> · 살살 갈 달 <b>${y["조심할달"].join("·")}월</b></p></div>
-      ${storyCard("한 해를 마무리하며", SY["맺음"], "happy")}
       <button class="btn lav wide" type="button" data-ask="${y["연도"]}년 내 운세를 연애·일·돈으로 나눠서 자세히 풀어줘">💬 냥이에게 ${y["연도"]}년 더 물어보기</button>
     </div>
     <div data-pane="month" hidden>
@@ -280,13 +313,14 @@ function renderLuck() {
         <div class="say" style="margin-top:10px"><span class="who" data-nyang="happy" data-size="54"></span>
           <div class="bubble">앞으로 가장 크게 피어나는 시기는 <b>${life["전성기"]["나이"]}세(${life["전성기"]["시작"]}년~)</b> '${esc(life["전성기"]["테마"])}'다냥!
           ${life["현재"] ? `<br>지금은 ${life["현재"]["나이"]}세 대운 '${esc(life["현재"]["테마"])}'의 한가운데에 있다냥.` : ""}</div></div></div>
-      ${storyCard("냥이 도사가 읽은 너의 인생 지도", SL["서문"], "think")}
-      ${SL["지금"]?.length ? storyCard("지금, 그리고 앞으로 10년", SL["지금"], "wink") : ""}
+      ${SL["핵심"] ? punchCard("인생 지도 한 줄 요약", SL["핵심"], "think", [["📖 자세히 풀이", paras(SL["서문"])], ["🌟 전성기 이야기", paras(SL["전성기"])], ["🏮 냥이 설화", taleHtml(SL["설화"])]])
+        : storyCard("냥이 도사가 읽은 너의 인생 지도", SL["서문"], "think")}
+      ${SL["지금핵심"] ? punchCard("지금, 그리고 앞으로 10년", SL["지금핵심"], "wink", [["📖 자세히 풀이", paras(SL["지금"])]]) : storyCard("지금, 그리고 앞으로 10년", SL["지금"], "wink")}
       ${SL["대운"]?.length ? `<div class="card"><h2>📜 대운 이야기 — 10년마다 바뀌는 인생의 계절</h2><div class="chaps">${SL["대운"].map((x, i) => {
         const cur = life["대운"][i]?.["현재"];
-        return chapter({ icon: cur ? "⭐" : "🍂", title: `${x["나이"]}세 ${x["간지"]} · ${x["제목"]}`, summary: cur ? "지금 지나고 있는 계절" : `${life["대운"][i]?.["시작"] ?? ""}년~ · ${life["대운"][i]?.["점수"] ?? ""}점`, story: x.story }, cur);
+        return chapter({ icon: cur ? "⭐" : "🍂", title: `${x["나이"]}세 ${x["간지"]} · ${x["제목"]}${cur ? " (지금)" : ""}`, summary: `${life["대운"][i]?.["시작"] ?? ""}년~ · ${life["대운"][i]?.["점수"] ?? ""}점`, "핵심": x["핵심"], story: x.story, "설화": x["설화"] });
       }).join("")}</div></div>` : ""}
-      ${storyCard("너의 전성기", SL["전성기"], "happy")}
+      ${SL["핵심"] ? "" : storyCard("너의 전성기", SL["전성기"], "happy")}
       <div class="card"><h2>대운 한눈에 보기</h2><div class="dw-list">${life["대운"].map((p) => `<div class="dw ${p["현재"] ? "now" : ""}">
         <div class="age">${p["나이"]}세</div><div class="gz">${esc(p["간지"])}</div><div>${p["점수"]}점</div><div class="th">${esc(p["테마"])}<br>${T(p["십성"], true)}</div></div>`).join("")}</div></div>
       <div class="card"><h2>앞으로 10년</h2><div class="dom">${f["앞으로10년"].map((x) => `<div class="dom-row" style="grid-template-columns:52px 1fr 34px">
@@ -357,10 +391,10 @@ function renderSaju() {
       <p class="sub" style="margin:12px 0 0">위는 ${chip("천간")}, 아래는 ${chip("지지")}. 글자 위아래 작은 글씨는 ${chip("십성")}과 ${chip("12운성")}, 맨 아래는 ${chip("지장간")}이다냥. 밑줄 친 말을 누르면 냥이가 설명해 준다냥!</p></div>
     <div class="card"><h2>${chip("오행")} 밸런스</h2><div class="bars">${bars}</div>
       <p class="sub" style="margin:12px 0 0">십성 비중 · ${Object.entries(d["십성 비중(%)"]).map(([k, v]) => `${chip(k)} ${v}%`).join(" · ")}</p></div>
-    ${SM["장"]?.length ? `${storyCard("냥이 도사가 펼친 너의 두루마리", SM["서문"], "think")}
-      <div class="card tint-lav"><div class="card-head"><h2>📜 사주 이야기 ${SM["장"].length}장</h2><span class="badge">눌러서 펼치기</span></div>
-        <div class="chaps">${SM["장"].map((c, i) => chapter(c, i === 0)).join("")}</div></div>
-      ${storyCard("두루마리를 말며", SM["맺음"], "happy")}`
+    ${SM["장"]?.length ? `${SM["핵심"] ? punchCard("냥이 도사의 첫인상", SM["핵심"], "think", [["📖 자세히 풀이", paras(SM["서문"])], ["🐾 마무리 인사", paras(SM["맺음"])]]) : storyCard("냥이 도사가 펼친 너의 두루마리", SM["서문"], "think")}
+      ${oneLiners(SM["한줄"], { 성격: "😺", 강점: "💪", 조심: "⚠️", 보약: "🍀" })}
+      <div class="card tint-lav"><div class="card-head"><h2>📜 사주 이야기 ${SM["장"].length}장</h2><span class="badge">궁금한 장을 콕</span></div>
+        <div class="chaps">${SM["장"].map((c) => chapter(c)).join("")}</div></div>`
     : `<div class="card tint-lav"><div class="card-head"><h2>냥이의 쉬운 해석</h2><span class="float" data-nyang="normal" data-size="50"></span></div><div class="easy">${easy}</div></div>`}
     <div class="card tint-mint" id="fit"><h2>🎯 나에게 맞는</h2><div class="grid2">
       <div class="fit full"><small>맞는 일</small><b>${esc(mt["직업"]["유형"])}</b><br>${esc(mt["직업"]["추천"])}<div class="sub">용신 분야: ${esc(mt["직업"]["용신분야"])}</div></div>
@@ -544,14 +578,16 @@ async function runCompat() {
         <div class="theme">${esc(r.names[0])} 💞 ${esc(r.names[1])}</div><div class="sub">${esc(r["띠"][0])}띠 · ${esc(r["띠"][1])}띠</div></div></div>
         <div class="say" style="margin-top:12px"><span class="who" data-nyang="${mood}" data-size="54"></span><div class="bubble">${say}</div></div>
         <p class="sub" style="margin:6px 0 0">${esc(r.names[0])}: ${T(r["1번"], true)}<br>${esc(r.names[1])}: ${T(r["2번"], true)}</p></div>
-      ${SC["서문"] ? storyCard(esc(SC["제목"] || "두 사람의 이야기"), SC["서문"], mood) : ""}
-      ${SC["장"]?.length ? `<div class="card tint-pink"><div class="card-head"><h2>💞 궁합 이야기 ${SC["장"].length}장</h2><span class="badge pink">눌러서 펼치기</span></div>
-        <div class="chaps">${SC["장"].map((c, i) => chapter(c, i === 0)).join("")}</div></div>` : ""}
+      ${SC["핵심"] ? punchCard(esc(SC["제목"] || "두 사람 한 줄 요약"), SC["핵심"], mood, [["📖 자세히 풀이", paras(SC["서문"])]]) : SC["서문"] ? storyCard(esc(SC["제목"] || "두 사람의 이야기"), SC["서문"], mood) : ""}
+      ${oneLiners(SC["한줄"], { 찰떡: "💞", 삐걱: "⚡", 비결: "🔑" })}
+      ${SC["장"]?.length ? `<div class="card tint-pink"><div class="card-head"><h2>💞 궁합 이야기 ${SC["장"].length}장</h2><span class="badge pink">궁금한 장을 콕</span></div>
+        <div class="chaps">${SC["장"].map((c) => chapter(c)).join("")}</div></div>` : ""}
       <div class="card"><h2>항목별 궁합</h2>${r.items.map((x, i) => `<div class="citem"><b>${T(x["항목"], true)}</b>
         <span class="pt ${x["점수"] > 0 ? "pos" : x["점수"] < 0 ? "neg" : ""}">${x["점수"] > 0 ? "+" : ""}${x["점수"]}</span>
-        <p class="sub" style="margin:2px 0 0">${T(x["해석"], true)}</p>${SC["항목"]?.[i]?.["이야기"] ? `<p>${esc(SC["항목"][i]["이야기"])}</p>` : ""}</div>`).join("")}
+        <p class="sub" style="margin:2px 0 0">${T(x["해석"], true)}</p>${SC["항목"]?.[i]?.["한줄"] ? `<p>${esc(SC["항목"][i]["한줄"])}</p>` : ""}
+        ${SC["항목"]?.[i]?.["이야기"] ? moreSet([["더 보기", `<p>${esc(SC["항목"][i]["이야기"])}</p>`]]) : ""}</div>`).join("")}
         <p class="sub">${esc(r.note)}</p></div>
-      ${storyCard("오래 가는 비결", SC["맺음"], "happy")}
+      ${SC["핵심"] ? "" : storyCard("오래 가는 비결", SC["맺음"], "happy")}
       <button class="btn primary wide" type="button" id="btn-compat-read" style="margin-bottom:10px">💞 냥이 도사의 궁합 대풀이 듣기</button>
       ${S.ai ? `<button class="btn lav wide" type="button" id="btn-compat-ai">💬 냥이에게 우리 궁합 상담하기</button>` : ""}`;
     paintNyang(out);
@@ -731,8 +767,7 @@ function openDay(dt) {
   api("/api/day", { birth: S.birth, day: dt }).then((j) => {
     const st = j["이야기"], el = $("#day-story");
     if (!el) return;
-    el.innerHTML = st?.story?.length ? `<h3 style="margin:4px 0 8px">${esc(st["제목"])}</h3><div class="story-text">${foldParas(st.story, 3)}</div>
-      ${st.tip ? `<div class="chap-tip" style="margin-bottom:12px"><span data-nyang="wink" data-size="38"></span><div><small>그날의 한마디</small>${esc(st.tip)}</div></div>` : ""}` : "";
+    el.innerHTML = st ? todayStory(st, "그날의 한마디").replace('class="card story-card"', 'class="story-card sheet-story"') : "";
     paintNyang(el);
   }).catch(() => { const el = $("#day-story"); if (el) el.innerHTML = ""; });
 }
@@ -747,7 +782,7 @@ function kindInfo(id) {
 function readMenu() {
   if (!S.kinds.length) return "";
   return `<div class="card tint-lav"><div class="card-head"><h2>🐾 냥이 도사 대풀이</h2><span class="badge">${S.ai ? "AI 서술형" : "서술형"}</span></div>
-    <div class="say" style="margin-bottom:12px"><span class="who" data-nyang="wink" data-size="48"></span><div class="bubble">두루마리를 펼쳐 놓고 길~게 이야기해 주겠다냥. 궁금한 걸 골라 보라냥!</div></div>
+    <div class="say" style="margin-bottom:12px"><span class="who" data-nyang="wink" data-size="48"></span><div class="bubble">궁금한 걸 콕 누르면 핵심만 쏙쏙! 더 듣고 싶으면 '길게 듣기'도 있다냥.</div></div>
     <div class="rd-menu">${READ_MENU.map(([id, hot]) => { const k = kindInfo(id); return `<button type="button" class="${hot}" data-read="${id}"><i>${k.icon}</i>${esc(k.title)}<small>${esc(k.desc)}</small></button>`; }).join("")}</div></div>`;
 }
 const kstDate = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 864e5).toISOString().slice(0, 10);
@@ -775,20 +810,21 @@ function openDream() {
 }
 function rdCacheKey(kind, o) {
   const scope = { day: o.day, week: kstDate(0), month: kstDate(0).slice(0, 7), year: kstDate(0).slice(0, 7) }[kind] || kstDate(0).slice(0, 4);
-  return `nyang:rd:${hashStr(JSON.stringify(S.birth))}:${kind}:${scope}${o.partner ? ":" + hashStr(JSON.stringify(o.partner)) : ""}`;
+  return `nyang:rd2:${hashStr(JSON.stringify(S.birth))}:${kind}:${scope}${o.long ? ":long" : ""}${o.partner ? ":" + hashStr(JSON.stringify(o.partner)) : ""}`;
 }
 let rdCtl = null;
 function closeReader() { rdCtl?.abort(); rdCtl = null; $("#reader").hidden = true; document.body.style.overflow = ""; }
 async function openReading(kind, o = {}) {
-  const k = kindInfo(kind), title = o.title || k.title;
+  const k = kindInfo(kind), title = (o.title || k.title) + (o.long ? " · 길게" : "");
   const R = $("#reader"), body = $("#rd-body");
   if (R.hidden) history.pushState({ reader: 1 }, "");
   R.hidden = false; document.body.style.overflow = "hidden";
   $("#rd-title").textContent = `${k.icon} ${title}`;
   const nm = S.d["이름"] || "너";
   body.innerHTML = `<div class="rd-hero"><span class="float" data-nyang="think" data-size="104"></span>
-      <div class="bubble big" id="rd-intro">흠흠… ${esc(nm)}의 <b>${esc(title)}</b>이라.<br>냥이 도사가 2천 년 묵은 두루마리를 펼치는 중이다냥…</div></div>
+      <div class="bubble big" id="rd-intro">흠흠… ${esc(nm)}의 <b>${esc(title)}</b>이라.<br>냥이 도사가 ${o.long ? "2천 년 묵은 두루마리를 통째로 펼치는" : "핵심만 쏙쏙 골라내는"} 중이다냥…</div></div>
     <article class="scroll-paper" id="rd-text"><p><span class="typing"></span></p></article>
+    ${o.long ? "" : `<button class="btn lav wide" type="button" id="rd-long" hidden style="margin-top:14px">📜 길게 듣기 — 설화·자세한 풀이까지</button>`}
     <div class="rd-actions" id="rd-actions" hidden><button class="ghost" type="button" id="rd-again">🔄 다시 풀이</button>
       <button class="ghost" type="button" id="rd-copy">📋 복사</button><button class="ghost" type="button" id="rd-share">📤 공유</button></div>
     <p class="rd-note" id="rd-note">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!</p>`;
@@ -798,6 +834,8 @@ async function openReading(kind, o = {}) {
   const render = (txt) => { box.innerHTML = md(txt, new Set()); };
   const finish = (txt, note) => {
     $("#rd-actions").hidden = false;
+    const lb = $("#rd-long");
+    if (lb) { lb.hidden = false; lb.onclick = () => openReading(kind, { ...o, long: true }); }
     $("#rd-intro").innerHTML = `${esc(nm)}의 <b>${esc(title)}</b>, 냥이 도사가 다 풀었다냥! 🐾`;
     if (note) $("#rd-note").textContent = note;
     $("#rd-again").onclick = () => { if (key) localStorage.removeItem(key); openReading(kind, o); };
@@ -815,7 +853,7 @@ async function openReading(kind, o = {}) {
   let text = "", err = "", fallback = false;
   try {
     const r = await fetch("/api/reading", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
-      body: JSON.stringify({ birth: S.birth, kind, partner: o.partner || null, day: o.day || null, text: o.text || "" }) });
+      body: JSON.stringify({ birth: S.birth, kind, partner: o.partner || null, day: o.day || null, text: o.text || "", long: !!o.long }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || "냥이 도사가 잠깐 자리를 비웠다냥");
     const reader = r.body.getReader(), dec = new TextDecoder();
     let buf = "", last = 0;
