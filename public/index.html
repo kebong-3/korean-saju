@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=14">
+  <link rel="stylesheet" href="/style.css?v=15">
 </head>
 <body>
   <div id="app">
@@ -69,7 +69,6 @@
         <button data-tab="saju"><i>📜</i>내 사주</button>
         <button data-tab="compat"><i>🌌</i>인연</button>
         <button data-tab="path"><i>🧭</i>나의 길</button>
-        <button data-tab="talk"><i>💬</i>상담</button>
       </nav>
     </div>
   </div>
@@ -79,6 +78,11 @@
     <header class="rd-top"><button class="ghost" type="button" id="rd-back" aria-label="뒤로">← 뒤로</button><b id="rd-title">대풀이</b><span></span></header>
     <div class="rd-scroll"><div class="rd-inner" id="rd-body"></div></div>
   </div>
+
+  <!-- 첫 감명 카드 -->
+  <div id="reveal" class="reveal" hidden></div>
+  <!-- 어디서나 냥이에게 묻기 -->
+  <button class="fab" id="fab-talk" type="button" aria-label="냥이에게 고민 상담" hidden>💬<span>냥이 상담</span></button>
 
   <!-- 용어 설명 바텀시트 -->
   <div id="sheet" class="sheet" hidden>
@@ -121,7 +125,7 @@
   </template>
 
   <script src="/nyang.js?v=2"></script>
-  <script src="/app.js?v=14" defer></script>
+  <script src="/app.js?v=15" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

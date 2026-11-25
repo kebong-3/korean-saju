@@ -173,6 +173,9 @@ def saju(b: Birth):
         d["나의길"] = _safe(journey.build, r, d["운세"], today_kst(), seed)
     if ipmyeong:
         d["입명"] = _safe(ipmyeong.build, r, d["운세"], today_kst(), seed)
+    if relation:
+        d["나의유형"] = relation.person_type(r)
+        d["나의올해"] = relation.year_type(r, d["운세"]["신년운세"]["연도"])
     syn = (d.get("오고") or {}).get("synth") or {}
     rx = syn.get("계절처방")
     gw = d["운세"].get("개운법")
@@ -442,6 +445,7 @@ def mapcalc(req: MapCalcReq):
 class MapCreateReq(BaseModel):
     owner: Birth
     consent: bool
+    invited_by: str = Field(default="", max_length=16)   # 초대 링크로 들어왔던 지도 id → 초대한 사람을 첫 별로
 
 
 def _need_store():
@@ -454,12 +458,24 @@ def map_create(req: MapCreateReq):
     _need_store()
     if not req.consent:
         raise HTTPException(400, "지도를 만들려면 동의가 필요하다냥")
-    _reading(req.owner)  # 날짜 검증
+    me_r = _reading(req.owner)  # 날짜 검증 겸 계산
     try:
         mid, token = share_store.create_map({"birth": req.owner.model_dump(), "name": _nick(req.owner.name or "나")})
     except share_store.StoreError as e:
         raise HTTPException(503, str(e)) from e
-    return {"id": mid, "token": token}
+    first = None
+    # 서로 보이게: 초대해 준 사람의 지도에 내가 올라가 있다면, 초대한 사람도 내 지도의 첫 별로 올린다
+    if re.fullmatch(r"[A-Za-z0-9]{4,16}", req.invited_by or ""):
+        try:
+            rec, _ = share_store.load(req.invited_by)
+            if rec:
+                inv_r = _reading(Birth(**rec["owner"]["birth"]))
+                view = _member(me_r, rec["owner"]["name"], inv_r, _target_year())
+                share_store.add_member(mid, view)
+                first = rec["owner"]["name"]
+        except Exception as e:  # noqa: BLE001
+            print(f"[map] 초대자 자동 등록 실패: {e!r}")
+    return {"id": mid, "token": token, "첫별": first}
 
 
 def _load_map(mid: str):

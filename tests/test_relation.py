@@ -149,6 +149,13 @@ class BlobFlowTest(unittest.TestCase):
         pub = c.get(f"/api/map/{r['id']}").json()
         self.assertEqual(len(pub["멤버"]), 3)
         self.assertNotIn("1992", json.dumps(self.files, ensure_ascii=False))
+        # 서로 보이게: 친구가 초대 지도 id를 들고 자기 지도를 만들면 초대한 사람이 첫 별로 올라온다
+        r2 = c.post("/api/map", json={"owner": {"year": 1992, "month": 7, "day": 3, "name": "친구0"}, "consent": True,
+                                      "invited_by": r["id"]}).json()
+        self.assertEqual(r2["첫별"], "지은")
+        mine = c.get(f"/api/map/{r2['id']}").json()
+        self.assertEqual([m["이름"] for m in mine["멤버"]], ["지은"])
+        self.assertTrue(c.delete(f"/api/map/{r2['id']}?token={r2['token']}").json()["ok"])
         self.assertTrue(c.delete(f"/api/map/{r['id']}?token={r['token']}").json()["ok"])
         self.assertEqual(self.files, {})
 

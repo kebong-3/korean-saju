@@ -196,12 +196,14 @@ async function loadMe(birth) {
   renderAll();
   $("#onboard").hidden = true; $("#main").hidden = false;
   showTab("home");
+  if (!store.get("revealed", 0)) showReveal();
 }
 function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="think" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
 
 function showTab(tab, sub) {
   $$(".bottom button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
+  const fab = $("#fab-talk"); if (fab) fab.hidden = tab === "talk" || $("#main").hidden;
   if (tab === "luck" && sub) setLuck(sub);
   if (tab === "talk") startTalk();
   if (tab === "path") renderPath(sub);
@@ -219,6 +221,74 @@ function renderAll() {
   $("#me-sub").textContent = `${i["띠"]}띠 · ${d["원국"]["일주"]["한글"]}일주`;
   renderHome(); renderLuck(); renderSaju(); renderCompat(); renderPath(); $("#tab-talk").innerHTML = "";
   paintNyang($("#main"));
+}
+
+// ───────────────────────── 첫 감명 카드(리빌) · 2027 신년 공유 카드
+function yearCardSvg(d) {
+  const y = d["운세"]["신년운세"], me = d["나의유형"] || {}, yt = d["나의올해"] || {}, nm = d["이름"] || "나";
+  const good = (y["좋은달표시"] || []).join(" · ");
+  const color = (d["운세"]["맞춤"]?.["행운의색"] || [""])[0];
+  const cat = nyang("happy", 120).replace("<svg ", '<svg x="120" y="70" ');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 450" width="100%" role="img" aria-label="${y["연도"]} 신년 카드"
+    font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">
+    <defs><linearGradient id="yc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe4ea"/><stop offset="1" stop-color="#efe9ff"/></linearGradient></defs>
+    <rect width="360" height="450" rx="28" fill="url(#yc)"/>
+    <text x="24" y="38" font-size="14" fill="#c2385a">사주냥이 · ${y["연도"]} 신년운세</text>
+    <text x="336" y="38" font-size="12" fill="#6b6080" text-anchor="end">${esc(y["간지"])}</text>
+    ${cat}
+    <text x="180" y="218" font-size="15" fill="#6b6080" text-anchor="middle">${esc(nm)}님은 ${esc(me["이모지"] || "")} ${esc(me["이름"] || "")}</text>
+    <text x="180" y="256" font-size="27" fill="#3b2f4a" text-anchor="middle">${esc(yt["이모지"] || "")} ${esc(yt["이름"] || y["테마"])}</text>
+    <text x="180" y="284" font-size="15" fill="#3b2f4a" text-anchor="middle">'${esc(y["테마"])}'</text>
+    <rect x="34" y="306" width="292" height="94" rx="18" fill="#ffffff" opacity=".85"/>
+    <text x="52" y="334" font-size="13" fill="#7c5cf0">힘 실을 달</text><text x="308" y="334" font-size="14" fill="#3b2f4a" text-anchor="end">${esc(good)}</text>
+    <text x="52" y="360" font-size="13" fill="#7c5cf0">나의 보약 기운</text><text x="308" y="360" font-size="14" fill="#3b2f4a" text-anchor="end">${esc(d["용신"]["용신"])} · ${esc(color)}</text>
+    <text x="52" y="386" font-size="13" fill="#7c5cf0">한 해 한 줄</text><text x="308" y="386" font-size="13" fill="#3b2f4a" text-anchor="end">${esc((yt["설명"] || "").slice(0, 20))}</text>
+    <text x="180" y="430" font-size="11" fill="#6b6080" text-anchor="middle">생일만 넣으면 무료 · korean-saju-six.vercel.app</text></svg>`;
+}
+async function shareYearCard() {
+  const d = S.d, y = d["운세"]["신년운세"], yt = d["나의올해"] || {};
+  const text = `나의 ${y["연도"]}년은 ${yt["이모지"] || ""} ${yt["이름"] || y["테마"]} — '${y["테마"]}' 🐾 너의 ${y["연도"]}년도 사주냥이에게 물어봐!`;
+  const url = location.origin + "/";
+  if (navigator.share) { try { await navigator.share({ title: `사주냥이 ${y["연도"]} 신년운세`, text, url }); return; } catch { /* 취소 */ } }
+  try { await navigator.clipboard.writeText(`${text} ${url}`); alert("공유 문구를 복사했다냥!"); } catch { alert(text); }
+}
+function openYearCard() {
+  openSheet(`<h2 style="margin:0 0 10px">🧧 나의 ${S.d["운세"]["신년운세"]["연도"]} 카드</h2>
+    <div id="yc-box">${yearCardSvg(S.d)}</div>
+    <div class="rd-cta" style="margin-top:12px"><button class="btn primary" type="button" id="yc-save">🖼️ 이미지 저장</button><button class="btn lav" type="button" id="yc-share">📤 친구에게 보내기</button></div>`);
+  $("#yc-save").addEventListener("click", () => saveSvgPng($("#yc-box svg"), `사주냥이_${S.d["운세"]["신년운세"]["연도"]}_${S.d["이름"] || "나"}.png`));
+  $("#yc-share").addEventListener("click", shareYearCard);
+}
+
+function showReveal() {
+  const d = S.d, me = d["나의유형"] || {}, yt = d["나의올해"] || {}, y = d["운세"]["신년운세"], yong = d["용신"]["용신"];
+  const mt = d["운세"]["맞춤"] || {}, nm = d["이름"] || "너";
+  const ilgan = (d["해석"]["일간"] || "").split(" — ")[1] || "";
+  const cards = [
+    { mood: "wow", k: "1 / 3 · 타고난 나", big: `${me["이모지"] || ""} ${me["이름"] || ""}`, sub: `${nm}님의 본체는 ${d["원국"]["일주"]["천간"]["글자"]}(${d["원국"]["일주"]["한글"][0]}) 일간이다냥.`, body: ilgan },
+    { mood: "happy", k: "2 / 3 · 나의 보약 기운", big: `${yong}(${{ 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" }[yong] || ""}) 기운`, sub: `너에게 제일 필요한 '용신'이다냥.`,
+      body: `행운의 색은 ${(mt["행운의색"] || [""])[0]}, 힘이 나는 방향은 ${mt["행운의방위"] || ""}. ${mt["힐링"] ? `지칠 땐 ${mt["힐링"].split("·")[0]}!` : ""}` },
+    { mood: "wink", k: `3 / 3 · 나의 ${y["연도"]}`, big: `${yt["이모지"] || "🧧"} ${yt["이름"] || y["테마"]}`, sub: `'${y["테마"]}'`, body: `${y["총평"]} 힘 실을 달은 ${(y["좋은달표시"] || []).join("·")}.` },
+  ];
+  let i = 0;
+  const box = $("#reveal");
+  const draw = () => {
+    const c = cards[i], last = i === cards.length - 1;
+    box.innerHTML = `<div class="rv-card"><div class="rv-k">${esc(c.k)}</div><span data-nyang="${c.mood}" data-size="120"></span>
+      <div class="rv-big">${esc(c.big)}</div><div class="rv-sub">${esc(c.sub)}</div><p class="rv-body">${esc(c.body)}</p>
+      <div class="rv-dots">${cards.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
+      ${last ? `<button class="btn primary wide" type="button" id="rv-card">🧧 내 ${y["연도"]} 카드 만들기</button>
+        <button class="ghost wide" type="button" id="rv-done" style="margin-top:8px">냥이 홈으로 가기 🐾</button>`
+        : `<button class="btn primary wide" type="button" id="rv-next">다음 →</button><button class="ghost wide" type="button" id="rv-skip" style="margin-top:8px">건너뛰기</button>`}</div>`;
+    paintNyang(box);
+    $("#rv-next")?.addEventListener("click", () => { i++; draw(); });
+    const close = () => { box.hidden = true; document.body.style.overflow = ""; store.set("revealed", 1); };
+    $("#rv-skip")?.addEventListener("click", close);
+    $("#rv-done")?.addEventListener("click", close);
+    $("#rv-card")?.addEventListener("click", () => { close(); openYearCard(); });
+  };
+  box.hidden = false; document.body.style.overflow = "hidden";
+  draw();
 }
 
 // ───────────────────────── 홈
@@ -258,31 +328,33 @@ function renderHome() {
       <div class="lucky"><div><small>행운 색</small>${esc(t["행운"]["색"])}</div><div><small>숫자</small>${esc(t["행운"]["숫자"])}</div>
         <div><small>방위</small>${esc(t["행운"]["방위"])}</div><div><small>음식</small>${esc(t["행운"]["음식"])}</div></div>
       <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span><span>오늘의 개운 미션: ${esc(t["미션"])}</span></button>
-      ${hoursStrip(f["시간대"])}
-      <p class="sub" style="margin:6px 0 0">시간대별 기운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b> · 살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p>
+      <details class="hours-more"><summary class="sub">⏰ 시간대별 기운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b></summary>
+        ${hoursStrip(f["시간대"])}<p class="sub" style="margin:6px 0 0">살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p></details>
       <div class="rd-cta"><button class="btn primary" type="button" data-read="day">☀️ 오늘 운세 자세히</button>
         <button class="btn lav" type="button" data-read="tomorrow">🌙 내일 운세 (${f["내일운세"]["점수"]}점)</button></div>
     </div>
-    ${monthCard(f["이번달"])}
-    ${todayStory(d["이야기"]?.["오늘"])}
     <div id="checkin-slot">${checkinCard()}</div>
-    ${wisdomCard(d["나의길"]?.["한구절"])}
+    ${monthCard(f["이번달"])}
+    <button class="banner" type="button" id="btn-yearcard"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
+      <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>'${esc(y["테마"])}' · 좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>
     ${readMenu()}
-    ${pathTeaser()}
     <div id="install-slot"></div>
-    <button class="banner" data-go="luck:new" type="button"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
-      <div class="t">'${esc(y["테마"])}'</div><small>총운 ${y["총운"]}점 · 좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")}</small></div><span class="big">🧧</span></button>
     <div class="menu" style="margin-bottom:16px">
       ${[["luck:new", "🧧", `${y["연도"]} 신년운세`, "var(--pink-l)"], ["luck:month", "📅", "월별 운세", "var(--butter-l)"], ["luck:life", "📈", "평생 총운", "var(--lav-l)"],
         ["saju:fit", "🎯", "나에게 맞는", "var(--mint-l)"], ["saju:rx", "🍀", "개운 처방전", "var(--mint-l)"], ["compat", "💞", "궁합", "var(--pink-l)"],
         ["talk", "💬", "고민 상담", "var(--lav-l)"], ["saju:ogo", "🏛️", "오고 정밀감명", "var(--peach-l)"], ["glossary", "📚", "명리 교실", "var(--butter-l)"]]
         .map(([g, ic, l, bg]) => `<button type="button" ${g === "glossary" ? 'id="btn-gloss"' : `data-go="${g}"`}><i style="background:${bg}">${ic}</i>${l}</button>`).join("")}
     </div>
-    <div class="card story">
-      <div class="card-head"><h2>냥이의 옛이야기</h2><span class="badge">${esc(st["시대"])}</span></div>
-      <h3>『${esc(st["제목"])}』</h3><p style="margin:0">${esc(st["이야기"])}</p>
-      <div class="lesson">🐾 ${esc(st["교훈"])} <span class="sub">— ${T(st["개념"], true)}</span></div>
-    </div>
+    <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b> <span class="sub">냥이 도사 한마디 · 명리 한 구절 · 옛이야기 · 나의 길</span></summary>
+      ${todayStory(d["이야기"]?.["오늘"])}
+      ${wisdomCard(d["나의길"]?.["한구절"])}
+      <div class="card story">
+        <div class="card-head"><h2>냥이의 옛이야기</h2><span class="badge">${esc(st["시대"])}</span></div>
+        <h3>『${esc(st["제목"])}』</h3><p style="margin:0">${esc(st["이야기"])}</p>
+        <div class="lesson">🐾 ${esc(st["교훈"])} <span class="sub">— ${T(st["개념"], true)}</span></div>
+      </div>
+      ${pathTeaser()}
+    </details>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
       <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a><br>
       계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a> · 천문 계산 만세력 · 옛이야기는 창작 설화예요</p>`;
@@ -294,6 +366,7 @@ function renderHome() {
     e.currentTarget.firstElementChild.textContent = on ? "✅" : "⬜";
   });
   $("#btn-gloss").addEventListener("click", openGlossary);
+  $("#btn-yearcard")?.addEventListener("click", openYearCard);
 }
 
 function monthCard(m) {
@@ -728,13 +801,19 @@ async function renderMapPane() {
   if (S.share && !ref) {
     pane.innerHTML = `<div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">내 귀인 지도를 만들고 링크를 보내 봐! 친구가 <b>별명과 생일만</b> 넣으면 내 지도에 별로 떠오른다냥 🌌</div></div>
       <div class="card"><h2>🌌 내 귀인 지도 만들기</h2>
-        <p class="sub">지도를 다시 계산하려고 <b>내 생년월일은 서버에 저장</b>돼요(지도 삭제 시 함께 삭제). 친구의 생년월일은 저장하지 않고, 계산된 관계 결과와 별명만 남아요.</p>
+        <p class="sub">지도를 다시 계산하려고 <b>내 생년월일은 서버에 저장</b>돼요(지도 삭제 시 함께 삭제). 친구의 생년월일은 저장하지 않고, 계산된 관계 결과와 별명만 남아요. 내 링크로 참여한 친구가 자기 지도를 만들면 <b>내 별명도 그 친구 지도에 별로 떠요</b>(서로 보이기).</p>
         <label class="check consent"><input type="checkbox" id="map-consent"> 위 내용과 <a href="/privacy.html" target="_blank">개인정보 처리방침</a>에 동의하고 만 14세 이상이에요</label>
         <button class="btn primary wide" type="button" id="map-create">지도 만들기 ✨</button></div>`;
     $("#map-create").addEventListener("click", async (e) => {
       if (!$("#map-consent").checked) { alert("동의에 체크해 달라냥"); return; }
       e.currentTarget.disabled = true;
-      try { const r = await api("/api/map", { owner: S.birth, consent: true }); store.set("mapref", r); renderMapPane(); }
+      let inv = ""; try { inv = localStorage.getItem("nyang:invitedBy") || ""; } catch { /* 저장 불가 */ }
+      try {
+        const r = await api("/api/map", { owner: S.birth, consent: true, invited_by: inv });
+        store.set("mapref", { id: r.id, token: r.token });
+        if (r["첫별"]) { try { localStorage.removeItem("nyang:invitedBy"); } catch { /* */ } alert(`나를 초대해 준 ${r["첫별"]}님이 내 지도의 첫 별로 올라왔다냥! 🌟`); }
+        renderMapPane();
+      }
       catch (err) { alert(err.message); e.currentTarget.disabled = false; }
     });
     paintNyang(pane); return;
@@ -822,9 +901,9 @@ async function guestMap(mid) {
           <div class="fit"><small>나에게 ${esc(owner)}님은</small><b>${esc(me["이모지"])} ${esc(me["세부"])}</b><div class="sub">용신 채움 ${me["보완"]}</div></div></div>
         <p style="margin:10px 0 4px">나는 <b>${esc(r["나"]["이모지"])} ${esc(r["나"]["이름"])}</b> · ${r["나의올해"]["이모지"]} ${esc(r["나의올해"]["이름"])} — ${esc(r["나의올해"]["설명"])}</p>
         <p class="sub">🔄 ${esc(r["내시선"]["흐름"])}</p>
-        <button class="btn primary wide" type="button" id="g-mine">🗺 내 귀인 지도도 만들기 (내 사주 보기)</button>
+        <button class="btn primary wide" type="button" id="g-mine">🗺 내 귀인 지도도 만들기 — ${esc(owner)}님이 첫 별로 떠요</button>
         <button class="ghost wide" type="button" id="g-undo" style="margin-top:8px">내 별 지우기</button></div>`;
-      $("#g-mine").addEventListener("click", () => { try { localStorage.setItem("nyang:me", JSON.stringify({ ...b, name })); } catch { /* 저장 불가 */ } location.href = "/"; });
+      $("#g-mine").addEventListener("click", () => { try { localStorage.setItem("nyang:me", JSON.stringify({ ...b, name })); localStorage.setItem("nyang:invitedBy", mid); } catch { /* 저장 불가 */ } location.href = "/"; });
       $("#g-undo").addEventListener("click", async () => { await fetch(`/api/map/${encodeURIComponent(mid)}/member/${r.id}?token=${encodeURIComponent(r.token)}`, { method: "DELETE" }); location.reload(); });
       $("#g-result").scrollIntoView({ behavior: "smooth" });
     } catch (err) { alert(err.message); e.currentTarget.disabled = false; }
@@ -1471,6 +1550,7 @@ async function init() {
     finally { btn.disabled = false; }
   });
   $$(".bottom button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  $("#fab-talk").addEventListener("click", () => showTab("talk"));
   $("#btn-profile").addEventListener("click", () => { fillForm(form, S.birth); $("#main").hidden = true; $("#onboard").hidden = false; window.scrollTo({ top: 0 }); });
 
   const [meta, st, kinds] = await Promise.all([api("/api/meta").catch(() => ({ glossary: {} })), api("/api/status").catch(() => ({ ai: false })),
