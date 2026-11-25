@@ -369,3 +369,24 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .dom-story[open] summary .n { color: var(--lav-d); }
 .dom-story .story-text { background: #fbf8fd; border-radius: 14px; padding: 12px 14px; margin: 6px 0 10px; }
 .dom-story .story-text p { font-size: 15px; }
+
+/* ── 짧게 핵심만 + 눌러서 더 보기 ── */
+.punch .bubble { font-size: 16.5px; line-height: 1.7; }
+.punch .bubble small { font: 13px var(--title); }
+.punch-text { font-size: 16.5px; line-height: 1.75; margin: 0 0 4px; word-break: keep-all; }
+.more-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.more-btn { border: 0; background: var(--lav-l); color: var(--lav-d); border-radius: 999px; padding: 7px 13px; font: 14px var(--title); cursor: pointer; }
+.more-btn.on { background: var(--lav-d); color: #fff; }
+.more-box { margin-top: 10px; background: #fbf8fd; border-radius: 14px; padding: 12px 14px; animation: fade .2s; }
+.more-box p { margin: 0 0 10px; line-height: 1.8; font-size: 15.5px; word-break: keep-all; }
+.more-box p:last-child { margin-bottom: 0; }
+.tale { background: #fff8ea; border-left: 4px solid #e9d3a6; border-radius: 10px; padding: 10px 12px; font-family: var(--body); }
+.one-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.one { background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 10px 12px; display: grid; gap: 3px; }
+.one b { font: 14px var(--title); font-weight: 400; color: var(--lav-d); }
+.one span { font-size: 14.5px; line-height: 1.5; word-break: keep-all; }
+.chap summary small { -webkit-line-clamp: unset; color: var(--ink); font-size: 14.5px; margin-top: 2px; }
+.chap[open] summary small { color: var(--ink); }
+.mon .more-row { margin-top: 4px; } .mon .more-btn { padding: 4px 10px; font-size: 12.5px; } .mon .more-box { padding: 8px 10px; } .mon .more-box p { font-size: 13.5px; }
+.sheet-story { margin-bottom: 12px; }
+.sheet-story .story-head h2 { font-size: 17px; }

@@ -38,7 +38,7 @@ PEOPLE = [
 NAMES = ["민준", "서연", "하늘", "지우", "도윤", "Alex", "", "은", "수빈", "철수", "영희", "나"]
 
 JUNK = ["{", "}", "None", "[]", "1번", "2번", "이(가)", "을(를)", "은(는)", "와(과)", "(으)로", "nan"]
-CHAPTER_KEYS = {"id", "icon", "title", "summary", "story", "tip"}
+CHAPTER_KEYS = {"id", "icon", "title", "summary", "story", "tip", "핵심", "설화"}
 REQUIRED_IDS = ["nature", "attraction", "room", "tonic", "rhythm", "conflict", "date"]
 
 _CACHE: dict = {}
@@ -58,6 +58,10 @@ def pairs() -> list:
         out.append((k, (k * 7 + 3) % n))
     out += [(0, 1), (19, 20), (19, 21), (5, 5), (12, 30), (2, 6), (4, 13)]
     return [(a, b) for a, b in out if a != b] + [(5, 5)]
+
+
+def sents(t: str) -> list:
+    return [x for x in re.split(r"(?<=[.!?])\s+", t) if x.strip()]
 
 
 def all_strings(obj):
@@ -93,7 +97,7 @@ class StoryCompat(unittest.TestCase):
     def test_shape(self):
         for pair, res, names, out in self.results:
             with self.subTest(pair=pair):
-                self.assertEqual(set(out), {"제목", "서문", "장", "항목", "맺음"})
+                self.assertEqual(set(out), {"핵심", "한줄", "제목", "서문", "장", "항목", "맺음"})
                 self.assertIsInstance(out["제목"], str)
                 self.assertTrue(out["제목"].strip())
                 self.assertTrue(2 <= len(out["서문"]) <= 3)
@@ -119,7 +123,7 @@ class StoryCompat(unittest.TestCase):
             with self.subTest(pair=pair):
                 self.assertEqual(len(out["항목"]), len(res["items"]))
                 for got, src in zip(out["항목"], res["items"]):
-                    self.assertEqual(set(got), {"항목", "점수", "이야기"})
+                    self.assertEqual(set(got), {"항목", "점수", "이야기", "한줄"})
                     self.assertEqual(got["점수"], src["점수"])
                     self.assertIsInstance(got["점수"], int)
                     self.assertTrue(got["이야기"].strip())
@@ -131,6 +135,8 @@ class StoryCompat(unittest.TestCase):
     def test_no_junk(self):
         for pair, res, names, out in self.results:
             with self.subTest(pair=pair):
+                for ch in out["장"]:
+                    self.assertTrue(ch["설화"].strip())  # 모든 장에 설화가 있어 빈 값이면 안 됨
                 for s in all_strings(out):
                     self.assertTrue(s.strip(), "빈 문자열")
                     for j in JUNK:
@@ -192,7 +198,7 @@ class StoryCompat(unittest.TestCase):
         self.assertIn("상대", text)
         self.assertNotIn("너가", text)
         out2 = story_compat.build(r1, r2, res, [])
-        self.assertEqual(set(out2), {"제목", "서문", "장", "항목", "맺음"})
+        self.assertEqual(set(out2), {"핵심", "한줄", "제목", "서문", "장", "항목", "맺음"})
 
     def test_josa(self):
         jo = story_compat.jo
@@ -220,6 +226,61 @@ class StoryCompat(unittest.TestCase):
         self.assertIn("丑", room)
         self.assertIn("삼합", room)
         self.assertIn("癸", " ".join(out["장"][0]["story"]))
+
+    # ---------------------------------------------------------------- 짧은 핵심 (기본 화면)
+    def test_short_layer_lengths(self):
+        for pair, res, names, out in self.results:
+            with self.subTest(pair=pair):
+                core = out["핵심"]
+                self.assertLessEqual(len(core), 120, core)
+                self.assertEqual(len(sents(core)), 2, core)
+                self.assertIn("냥", core)
+                self.assertIn(str(res["score"]), core)
+                self.assertEqual(set(out["한줄"]), {"찰떡", "삐걱", "비결"})
+                for k, v in out["한줄"].items():
+                    self.assertIsInstance(v, str)
+                    self.assertTrue(v.strip())
+                    self.assertLessEqual(len(v), 35, (k, v))
+                    self.assertIn("냥", v)
+                for ch in out["장"]:
+                    c = ch["핵심"]
+                    self.assertTrue(50 <= len(c) <= 110, (ch["id"], len(c), c))
+                    self.assertTrue(1 <= len(sents(c)) <= 2, c)
+                    self.assertIn("냥", c)
+                    self.assertLessEqual(len(ch["tip"]), 60, ch["tip"])
+                    self.assertIn("냥", ch["tip"])
+                for it in out["항목"]:
+                    self.assertLessEqual(len(it["한줄"]), 60, it["한줄"])
+                    self.assertIn("냥", it["한줄"])
+
+    def test_tale_moved_out_of_story(self):
+        for pair, res, names, out in self.results:
+            with self.subTest(pair=pair):
+                tales = [ch["설화"] for ch in out["장"] if ch["설화"]]
+                self.assertEqual(len(tales), len(set(tales)))
+                for ch in out["장"]:
+                    self.assertNotIn(ch["설화"], ch["story"])
+                    for other in out["장"]:
+                        if other["설화"]:
+                            self.assertNotIn(other["설화"], ch["story"])
+                    self.assertGreaterEqual(len(ch["story"]), 2)
+                    self.assertNotIn(ch["핵심"], ch["story"])
+
+    def test_short_layer_quotes_data_and_differs(self):
+        cores, chaps = set(), set()
+        for (a, b), res, names, out in self.results:
+            r1, r2 = reading(a), reading(b)
+            cores.add(out["핵심"])
+            chaps.add(json.dumps([c["핵심"] for c in out["장"]], ensure_ascii=False))
+            with self.subTest(pair=(a, b)):
+                room = next(c for c in out["장"] if c["id"] == "room")["핵심"]
+                self.assertIn(r1.chart.day.hanja[1], room)
+                self.assertIn(r2.chart.day.hanja[1], room)
+                nature = next(c for c in out["장"] if c["id"] == "nature")["핵심"]
+                self.assertIn(r1.chart.day.hanja[0], nature)
+                self.assertIn(r1.chart.day.hanja[0], out["핵심"])
+        self.assertGreaterEqual(len(cores), 30)
+        self.assertEqual(len(chaps), len(self.results))
 
     def test_python39_syntax(self):
         path = os.path.join(ROOT, "sajunyang", "story_compat.py")

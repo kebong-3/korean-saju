@@ -246,6 +246,7 @@ class ReadingReq(BaseModel):
     partner: Optional[Birth] = None
     day: Optional[date] = None
     text: str = Field(default="", max_length=600)
+    long: bool = False
 
 
 @app.get("/api/readings")
@@ -276,8 +277,8 @@ def reading(req: ReadingReq):
     if not _ai_ready():
         return _stream_text(readings.fallback(req.kind, who, r, fx, extra, r2, who2), fallback=True)
     prompt = readings.user_prompt(req.kind, who, r, fx, extra, r2, who2)
-    return _stream_llm(readings.system_for(req.kind) + "\n\n해석 기준표\n" + GUIDE,
-                       [{"role": "user", "content": prompt}], 9000)
+    return _stream_llm(readings.system_for(req.kind, req.long) + "\n\n해석 기준표\n" + GUIDE,
+                       [{"role": "user", "content": prompt}], 9000 if req.long else 2500)
 
 
 def _sse(obj: dict) -> str:

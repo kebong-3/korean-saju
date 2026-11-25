@@ -52,7 +52,8 @@ CASES = [
     (1979, 5, 25, 19, 0, "남", "solar", ""),
 ]
 REQUIRED_IDS = ["ilgan", "ilju", "gangyak", "ohaeng", "gyeokguk", "sipseong", "yongshin", "sinsal", "hapchung"]
-CHAPTER_KEYS = {"id", "icon", "title", "term", "summary", "story", "tip"}
+CHAPTER_KEYS = {"id", "icon", "title", "term", "summary", "story", "tip", "핵심", "설화"}
+CHIP_KEYS = {"성격", "강점", "조심", "보약"}
 JUNK = ("{", "}", "None", "[]", "[[", "]]", "  ", "..", " ,", " .")
 
 
@@ -70,15 +71,17 @@ class StoryMe(unittest.TestCase):
             cls.results.append((case, r, story_me.build(r, case[-1])))
 
     def _paragraphs(self, d):
-        out = list(d["서문"]) + list(d["맺음"])
+        out = list(d["서문"]) + list(d["맺음"]) + [d["핵심"]] + list(d["한줄"].values())
         for ch in d["장"]:
-            out += ch["story"] + [ch["title"], ch["summary"], ch["tip"]]
+            out += ch["story"] + [ch["title"], ch["summary"], ch["tip"], ch["핵심"]]
+            if ch["설화"]:
+                out.append(ch["설화"])
         return out
 
     def test_format(self):
         for case, _, d in self.results:
             with self.subTest(case=case):
-                self.assertEqual(set(d), {"서문", "장", "맺음"})
+                self.assertEqual(set(d), {"핵심", "한줄", "서문", "장", "맺음"})
                 self.assertTrue(2 <= len(d["서문"]) <= 3)
                 self.assertTrue(1 <= len(d["맺음"]) <= 2)
                 self.assertTrue(8 <= len(d["장"]) <= 10)
@@ -87,10 +90,10 @@ class StoryMe(unittest.TestCase):
                 self.assertEqual([i for i in ids if i in REQUIRED_IDS], REQUIRED_IDS)
                 for ch in d["장"]:
                     self.assertEqual(set(ch), CHAPTER_KEYS, ch["id"])
-                    for k in ("id", "icon", "title", "term", "summary", "tip"):
+                    for k in ("id", "icon", "title", "term", "summary", "tip", "핵심", "설화"):
                         self.assertIsInstance(ch[k], str)
                     self.assertIsInstance(ch["story"], list)
-                    self.assertTrue(3 <= len(ch["story"]) <= 5, (ch["id"], len(ch["story"])))
+                    self.assertTrue(3 <= len(ch["story"]) <= 4, (ch["id"], len(ch["story"])))
                     self.assertTrue(ch["summary"] and ch["tip"] and ch["title"] and ch["icon"])
                     self.assertLessEqual(len(ch["summary"]), 40, ch["summary"])
 
@@ -108,10 +111,43 @@ class StoryMe(unittest.TestCase):
     def test_nyang_voice(self):
         """서문·각 장 문단·맺음 문단마다 냥이체가 1~4번."""
         for case, _, d in self.results:
-            paras = list(d["서문"]) + list(d["맺음"]) + [p for ch in d["장"] for p in ch["story"]]
+            paras = (list(d["서문"]) + list(d["맺음"]) + [p for ch in d["장"] for p in ch["story"]]
+                     + [ch["설화"] for ch in d["장"] if ch["설화"]] + [ch["핵심"] for ch in d["장"]] + [d["핵심"]])
             for p in paras:
                 with self.subTest(case=case, text=p[:30]):
                     self.assertTrue(1 <= p.count("냥") <= 4, p)
+
+    def test_core_and_chips(self):
+        """기본 화면용 핵심·한줄·짧은 tip."""
+        for case, _, d in self.results:
+            with self.subTest(case=case):
+                top = d["핵심"]
+                self.assertTrue(20 <= len(top) <= 120, top)
+                self.assertIn("냥", top)
+                self.assertEqual(set(d["한줄"]), CHIP_KEYS)
+                for k, v in d["한줄"].items():
+                    self.assertTrue(v and len(v) <= 30, (k, v))
+                for ch in d["장"]:
+                    core = ch["핵심"]
+                    self.assertTrue(50 <= len(core) <= 110, (ch["id"], len(core), core))
+                    self.assertIn("냥", core)
+                    self.assertLessEqual(len(ch["tip"]), 60, ch["tip"])
+
+    def test_tale_moved_out(self):
+        """설화는 story에서 빠져 '설화' 키로 옮겨지고, 이 사람과 잇는 한 줄로 끝난다."""
+        for case, _, d in self.results:
+            who = case[-1] or "너"
+            for ch in d["장"]:
+                with self.subTest(case=case, ch=ch["id"]):
+                    t = ch["설화"]
+                    self.assertTrue(t)
+                    body = " ".join(ch["story"])
+                    self.assertNotIn(t, body)
+                    self.assertNotIn(t.split(". ")[0], body)  # 설화 첫 문장도 story에 없어야 한다
+                    self.assertTrue(3 <= story_me.nsent(t) <= 5, t)
+                    last = t.rsplit(". ", 1)[-1]
+                    self.assertIn(who, last)
+                    self.assertTrue(last.endswith("냥."), last)
 
     def test_length(self):
         for case, _, d in self.results:
@@ -171,6 +207,18 @@ class StoryMe(unittest.TestCase):
             self.assertNotIn(ilgan, seen_ilgan, (case, seen_ilgan.get(ilgan)))
             seen_intro[intro] = case
             seen_ilgan[ilgan] = case
+        # 사람마다 장별 핵심 묶음이 달라야 한다
+        cores = [tuple(ch["핵심"] for ch in d["장"]) for _, _, d in self.results]
+        self.assertEqual(len(cores), len(set(cores)))
+        # 같은 일간끼리도 다른 데이터를 인용해 일부 장의 핵심은 달라야 한다
+        by_stem = {}
+        for _, r, d in self.results:
+            by_stem.setdefault(r.chart.day_stem, []).append([ch["핵심"] for ch in d["장"]])
+        pairs = [v for v in by_stem.values() if len(v) >= 2]
+        self.assertTrue(pairs)
+        for v in pairs:
+            diff = sum(1 for x, y in zip(v[0], v[1]) if x != y)
+            self.assertGreaterEqual(diff, 3)
         # 같은 장이라도 서로 다른 사람이면 문단 구성이 충분히 달라야 한다
         a, b = self.results[0][2], self.results[1][2]
         for ca, cb in zip(a["장"], b["장"]):
