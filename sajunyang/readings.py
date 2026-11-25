@@ -55,6 +55,10 @@ KINDS: dict[str, tuple[str, str, str, str, str]] = {
                 " 비슷한 일(이직·이사·연애·건강 등)이 반복됐는지 패턴을 찾고, 그 패턴이 다시 오는 '앞으로'의 해를 짚어 무엇을 준비하면 좋을지 이야기해라."
                 " 지나간 힘든 해는 탓하지 말고 '그때 무엇을 배웠는지'로, 좋았던 해는 '그때의 나를 어떻게 다시 불러올지'로 풀어라. 기록이 적으면 적은 대로,"
                 " 억지로 맞추지 말고 '아직은 우연일 수도 있다'고 솔직히 말해라."),
+    "child": ("자녀 궁합 대풀이", "👨‍👧", "아이의 기질과 우리 사이 사용 설명서",
+              "3500~4500자", "<extra>의 자녀궁합(관계유형·한줄·장별 핵심)과 두 사람의 <saju>를 근거로, 아이의 타고난 기질과 공부·칭찬법, 부모와 아이 기운의 관계,"
+              " 부딪히는 순간과 화해법(아이 나이에 맞는 대화 예시), 서로의 보약, 올해·내년 아이에게 필요한 지원을 풀어라. 아이나 부모 어느 쪽도 탓하지 말고,"
+              " 아이를 조종하는 법이 아니라 이해하는 법으로 말해라. 심각한 정서·행동 문제가 보이면 전문가 상담을 권해라."),
     "dream": ("꿈해몽", "💭", "간밤의 꿈을 냥이 도사가 풀어줌",
               "2000~3000자", "사용자가 적은 꿈을 전통 해몽(상징의 뜻)으로 먼저 풀고, 꿈을 꾼 날의 일진(<extra>)과 내 사주의 흐름에 비추어"
               " 어떤 마음 상태·기회·조심할 점을 비추는지 이야기해라. 길몽/흉몽을 단정하지 말고, 좋은 기운을 살리는 행동을 권해라."),
@@ -173,6 +177,25 @@ def extra_for(kind: str, r, fx: dict, today: date, day: date | None = None, text
     return {}
 
 
+def profile_line(prof: dict | None) -> str:
+    """사용자의 기초정보 — 풀이의 주제와 말투를 바꾼다(계산과는 무관)."""
+    if not prof or not (prof.get("결혼") or prof.get("자녀")):
+        return ""
+    m, k = prof.get("결혼") or "모름", int(prof.get("자녀") or 0)
+    rule = {"기혼": "연애운 대신 부부운·가정을 말하고 '썸·소개팅' 같은 표현은 쓰지 마라.",
+            "미혼": "배우자를 단정하지 말고 인연·연애로 말하라.", "연애중": "지금의 연애를 지키고 키우는 쪽으로 말하라.",
+            "기타": "결혼·이혼을 단정하거나 캐묻지 말고 '사람과 관계' 중심으로 담백하게 말하라."}.get(m, "")
+    kid = f"자녀 {k}명 — 질문과 관련 있으면 자녀운·양육·아이와의 소통도 함께 짚어라." if k else "자녀 없음(또는 미입력) — 자녀 이야기를 먼저 꺼내지 마라."
+    return f"<profile>결혼: {m} / {kid} {rule}</profile>\n"
+
+
+def family_digest(res: dict | None) -> dict:
+    if not res:
+        return {}
+    return {"관계유형": res.get("관계유형"), "핵심": res.get("핵심"), "한줄": res.get("한줄"),
+            "장": [{"title": c.get("title"), "핵심": c.get("핵심") or c.get("summary")} for c in res.get("장", [])]}
+
+
 def compact_fortune(fx: dict) -> str:
     y, life, mt, t = fx["신년운세"], fx["평생운"], fx["맞춤"], fx["오늘운세"]
     cur = life["현재"]
@@ -194,11 +217,13 @@ def user_prompt(kind: str, who: str, r, fx: dict, extra: dict, r2=None, who2: st
         ctx += "\n<extra>\n" + json.dumps(extra, ensure_ascii=False) + "\n</extra>"
     if r2 is not None:
         ctx += f"\n<saju who=\"{who2}\">\n{r2.to_compact()}\n</saju>"
-        ctx += "\n<compat>\n" + json.dumps(read_compatibility(r, r2), ensure_ascii=False) + "\n</compat>"
+        if kind != "child":
+            ctx += "\n<compat>\n" + json.dumps(read_compatibility(r, r2), ensure_ascii=False) + "\n</compat>"
     title = KINDS[kind][0]
     ask = {
         "dream": f"냥이 도사님, 제가 꾼 꿈 좀 풀어 주세요. 꿈 내용: {extra.get('꿈내용', '')}",
         "compat": f"냥이 도사님, {who}와(과) {who2}의 궁합을 자세히 풀어 주세요.",
+        "child": f"냥이 도사님, 부모인 {who}와(과) 아이 {who2}의 궁합을 풀어 주세요. 아이를 더 잘 이해하고 싶어요.",
         "day": f"냥이 도사님, {extra.get('날짜', '')} 하루 운세를 자세히 풀어 주세요.",
         "journey": "냥이 도사님, 제가 적은 지난 일들을 보고 제 인생의 운 패턴을 찾아 주세요. 앞으로 무엇을 준비하면 좋을까요?",
     }.get(kind, f"냥이 도사님, 제 {title}을(를) 자세히 풀어 주세요.")
@@ -298,6 +323,15 @@ def fallback(kind: str, who: str, r, fx: dict, extra: dict, r2=None, who2: str =
           "반복되는지 또렷하게 보인다냥. 아직 몇 개 안 된다면 우연일 수도 있으니 너무 믿지는 말라냥.")
         P("### 🧭 다가올 해")
         P(" ".join(f"{y['연도']}년은 {y['간지']}·{y['십성']}의 해로 키워드는 '{y['키워드']}'이다냥." for y in extra.get("앞으로", [])))
+    elif kind == "child":
+        fd = extra.get("자녀궁합") or {}
+        wa = "과" if nm and "가" <= nm[-1] <= "힣" and (ord(nm[-1]) - 0xAC00) % 28 else "와"
+        P(f"흠흠, {nm}{wa} {who2}의 두루마리를 나란히 펼쳐 보겠다냥. 관계 유형은 '{fd.get('관계유형', '알쏭달쏭')}'이다냥.")
+        if fd.get("핵심"):
+            P(fd["핵심"])
+        for c in fd.get("장", []):
+            P(f"### {c.get('title')}")
+            P(c.get("핵심") or "")
     elif kind == "dream":
         t = extra["꿈꾼날"]
         P(f"냐옹~ {nm}, 꿈 이야기를 들려줘서 고맙다냥. 꿈을 꾼 날은 {t['일진']}일, 네게는 {t['십성']}의 기운이 흐르던 날이다냥.")

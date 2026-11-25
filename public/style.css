@@ -440,3 +440,11 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .wisdom .w-me { display: inline-block; margin-top: 6px; font-weight: 400; font-family: var(--title); color: var(--pink-d); }
 .w-mission { width: 100%; text-align: left; border: 0; background: var(--butter-l); border-radius: 14px; padding: 10px 12px; margin-top: 12px; font: 15px var(--body); color: var(--ink); cursor: pointer; }
 .w-mission.done { background: var(--mint-l); text-decoration: line-through; color: var(--sub); }
+.seg.wrap { display: flex; flex-wrap: wrap; width: auto; }
+.seg.wrap b { padding: 8px 14px; }
+.kid-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.kid-chips button { border: 0; background: #fff; box-shadow: var(--shadow); border-radius: 99px; padding: 8px 14px; font: 15px var(--title); cursor: pointer; color: var(--ink); }
+.kid-chips button.on { background: var(--mint); color: #fff; }
+.kid-type { display: inline-block; margin-top: 6px; background: var(--mint-l); border-radius: 99px; padding: 4px 12px; font: 14px var(--title); color: #2f7d63; }
+.kid-year { margin-top: 14px; background: var(--butter-l); border-radius: 16px; padding: 12px 14px; }
+.kid-year b { font: 15px var(--title); font-weight: 400; } .kid-year p { margin: 4px 0 0; font-size: 15px; line-height: 1.7; }

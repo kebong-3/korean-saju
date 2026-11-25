@@ -289,6 +289,87 @@ class LifeStory(Base):
                          S.life(r, fx["평생운"], fx["앞으로10년"], "가나"))
 
 
+PROFS = [None, {"결혼": "미혼", "자녀": 0}, {"결혼": "연애중", "자녀": 0},
+         {"결혼": "기혼", "자녀": 2}, {"결혼": "기타", "자녀": 0}]
+
+
+class Profile(Base):
+    """결혼·자녀 기초정보에 따라 연애·자녀 풀이가 달라진다."""
+
+    def run_all(self, i, prof):
+        r, fx = load(i)
+        return (S.today(r, fx["오늘운세"], fx["시간대"], "", prof=prof),
+                S.year(r, fx["신년운세"], "", prof=prof),
+                S.life(r, fx["평생운"], fx["앞으로10년"], "", prof=prof))
+
+    def test_none_equals_default(self):
+        r, fx = load(19)
+        self.assertEqual(S.today(r, fx["오늘운세"], fx["시간대"], ""),
+                         S.today(r, fx["오늘운세"], fx["시간대"], "", prof=None))
+        self.assertEqual(S.year(r, fx["신년운세"]), S.year(r, fx["신년운세"], prof={"결혼": "", "자녀": 0}))
+        self.assertEqual(S.life(r, fx["평생운"], fx["앞으로10년"]), S.life(r, fx["평생운"], fx["앞으로10년"], prof=None))
+
+    def test_love_text_differs_by_status(self):
+        for i in range(0, len(BIRTHS), 3):
+            outs = [self.run_all(i, p) for p in PROFS]
+            love_day = [t["분야"]["연애"] for t, _, _ in outs]
+            love_year = [y["분야핵심"]["연애운"] for _, y, _ in outs]
+            love_year_story = [" ".join(y["분야"]["연애운"]) for _, y, _ in outs]
+            self.assertEqual(len(set(love_day)), 5, f"#{i} {love_day}")
+            self.assertEqual(len(set(love_year)), 5, f"#{i} {love_year}")
+            self.assertEqual(len(set(love_year_story)), 5, f"#{i}")
+            day_story = [t["story"][3] for t, _, _ in outs]
+            self.assertEqual(len(set(day_story[2:])), 3, f"#{i} 연애중·기혼·기타 story 동일")
+
+    def test_forbidden_words(self):
+        for i in range(len(BIRTHS)):
+            married = self.run_all(i, {"결혼": "기혼", "자녀": 1})
+            for t in texts(list(married)):
+                for w in ("썸", "소개팅", "소개 자리", "솔로"):
+                    self.assertNotIn(w, t, f"기혼#{i}: {t[:120]}")
+            single = self.run_all(i, {"결혼": "미혼", "자녀": 0})
+            for t in texts(list(single)):
+                for w in ("남편", "아내", "배우자에게", "배우자의 별"):
+                    self.assertNotIn(w, t, f"미혼#{i}: {t[:120]}")
+                self.assertIsNone(re.search(r"(?<!공)부부", t), f"미혼#{i}: {t[:120]}")
+
+    def test_child_keys(self):
+        for i in range(len(BIRTHS)):
+            r, fx = load(i)
+            for prof in PROFS:
+                t, y, l = self.run_all(i, prof)
+                kids = (prof or {}).get("자녀", 0)
+                self.assertEqual("자녀" in t["분야"], kids >= 1)
+                self.assertEqual("자녀" in y, kids >= 1)
+                self.clean([t, y, l], f"prof#{i} {prof}")
+                if kids:
+                    short(self, t["분야"]["자녀"], 70, f"자녀 today#{i}")
+                    self.assertIn("아이들", t["분야"]["자녀"] + " ".join(t["story"]))
+                    self.assertEqual(set(y["자녀"]), {"핵심", "story"})
+                    short(self, y["자녀"]["핵심"], 80, f"자녀 year#{i}")
+                    self.paras(y["자녀"]["story"], 2, 2, f"자녀 story#{i}")
+                    self.assertIn("관성" if r.chart.birth.gender == "남" else "식상", y["자녀"]["story"][0])
+                for k, v in t["분야"].items():
+                    short(self, v, 70, f"prof today 분야 {k}#{i}")
+                for k, v in y["분야핵심"].items():
+                    short(self, v, 80, f"prof 분야핵심 {k}#{i}")
+
+    def test_child_one_vs_two_and_life_family(self):
+        one = self.run_all(19, {"결혼": "기혼", "자녀": 1})
+        two = self.run_all(19, {"결혼": "기혼", "자녀": 2})
+        self.assertNotIn("아이들", one[0]["분야"]["자녀"])
+        self.assertNotEqual(one[1]["자녀"], two[1]["자녀"])
+        base = self.run_all(19, None)[2]
+        fam = one[2]
+        cur = next(k for k, d in enumerate(base["대운"]) if "설화" in d)
+        self.assertNotEqual(base["대운"][cur]["story"], fam["대운"][cur]["story"])
+        self.assertIn("아이", " ".join(fam["대운"][cur]["story"]))
+        self.assertEqual(len(fam["대운"][cur]["story"]), len(base["대운"][cur]["story"]))
+        wed = self.run_all(19, {"결혼": "기혼", "자녀": 0})[2]
+        self.assertIn("배우자", " ".join(wed["대운"][cur]["story"]))
+        self.assertNotIn("배우자", " ".join(base["대운"][cur]["story"][2:]))
+
+
 class Josa(unittest.TestCase):
     def test_particles(self):
         j = S._j

@@ -283,11 +283,19 @@ class StoryCompat(unittest.TestCase):
         self.assertEqual(len(chaps), len(self.results))
 
     def test_python39_syntax(self):
+        import shutil
+        import subprocess
         path = os.path.join(ROOT, "sajunyang", "story_compat.py")
         with open(path, encoding="utf-8") as f:
-            src = f.read()
-        ast.parse(src, feature_version=(3, 9))
-
+            ast.parse(f.read(), feature_version=(3, 9))
+        # ast feature_version 은 3.12식 f-string(같은 따옴표 재사용)을 못 잡으므로, 옛 인터프리터가 있으면 실제로 컴파일해 본다
+        for exe in ("python3.9", "python3.10", "python3.11"):
+            found = shutil.which(exe)
+            if found:
+                r = subprocess.run([found, "-c", "import ast,sys; ast.parse(open(sys.argv[1], encoding='utf-8').read())", path],
+                                   capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                break
 
 if __name__ == "__main__":
     unittest.main()

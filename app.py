@@ -40,6 +40,7 @@ def _opt(mod: str):
 
 story_me, story_luck, story_compat = _opt("story_me"), _opt("story_luck"), _opt("story_compat")
 journey = _opt("journey")
+family = _opt("family")
 
 
 def _safe(fn, *args, **kw):
@@ -72,6 +73,23 @@ class Birth(BaseModel):
     longitude: float = Field(default=127.0, ge=124.0, le=132.0)
     zi_mode: Literal["unified", "split"] = "unified"
     name: str = Field(default="", max_length=20)
+    # 기초정보(계산에는 안 쓰고 풀이·상담의 말투와 주제를 바꾸는 데만 쓴다)
+    marital: Literal["", "미혼", "연애중", "기혼", "기타"] = ""
+    kids: int = Field(default=0, ge=0, le=10)
+
+
+def _prof(b: Birth) -> dict:
+    return {"결혼": b.marital, "자녀": b.kids}
+
+
+def _call(fn, *args, prof=None):
+    """이야기 함수에 기초정보(prof)를 넘기되, 아직 prof를 모르는 함수면 빼고 부른다."""
+    try:
+        return fn(*args, prof=prof)
+    except TypeError as e:
+        if "prof" not in str(e):
+            raise
+        return fn(*args)
 
 
 class CompatReq(BaseModel):
@@ -87,6 +105,7 @@ class ChatMsg(BaseModel):
 class AIReq(BaseModel):
     birth: Birth
     partner: Optional[Birth] = None
+    partner_role: Literal["love", "child"] = "love"
     messages: list[ChatMsg] = Field(default_factory=list, max_length=30)
 
 
@@ -132,21 +151,21 @@ def saju(b: Birth):
     d["상담"] = counsel.build(r, d["운세"], d["옛이야기"])
     d["오고"] = ogo.build(r, d["운세"])
     d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
-    d["이야기"] = _stories(r, d["운세"], b.name.strip())
+    d["이야기"] = _stories(r, d["운세"], b.name.strip(), _prof(b))
     if journey:
         seed = f"{b.year}{b.month}{b.day}{b.hour}{b.gender}"
         d["나의길"] = _safe(journey.build, r, d["운세"], today_kst(), seed)
     return d
 
 
-def _stories(r, fx: dict, name: str) -> dict:
+def _stories(r, fx: dict, name: str, prof: dict | None = None) -> dict:
     out = {}
     if story_me:
-        out["사주"] = _safe(story_me.build, r, name)
+        out["사주"] = _safe(_call, story_me.build, r, name, prof=prof)
     if story_luck:
-        out["오늘"] = _safe(story_luck.today, r, fx["오늘운세"], fx["시간대"], name)
-        out["신년"] = _safe(story_luck.year, r, fx["신년운세"], name)
-        out["평생"] = _safe(story_luck.life, r, fx["평생운"], fx["앞으로10년"], name)
+        out["오늘"] = _safe(_call, story_luck.today, r, fx["오늘운세"], fx["시간대"], name, prof=prof)
+        out["신년"] = _safe(_call, story_luck.year, r, fx["신년운세"], name, prof=prof)
+        out["평생"] = _safe(_call, story_luck.life, r, fx["평생운"], fx["앞으로10년"], name, prof=prof)
     return out
 
 
@@ -161,7 +180,7 @@ def day(req: DayReq):
         raise HTTPException(400, "냥이 달력은 앞뒤 1년까지만 본다냥")
     r = _reading(req.birth)
     df, hr = day_fortune(r, req.day), hourly(r, req.day)
-    st = _safe(story_luck.today, r, df, hr, req.birth.name.strip()) if story_luck else None
+    st = _safe(_call, story_luck.today, r, df, hr, req.birth.name.strip(), prof=_prof(req.birth)) if story_luck else None
     return {"운세": df, "시간대": hr, "이야기": st}
 
 
@@ -174,6 +193,30 @@ def compat(req: CompatReq):
     if story_compat:
         res["이야기"] = _safe(story_compat.build, r1, r2, res, [req.a.name.strip(), req.b.name.strip()])
     return res
+
+
+# ---------------------------------------------------------------- 자녀 궁합
+class FamilyReq(BaseModel):
+    parent: Birth
+    child: Birth
+
+
+def _family(req: FamilyReq):
+    rp, rc = _reading(req.parent), _reading(req.child)
+    names = [req.parent.name.strip(), req.child.name.strip()]
+    res = _safe(family.build, rp, rc, names, today_kst()) if family else None
+    dc = rc.to_dict()
+    return rp, rc, res, {"names": [names[0] or "나", names[1] or "아이"], "자녀": {
+        "일주": f"{rc.chart.day.hanja}({rc.chart.day.hangul})",
+        "띠": dc["입력"]["띠"], "나이": today_kst().year - rc.chart.birth.year}}
+
+
+@app.post("/api/family")
+def family_compat(req: FamilyReq):
+    _, _, res, meta = _family(req)
+    if not res:
+        raise HTTPException(503, "자녀 궁합 풀이를 준비하는 중이다냥. 잠시 후 다시 와 줘!")
+    return {**meta, "이야기": res}
 
 
 # ---------------------------------------------------------------- AI (Gemini 기본 / Claude 선택)
@@ -192,13 +235,19 @@ def _context(req: AIReq) -> str:
     r = _reading(req.birth)
     fx = bundle(r, today_kst())
     who = req.birth.name.strip() or "사용자"
-    ctx = (f"<saju who=\"{who}\">\n{r.to_compact()}\n</saju>\n"
+    ctx = (readings.profile_line(_prof(req.birth)) + f"<saju who=\"{who}\">\n{r.to_compact()}\n</saju>\n"
            f"<fortune who=\"{who}\">\n{readings.compact_fortune(fx)}\n</fortune>")
     if req.partner:
         r2 = _reading(req.partner)
-        who2 = req.partner.name.strip() or "상대"
-        ctx += f"\n<saju who=\"{who2}\">\n{r2.to_compact()}\n</saju>"
-        ctx += "\n<compat>\n" + json.dumps(read_compatibility(r, r2), ensure_ascii=False) + "\n</compat>"
+        if req.partner_role == "child":
+            who2 = req.partner.name.strip() or "아이"
+            ctx += f"\n<saju who=\"{who2}(자녀, {today_kst().year - r2.chart.birth.year}세)\">\n{r2.to_compact()}\n</saju>"
+            fam = _safe(family.build, r, r2, [req.birth.name.strip(), req.partner.name.strip()], today_kst()) if family else None
+            ctx += "\n<child_compat>\n" + json.dumps(readings.family_digest(fam), ensure_ascii=False) + "\n</child_compat>"
+        else:
+            who2 = req.partner.name.strip() or "상대"
+            ctx += f"\n<saju who=\"{who2}\">\n{r2.to_compact()}\n</saju>"
+            ctx += "\n<compat>\n" + json.dumps(read_compatibility(r, r2), ensure_ascii=False) + "\n</compat>"
     return ctx + f"\n오늘 날짜(KST): {today_kst().isoformat()}"
 
 
@@ -262,7 +311,7 @@ def reading_menu():
 def reading(req: ReadingReq):
     if req.kind not in readings.KINDS:
         raise HTTPException(400, "그런 풀이는 냥이도 처음 듣는다냥")
-    if req.kind == "compat" and not req.partner:
+    if req.kind in ("compat", "child") and not req.partner:
         raise HTTPException(400, "궁합은 상대방 생일이 필요하다냥")
     if req.kind == "journey" and not req.text.strip():
         raise HTTPException(400, "먼저 지난 해에 있었던 일을 한두 개라도 기록해 달라냥")
@@ -280,9 +329,12 @@ def reading(req: ReadingReq):
     if req.partner:
         r2, who2 = _reading(req.partner), (req.partner.name.strip() or "상대")
     extra = readings.extra_for(req.kind, r, fx, today, req.day, req.text.strip())
+    if req.kind == "child":
+        res = _safe(family.build, r, r2, [req.birth.name.strip(), req.partner.name.strip()], today) if family else None
+        extra = {"자녀궁합": readings.family_digest(res), "자녀나이": today.year - r2.chart.birth.year}
     if not _ai_ready():
         return _stream_text(readings.fallback(req.kind, who, r, fx, extra, r2, who2), fallback=True)
-    prompt = readings.user_prompt(req.kind, who, r, fx, extra, r2, who2)
+    prompt = readings.profile_line(_prof(req.birth)) + readings.user_prompt(req.kind, who, r, fx, extra, r2, who2)
     return _stream_llm(readings.system_for(req.kind, req.long) + "\n\n해석 기준표\n" + GUIDE,
                        [{"role": "user", "content": prompt}], 9000 if req.long else 2500)
 

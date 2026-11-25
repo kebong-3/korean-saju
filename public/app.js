@@ -137,6 +137,11 @@ function buildForm(form, key, title) {
   for (let m = 1; m <= 12; m++) form.month.add(new Option(`${m}월`, m));
   for (let d = 1; d <= 31; d++) form.day.add(new Option(`${d}일`, d));
   form.year.value = 2000; form.month.value = 1; form.day.value = 1;
+  if (key === "me") $("details.adv", form).insertAdjacentHTML("beforebegin", `
+    <div class="field"><span>결혼 <small class="sub">(선택 · 풀이 말투가 달라져요)</small></span>
+      <div class="seg small wrap">${["미혼", "연애중", "기혼", "기타"].map((m) => `<label><input type="radio" name="marital" value="${m}"><b>${m === "연애중" ? "연애 중" : m}</b></label>`).join("")}</div></div>
+    <label class="field"><span>자녀 <small class="sub">(선택)</small></span>
+      <select name="kids"><option value="0">없음</option>${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n}명</option>`).join("")}</select></label>`);
   $$('input[type="radio"]', form).forEach((r) => (r.name = `${key}-${r.name}`));
   const sync = () => { $(".leap", form).hidden = val(form, "calendar") !== "lunar"; form.time.disabled = form.unknown.checked; };
   form.addEventListener("change", sync);
@@ -153,6 +158,7 @@ function birthOf(form) {
     year: +form.year.value, month: +form.month.value, day: +form.day.value,
     hour: unknown ? null : h, minute: unknown ? 0 : mi, longitude: +form.longitude.value,
     zi_mode: form.split.checked ? "split" : "unified",
+    ...(form.kids ? { marital: val(form, "marital") || "", kids: +form.kids.value || 0 } : {}),
   };
 }
 function fillForm(form, b) {
@@ -165,6 +171,11 @@ function fillForm(form, b) {
   if (b.hour != null) form.time.value = `${String(b.hour).padStart(2, "0")}:${String(b.minute).padStart(2, "0")}`;
   form.longitude.value = Number(b.longitude).toFixed(2);
   form.split.checked = b.zi_mode === "split";
+  if (form.kids) {
+    form.kids.value = b.kids || 0;
+    const m = form.querySelector(`input[name$="-marital"][value="${b.marital || ""}"]`);
+    $$('input[name$="-marital"]', form).forEach((x) => (x.checked = x === m));
+  }
   form._sync?.();
 }
 
@@ -213,11 +224,12 @@ function renderAll() {
 function ring(score, label, cls = "", color = "var(--pink)") {
   return `<div class="ring ${cls}" style="--p:${score};--c:${color}"><div><span><b>${score}</b><small>${esc(label)}</small></span></div></div>`;
 }
-const TODAY_IC = { 일: "💼", 돈: "💰", 연애: "💗", 관계: "🤝", 컨디션: "🌿", 시간: "⏰" };
+const TODAY_IC = { 일: "💼", 돈: "💰", 연애: "💗", 관계: "🤝", 컨디션: "🌿", 시간: "⏰", 자녀: "👶" };
+const domLabel = (k) => (married() && (k === "연애" || k === "연애운") ? (k === "연애" ? "부부" : "애정·부부운") : k);
 function todayStory(st, label = "냥이 도사의 오늘 한마디") {
   if (!st) return "";
   const punch = st["핵심"] || st.story?.[0] || "";
-  const dom = st["분야"] ? moreSet(Object.entries(st["분야"]).map(([k, v]) => [`${TODAY_IC[k] || "🐾"} ${k}`, `<p>${esc(v)}</p>`]), true) : "";
+  const dom = st["분야"] ? moreSet(Object.entries(st["분야"]).map(([k, v]) => [`${TODAY_IC[k] || "🐾"} ${domLabel(k)}`, `<p>${esc(v)}</p>`]), true) : "";
   return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="normal" data-size="54"></span>
       <div><small class="sub">${label}</small><h2>${esc(st["제목"])}</h2></div></div>
     <p class="punch-text">${esc(punch)}</p>
@@ -303,11 +315,12 @@ function renderLuck() {
       </div>
       ${punchCard(`${y["연도"]}년 한 줄 요약`, SY["핵심"], "wink", [["📖 자세히 풀이", paras(SY["서문"])], ["🐾 마무리", paras(SY["맺음"])], ["🏮 냥이 설화", taleHtml(SY["설화"])]])}
       <div class="card"><h2>분야별 운세</h2><div class="dom">
-        ${Object.entries(y["분야"]).map(([k, v]) => { const row = `<div class="dom-row"><span class="ic">${DOM_IC[k]}</span><span class="n">${k}</span>
+        ${Object.entries(y["분야"]).map(([k, v]) => { const row = `<div class="dom-row"><span class="ic">${DOM_IC[k]}</span><span class="n">${domLabel(k)}</span>
           <div class="track"><div class="fill" style="width:${v}%"></div></div><span class="v">${v}</span></div>`;
           const short = SY["분야핵심"]?.[k];
           return short || SY["분야"]?.[k]?.length ? `<details class="dom-story"><summary>${row}</summary><div class="story-text">${short ? `<p>${esc(short)}</p>${moreSet([["📖 더 자세히", paras(SY["분야"]?.[k])]])}` : paras(SY["분야"][k])}</div></details>` : row; }).join("")}</div>
         ${SY["분야"] ? `<p class="sub" style="margin:10px 0 0">분야를 누르면 냥이 도사가 자세히 이야기해 준다냥 👆</p>` : ""}
+        ${SY["자녀"]?.["핵심"] ? `<div class="kid-year"><b>👶 올해의 자녀운</b><p>${esc(SY["자녀"]["핵심"])}</p>${moreSet([["📖 자세히", paras(SY["자녀"].story)]])}</div>` : ""}
         <p class="sub" style="margin:12px 0 0">점수는 올해 기운이 내 ${chip("용신")}과 맞는지, 원국과 ${chip("합")}·${chip("충")}이 생기는지로 계산한 '순풍/역풍' 지표다냥.</p></div>
       <div class="card"><h2>냥이의 ${y["연도"]}년 조언</h2><ul class="tips">${y["조언"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>
         ${y["작용"].length ? `<h3 style="margin-top:16px">원국과 만나는 작용</h3><div class="chips">${y["작용"].map((x) => `<span class="chip">${T(x, true)}</span>`).join("")}</div>` : ""}
@@ -566,15 +579,78 @@ function saveMansePng() {
 }
 
 // ───────────────────────── 궁합
+let compatMode = "love";
 function renderCompat() {
+  const m = married(), kidsN = S.birth?.kids || 0;
   $("#tab-compat").innerHTML = `
-    <div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">두 사람의 ${chip("일간")}, 배우자 자리(${chip("일지")}), 서로의 ${chip("용신")}까지 정밀하게 보는 궁합이다냥 💞</div></div>
-    <div class="pair"><form id="form-b" class="card form" autocomplete="off"></form></div>
-    <button class="btn primary wide" id="btn-compat" type="button">궁합 보기</button>
-    <div id="compat-out" style="margin-top:16px"></div>`;
-  buildForm($("#form-b"), "b", "상대방 생일");
+    <div class="segtabs" role="tablist"><button data-cmode="love" type="button">${m ? "💑 부부 궁합" : "💞 연인 궁합"}</button><button data-cmode="child" type="button">👨‍👧 자녀 궁합${kidsN ? "" : ""}</button></div>
+    <div data-cpane="love" ${compatMode === "love" ? "" : "hidden"}>
+      <div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">${m ? "두 사람의 본성부터 마음의 안방(일지)까지, 우리 부부 사용 설명서를 펼쳐 주겠다냥 💑" : `두 사람의 ${chip("일간")}, 배우자 자리(${chip("일지")}), 서로의 ${chip("용신")}까지 정밀하게 보는 궁합이다냥 💞`}</div></div>
+      <div class="pair"><form id="form-b" class="card form" autocomplete="off"></form></div>
+      <button class="btn primary wide" id="btn-compat" type="button">궁합 보기</button>
+      <div id="compat-out" style="margin-top:16px"></div>
+    </div>
+    <div data-cpane="child" ${compatMode === "child" ? "" : "hidden"}>${renderKidPane()}</div>`;
+  buildForm($("#form-b"), "b", m ? "배우자 생일" : "상대방 생일");
   fillForm($("#form-b"), JSON.parse(localStorage.getItem("nyang:partner") || "null"));
   $("#btn-compat").addEventListener("click", runCompat);
+  $$("#tab-compat [data-cmode]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.cmode === compatMode);
+    b.addEventListener("click", () => { compatMode = b.dataset.cmode; renderCompat(); }); });
+  bindKidPane();
+  paintNyang($("#tab-compat"));
+}
+
+// ───────────────────────── 자녀 궁합
+const getKids = () => JSON.parse(localStorage.getItem("nyang:kids") || "[]");
+const setKids = (k) => localStorage.setItem("nyang:kids", JSON.stringify(k));
+let kidSel = 0;
+function renderKidPane() {
+  const kids = getKids();
+  return `<div class="say"><span class="who" data-nyang="wink" data-size="64"></span><div class="bubble">아이와 자꾸 부딪힌다면, 누가 틀린 게 아니라 <b>기운이 다른 것</b>일 수 있다냥. 아이의 타고난 기질과 우리 사이 사용 설명서를 펼쳐 주겠다냥 👨‍👧</div></div>
+    ${kids.length ? `<div class="kid-chips">${kids.map((k, i) => `<button type="button" data-kid="${i}" class="${i === kidSel ? "on" : ""}">${k.gender === "남" ? "👦" : "👧"} ${esc(k.name || `아이 ${i + 1}`)}</button>`).join("")}
+      <button type="button" data-kid="new" class="${kidSel === "new" ? "on" : ""}">＋ 추가</button></div>` : ""}
+    <div class="pair"><form id="form-kid" class="card form" autocomplete="off"></form></div>
+    <div class="rd-cta" style="grid-template-columns:1fr ${kids.length && kidSel !== "new" ? "auto" : ""}"><button class="btn primary" id="btn-kid" type="button">자녀 궁합 보기</button>
+      ${kids.length && kidSel !== "new" ? `<button class="ghost" id="btn-kid-del" type="button">삭제</button>` : ""}</div>
+    <div id="kid-out" style="margin-top:16px"></div>`;
+}
+function bindKidPane() {
+  const f = $("#form-kid");
+  if (!f) return;
+  buildForm(f, "kid", "아이 생일");
+  const kids = getKids();
+  if (kidSel !== "new" && kids[kidSel]) fillForm(f, kids[kidSel]); else { f.year.value = 2015; }
+  $$("#tab-compat [data-kid]").forEach((b) => b.addEventListener("click", () => {
+    kidSel = b.dataset.kid === "new" ? "new" : +b.dataset.kid; compatMode = "child"; renderCompat();
+  }));
+  $("#btn-kid-del")?.addEventListener("click", () => { const k = getKids(); k.splice(kidSel, 1); setKids(k); kidSel = 0; renderCompat(); });
+  $("#btn-kid").addEventListener("click", runKid);
+}
+async function runKid() {
+  const out = $("#kid-out"), btn = $("#btn-kid"), kid = birthOf($("#form-kid"));
+  const kids = getKids();
+  if (kidSel === "new" || !kids.length) { kids.push(kid); kidSel = kids.length - 1; } else kids[kidSel] = kid;
+  setKids(kids);
+  btn.disabled = true; loading(out);
+  try {
+    const r = await api("/api/family", { parent: S.birth, child: kid }), F = r["이야기"] || {};
+    const [pn, cn] = r.names;
+    out.innerHTML = `<div class="card tint-mint"><div class="yhead"><span data-nyang="happy" data-size="80"></span><div>
+        <div class="theme">${esc(pn)} 👨‍👧 ${esc(cn)}</div><div class="sub">${esc(r["자녀"]["띠"])}띠 · ${esc(r["자녀"]["일주"])}일주 · ${r["자녀"]["나이"]}세</div>
+        <div class="kid-type">${esc(F["관계유형"] || "")}</div></div></div></div>
+      ${punchCard(esc(F["제목"] || "우리 사이 한 줄 요약"), F["핵심"], "wink", [["📖 자세히 풀이", paras(F["서문"])], ["🐾 마무리", paras(F["맺음"])]])}
+      ${oneLiners(F["한줄"], { 찰떡: "💞", 삐걱: "⚡", 비결: "🔑" })}
+      ${F["장"]?.length ? `<div class="card tint-mint"><div class="card-head"><h2>👨‍👧 우리 사이 이야기 ${F["장"].length}장</h2><span class="badge">궁금한 장을 콕</span></div>
+        <div class="chaps">${F["장"].map((c) => chapter(c)).join("")}</div></div>` : ""}
+      <button class="btn primary wide" type="button" id="btn-kid-read" style="margin-bottom:10px">👨‍👧 냥이 도사의 자녀 궁합 대풀이 듣기</button>
+      ${S.ai ? `<button class="btn lav wide" type="button" id="btn-kid-ai">💬 아이 일로 냥이에게 상담하기</button>` : ""}`;
+    paintNyang(out);
+    $("#btn-kid-read").addEventListener("click", () => openReading("child", { partner: kid, title: `${cn}와 나, 자녀 궁합` }));
+    $("#btn-kid-ai")?.addEventListener("click", () => { S.chat = { history: [], partner: kid, role: "child", topic: null }; $("#tab-talk").innerHTML = "";
+      askNyang(`우리 아이 ${cn}(${r["자녀"]["나이"]}세)와 자꾸 부딪혀. 아이 사주와 내 사주를 보고, 아이를 이해하는 법과 대화법을 알려줘`); });
+    $$("#tab-compat .kid-chips button").forEach((b) => b.classList.toggle("on", b.dataset.kid === String(kidSel)));
+  } catch (e) { out.innerHTML = `<div class="card"><p class="error">${esc(e.message)}</p></div>`; }
+  finally { btn.disabled = false; }
 }
 async function runCompat() {
   const out = $("#compat-out"), btn = $("#btn-compat"), b = birthOf($("#form-b"));
@@ -674,7 +750,7 @@ function startTalk() {
   tab.innerHTML = `
     <div class="card tint-lav" style="text-align:center"><span class="float" data-nyang="happy" data-size="96" style="display:inline-block"></span>
       <h2 style="margin:6px 0 2px">사주냥이 고민 상담소</h2><p class="sub" style="margin:0">2천 년 동안 인간의 사주를 봐 온 냥이가 네 사주로 답해 준다냥</p></div>
-    ${S.chat.partner ? `<p class="ctx-note">💞 상대방 사주도 함께 보고 있어요</p>` : ""}
+    ${S.chat.partner ? `<p class="ctx-note">${S.chat.role === "child" ? "👨‍👧 아이 사주도 함께 보고 있어요" : "💞 상대방 사주도 함께 보고 있어요"}</p>` : ""}
     <div class="chat" id="chat"></div>
     <form class="composer" id="composer"><input name="q" maxlength="300" placeholder="${S.ai ? "냥이에게 무엇이든 털어놔 봐" : "고민을 적으면 냥이가 알맞은 답을 찾아줘"}" autocomplete="off">
       <button class="btn primary" type="submit">보내기</button></form>
@@ -720,7 +796,7 @@ async function aiSend(q) {
   let text = "", err = "";
   try {
     const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ birth: S.birth, partner: S.chat.partner, messages: S.chat.history.slice(-28) }) });
+      body: JSON.stringify({ birth: S.birth, partner: S.chat.partner, partner_role: S.chat.role || "love", messages: S.chat.history.slice(-28) }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || "냥이가 잠깐 자리를 비웠다냥");
     const reader = r.body.getReader(), dec = new TextDecoder();
     let buf = "";
@@ -787,16 +863,18 @@ function openDay(dt) {
 
 // ───────────────────────── 냥이 도사 대풀이 (서술형 AI 풀이)
 const READ_MENU = [["life", "hot"], ["day", "hot"], ["tomorrow", ""], ["week", ""], ["month", ""], ["year", "hot"], ["love", ""], ["money", ""],
-  ["career", ""], ["health", ""], ["daewoon", ""], ["compat", ""], ["dream", ""]];
+  ["career", ""], ["health", ""], ["daewoon", ""], ["compat", ""], ["child", ""], ["dream", ""]];
+const married = () => S.birth?.marital === "기혼";
 function kindInfo(id) {
   if (id === "tomorrow") return { id, title: "내일의 운세", icon: "🌙", desc: "내일 하루를 미리 귀띔" };
+  if (id === "love" && married()) return { id, title: "부부운", icon: "💑", desc: "우리 부부 사용 설명서" };
   return S.kinds.find((k) => k.id === id) || { id, title: id, icon: "🐾", desc: "" };
 }
 function readMenu() {
   if (!S.kinds.length) return "";
   return `<div class="card tint-lav"><div class="card-head"><h2>🐾 냥이 도사 대풀이</h2><span class="badge">${S.ai ? "AI 서술형" : "서술형"}</span></div>
     <div class="say" style="margin-bottom:12px"><span class="who" data-nyang="wink" data-size="48"></span><div class="bubble">궁금한 걸 콕 누르면 핵심만 쏙쏙! 더 듣고 싶으면 '길게 듣기'도 있다냥.</div></div>
-    <div class="rd-menu">${READ_MENU.map(([id, hot]) => { const k = kindInfo(id); return `<button type="button" class="${hot}" data-read="${id}"><i>${k.icon}</i>${esc(k.title)}<small>${esc(k.desc)}</small></button>`; }).join("")}</div></div>`;
+    <div class="rd-menu">${READ_MENU.filter(([id]) => id !== "child" || (S.birth?.kids || 0) > 0).map(([id, hot]) => { const k = kindInfo(id); return `<button type="button" class="${hot}" data-read="${id}"><i>${k.icon}</i>${esc(k.title)}<small>${esc(k.desc)}</small></button>`; }).join("")}</div></div>`;
 }
 const kstDate = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 864e5).toISOString().slice(0, 10);
 function hashStr(t) { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0).toString(36); }
@@ -809,6 +887,11 @@ function readFrom(id, day) {
     showTab("compat"); return;
   }
   if (id === "dream") return openDream();
+  if (id === "child") {
+    const kids = JSON.parse(localStorage.getItem("nyang:kids") || "[]");
+    if (kids.length === 1) return openReading("child", { partner: kids[0], title: `${kids[0].name || "아이"}와 나, 자녀 궁합` });
+    compatMode = "child"; renderCompat(); showTab("compat"); return;
+  }
   return openReading(id);
 }
 function openDream() {
@@ -895,7 +978,8 @@ async function openReading(kind, o = {}) {
 }
 
 // ───────────────────────── 나의 기록 (이 기기에만 저장) — 출석·오늘 어땠냥·돌아보기·준비하기
-const meKey = () => hashStr(JSON.stringify(S.birth));
+const CORE = ["year", "month", "day", "hour", "minute", "gender", "calendar", "leap"];
+const meKey = () => hashStr(JSON.stringify(CORE.map((k) => S.birth?.[k])));  // 결혼·자녀를 바꿔도 기록은 그대로
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(`nyang:${k}:${meKey()}`)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(`nyang:${k}:${meKey()}`, JSON.stringify(v)); } catch { /* 저장 공간 부족 */ } },
