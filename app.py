@@ -2,13 +2,15 @@
 
 - 사주 계산: ksaju 엔진 (천문 계산 만세력, 결정적·무료)
 - 운세 점수·맞춤·개운법: sajunyang.fortune (엔진 결과에 규칙 적용, 결정적·무료)
-- AI 상담(선택): Claude가 위 두 결과만 근거로 '사주냥이'로서 상담. ANTHROPIC_API_KEY가 없으면 AI만 꺼진다.
+- AI 풀이·상담(선택): Gemini(기본) 또는 Claude가 위 두 결과만 근거로 '사주냥이 도사'로서 이야기한다.
+  키가 없으면 규칙 기반 서술형 풀이로 대신한다. (sajunyang/llm.py 참고)
 - 화면: public/ (Vercel CDN이 서빙, 로컬에선 아래 mount로 서빙)
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -24,12 +26,11 @@ sys.path.insert(0, str(ROOT))
 
 from ksaju import read_compatibility, read_saju  # noqa: E402
 from ksaju.core import BRANCH_ELEMENT, ELEMENTS  # noqa: E402
-from sajunyang import counsel, ogo, persona  # noqa: E402
+from sajunyang import counsel, llm, ogo, persona, readings  # noqa: E402
 from sajunyang.fortune import bundle  # noqa: E402
 
 app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None)
 
-MODEL = os.environ.get("SAJU_MODEL", "claude-opus-5-5")
 GUIDE = (ROOT / "skills/saju-reading/references/interpretation-guide.md").read_text(encoding="utf-8")
 KST = timezone(timedelta(hours=9))
 
@@ -81,7 +82,8 @@ def _reading(b: Birth):
 # ---------------------------------------------------------------- 계산 API
 @app.get("/api/status")
 def status():
-    return {"ai": _ai_ready()}
+    p = llm.provider()  # 키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만
+    return {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"]}
 
 
 @app.get("/api/meta")
@@ -114,32 +116,16 @@ def compat(req: CompatReq):
     return res
 
 
-# ---------------------------------------------------------------- AI 상담
+# ---------------------------------------------------------------- AI (Gemini 기본 / Claude 선택)
 SYSTEM = persona.SYSTEM + "\n\n해석 기준표\n" + GUIDE
+CRISIS = re.compile(r"(죽고\s*싶|자살|사라지고\s*싶|살기\s*싫|자해|목숨|끝내고\s*싶)")
+CRISIS_MSG = ("말해 줘서 정말 고마워. 지금 많이 힘들구나… 냥이는 네가 꼭 괜찮았으면 좋겠다냥.\n\n"
+              "이건 사주보다 사람의 도움이 먼저 필요한 순간이다냥. 지금 바로 **자살예방상담전화 109**(24시간)나 "
+              "**정신건강위기상담 1577-0199**에 전화해 줄래? 위급하면 **119**.\n\n혼자 버티지 않아도 된다냥. 🐾")
 
 
 def _ai_ready() -> bool:
-    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        return False
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
-def _fortune_summary(fx: dict) -> str:
-    y, life, mt, t = fx["신년운세"], fx["평생운"], fx["맞춤"], fx["오늘운세"]
-    cur = life["현재"]
-    return "\n".join([
-        f"오늘({t['date']}) {t['일진']} 점수{t['점수']}({t['등급']}) {t['십성']}",
-        f"{y['연도']}년 {y['간지']} '{y['테마']}' 총운{y['총운']} " + " ".join(f"{k}{v}" for k, v in y["분야"].items()),
-        f"{y['연도']}년 월별점수 " + " ".join(f"{m['월']}월{m['점수']}" for m in y["월별"])
-        + f" | 좋은달 {y['좋은달']} 조심할달 {y['조심할달']}",
-        "대운점수 " + " ".join(f"{p['나이']}세{p['간지']}{p['점수']}" for p in life["대운"])
-        + (f" | 현재 {cur['나이']}세 대운" if cur else ""),
-        f"맞춤: 직업유형 {mt['직업']['유형']}({mt['직업']['추천']}) 잘맞는띠 {mt['잘맞는띠']} 조심할띠 {mt['조심할띠']} 행운색 {mt['행운의색']}",
-    ])
+    return llm.ready()
 
 
 def _context(req: AIReq) -> str:
@@ -147,7 +133,7 @@ def _context(req: AIReq) -> str:
     fx = bundle(r, today_kst())
     who = req.birth.name.strip() or "사용자"
     ctx = (f"<saju who=\"{who}\">\n{r.to_compact()}\n</saju>\n"
-           f"<fortune who=\"{who}\">\n{_fortune_summary(fx)}\n</fortune>")
+           f"<fortune who=\"{who}\">\n{readings.compact_fortune(fx)}\n</fortune>")
     if req.partner:
         r2 = _reading(req.partner)
         who2 = req.partner.name.strip() or "상대"
@@ -159,47 +145,83 @@ def _context(req: AIReq) -> str:
 GREETING = "냥이야, 나 왔어. 내 사주를 보고 먼저 짧게 인사해 줘. 내 타고난 성향 한 가지와 요즘 운 흐름 한 가지만 말해 주고, 무슨 고민이 있는지 물어봐 줘."
 
 
+def _stream_llm(system: str, messages: list[dict], max_tokens: int):
+    def gen():
+        try:
+            for text in llm.stream(system, messages, max_tokens=max_tokens):
+                yield _sse({"t": text})
+        except llm.LLMError as e:
+            yield _sse({"error": str(e)})
+        except Exception:  # noqa: BLE001
+            yield _sse({"error": "냥이가 잠깐 졸았다냥. 다시 시도해 줘!"})
+        yield _sse({"done": True})
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+def _stream_text(text: str, **flags):
+    def gen():
+        for k in range(0, len(text), 60):
+            yield _sse({"t": text[k:k + 60]})
+        yield _sse({**flags, "done": True})
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
+
 @app.post("/api/ai")
 def ai(req: AIReq):
     if not _ai_ready():
-        raise HTTPException(503, "AI 상담이 아직 설정되지 않았다냥 (ANTHROPIC_API_KEY 필요)")
-    import anthropic
-
+        raise HTTPException(503, "AI 상담이 아직 설정되지 않았다냥 (Gemini API 키 필요)")
     history = [m.model_dump() for m in req.messages]
     if not history or history[0]["role"] != "user":
         history.insert(0, {"role": "user", "content": GREETING})
     if history[-1]["role"] != "user":
         raise HTTPException(400, "마지막 메시지는 사용자 질문이어야 한다냥")
+    if CRISIS.search(history[-1]["content"]):
+        return _stream_text(CRISIS_MSG)
     # 계산 결과는 서버에서 다시 만들어 첫 메시지 앞에 붙인다(클라이언트가 조작할 수 없음).
     history[0] = {"role": "user", "content": _context(req) + "\n\n" + history[0]["content"]}
+    return _stream_llm(SYSTEM, history, 3000)
 
-    client = anthropic.Anthropic()
 
-    def gen():
-        try:
-            with client.beta.messages.stream(
-                model=MODEL,
-                max_tokens=2500,
-                system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
-                messages=history,
-                output_config={"effort": "low"},
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
-            ) as stream:
-                for text in stream.text_stream:
-                    yield _sse({"t": text})
-                if stream.get_final_message().stop_reason == "refusal":
-                    yield _sse({"error": "이 이야기는 냥이가 답하기 어렵다냥. 다르게 물어봐 줄래?"})
-        except anthropic.RateLimitError:
-            yield _sse({"error": "지금 상담하러 온 사람이 많다냥. 잠시 후 다시 불러줘!"})
-        except anthropic.APIStatusError as e:
-            yield _sse({"error": f"냥이가 잠깐 졸았다냥 (오류 {e.status_code})"})
-        except anthropic.APIConnectionError:
-            yield _sse({"error": "냥이와 연결이 끊겼다냥. 다시 시도해 줘!"})
-        yield _sse({"done": True})
+# ---------------------------------------------------------------- 냥이 도사 서술형 대풀이
+class ReadingReq(BaseModel):
+    birth: Birth
+    kind: str
+    partner: Optional[Birth] = None
+    day: Optional[date] = None
+    text: str = Field(default="", max_length=600)
 
-    return StreamingResponse(gen(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+@app.get("/api/readings")
+def reading_menu():
+    return [{"id": k, "title": v[0], "icon": v[1], "desc": v[2]} for k, v in readings.KINDS.items()]
+
+
+@app.post("/api/reading")
+def reading(req: ReadingReq):
+    if req.kind not in readings.KINDS:
+        raise HTTPException(400, "그런 풀이는 냥이도 처음 듣는다냥")
+    if req.kind == "compat" and not req.partner:
+        raise HTTPException(400, "궁합은 상대방 생일이 필요하다냥")
+    if req.kind == "dream" and not req.text.strip():
+        raise HTTPException(400, "어떤 꿈을 꿨는지 적어 달라냥")
+    if CRISIS.search(req.text):
+        return _stream_text(CRISIS_MSG)
+    today = today_kst()
+    if req.day and abs((req.day - today).days) > 400:
+        raise HTTPException(400, "냥이 달력은 앞뒤 1년까지만 본다냥")
+    r = _reading(req.birth)
+    fx = bundle(r, today)
+    who = req.birth.name.strip() or "사용자"
+    r2, who2 = (None, "")
+    if req.partner:
+        r2, who2 = _reading(req.partner), (req.partner.name.strip() or "상대")
+    extra = readings.extra_for(req.kind, r, fx, today, req.day, req.text.strip())
+    if not _ai_ready():
+        return _stream_text(readings.fallback(req.kind, who, r, fx, extra, r2, who2), fallback=True)
+    prompt = readings.user_prompt(req.kind, who, r, fx, extra, r2, who2)
+    return _stream_llm(readings.system_for(req.kind) + "\n\n해석 기준표\n" + GUIDE,
+                       [{"role": "user", "content": prompt}], 9000)
 
 
 def _sse(obj: dict) -> str:

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>사주냥이 — 2천 년 동안 사주를 봐 온 고양이</title>
-  <meta name="description" content="2천 년 동안 인간의 사주를 봐 온 사주냥이가 2027 신년운세, 평생 총운, 궁합, 나에게 맞는 직업·개운법을 쉽게 풀어주고 고민을 상담해 줘요.">
+  <meta name="description" content="2천 년 동안 인간의 사주를 봐 온 사주냥이 도사가 오늘의 운세, 운세 달력, 신년운세, 평생 사주 총평, 연애·재물·직업운, 궁합, 꿈해몽까지 길고 자세하게 풀어 줘요.">
   <meta name="theme-color" content="#fff4f1">
   <meta property="og:title" content="사주냥이 🐾">
   <meta property="og:description" content="2천 년 동안 인간의 사주를 봐 온 고양이에게 고민 상담 받기">
@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=4">
+  <link rel="stylesheet" href="/style.css?v=5">
 </head>
 <body>
   <div id="app">
@@ -56,6 +56,12 @@
     </div>
   </div>
 
+  <!-- 냥이 도사 대풀이 (전체 화면) -->
+  <div id="reader" class="reader" hidden>
+    <header class="rd-top"><button class="ghost" type="button" id="rd-back" aria-label="뒤로">← 뒤로</button><b id="rd-title">대풀이</b><span></span></header>
+    <div class="rd-scroll"><div class="rd-inner" id="rd-body"></div></div>
+  </div>
+
   <!-- 용어 설명 바텀시트 -->
   <div id="sheet" class="sheet" hidden>
     <div class="sheet-bg" data-close></div>
@@ -97,6 +103,6 @@
   </template>
 
   <script src="/nyang.js?v=2"></script>
-  <script src="/app.js?v=4" defer></script>
+  <script src="/app.js?v=5" defer></script>
 </body>
 </html>

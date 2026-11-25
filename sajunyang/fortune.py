@@ -8,12 +8,13 @@
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from ksaju.analysis import find_relations
 from ksaju.core import (BRANCH_ELEMENT, BRANCHES, BRANCHES_KO, ELEMENTS, STEM_ELEMENT, STEMS,
                         ZODIAC_LIST, Pillar, branch_main_stem, ten_god, twelve_stage, year_index)
-from ksaju.luck import wolun
+from ksaju.core import day_index, hour_index
+from ksaju.luck import day_luck, wolun
 from ksaju.texts import ELEMENT_ADVICE
 
 GOOD_REL = {"천간합", "육합", "삼합", "반합", "방합"}
@@ -110,16 +111,22 @@ def _elem_of(p: Pillar) -> tuple[str, str]:
     return ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]
 
 
-# ------------------------------------------------------------------ 오늘
-def today_fortune(r, today: date) -> dict:
+# ------------------------------------------------------------------ 오늘·특정일
+WEEKDAY = "월화수목금토일"
+HOUR_RANGE = ["23~01", "01~03", "03~05", "05~07", "07~09", "09~11", "11~13", "13~15", "15~17", "17~19", "19~21", "21~23"]
+
+
+def day_fortune(r, d: date) -> dict:
+    """아무 날짜의 일진 운세(점수·십성·한마디·행운). 오늘 운세도 이 함수로 만든다."""
     c, a = r.chart, r.analysis
-    t = r.today_luck
+    t = day_luck(c, d)
     p = Pillar(t["day_index"], "일진")
     s, rels, stage = _pillar_score(c, a, p)
     score = _clamp(s)
     adv = ELEMENT_ADVICE[a.yongshin]
     return {
-        "date": today.isoformat(), "일진": t["day"], "점수": score, "등급": _grade(score),
+        "date": d.isoformat(), "요일": WEEKDAY[d.weekday()], "일진": t["day"], "월건": t["month"],
+        "점수": score, "등급": _grade(score),
         "십성": f"{t['stem_god']}/{t['branch_god']}", "12운성": stage,
         "한마디": DAY_TIP[t["stem_god"]],
         "작용": [str(x) for x in rels],
@@ -127,6 +134,41 @@ def today_fortune(r, today: date) -> dict:
                "음식": ELEMENT_FOOD[a.yongshin].split("(")[1].rstrip(")").split(", ")[0]},
         "미션": adv["활동"].split("·")[0] + " 10분 하기",
     }
+
+
+def today_fortune(r, today: date) -> dict:
+    return day_fortune(r, today)
+
+
+def hourly(r, d: date) -> dict:
+    """그날 12시진(2시간 단위)별 순풍/역풍 점수."""
+    c, a = r.chart, r.analysis
+    ds = day_index(d) % 10
+    out = []
+    for k in range(12):
+        p = Pillar(hour_index(ds, k), "시진")
+        s, rels, _ = _pillar_score(c, a, p)
+        sg = ten_god(c.day_stem, p.stem)
+        out.append({"시": BRANCHES_KO[k] + "시", "시간": HOUR_RANGE[k], "간지": p.hanja, "점수": _clamp(s),
+                    "십성": sg, "한마디": DAY_TIP[sg]})
+    best = sorted(out, key=lambda x: -x["점수"])
+    return {"시진": out, "좋은시간": [x["시"] for x in best[:3]], "조심시간": [x["시"] for x in best[-2:]]}
+
+
+def calendar(r, start: date, n: int = 35) -> list[dict]:
+    """start부터 n일간의 일진 점수(운세 달력·좋은 날 고르기)."""
+    c, a = r.chart, r.analysis
+    out = []
+    for k in range(n):
+        d = start + timedelta(days=k)
+        p = Pillar(day_index(d), "일진")
+        s, rels, _ = _pillar_score(c, a, p)
+        sg = ten_god(c.day_stem, p.stem)
+        out.append({"date": d.isoformat(), "요일": WEEKDAY[d.weekday()], "간지": p.hanja, "한글": p.hangul,
+                    "점수": _clamp(s), "십성": sg, "한마디": DAY_TIP[sg],
+                    "충": any(x.kind in {"충", "천간충"} for x in rels),
+                    "합": any(x.kind in GOOD_REL for x in rels)})
+    return out
 
 
 # ------------------------------------------------------------------ 신년운세
@@ -280,5 +322,7 @@ def bundle(r, today: date) -> dict:
     yf = year_fortune(r, target)
     life = life_fortune(r)
     mt = matches(r)
-    return {"오늘운세": today_fortune(r, today), "신년운세": yf, "평생운": life, "맞춤": mt,
+    return {"오늘운세": today_fortune(r, today), "내일운세": day_fortune(r, today + timedelta(days=1)),
+            "시간대": hourly(r, today), "달력": calendar(r, today, 35),
+            "신년운세": yf, "평생운": life, "맞춤": mt,
             "개운법": gaewoon(r, target), "앞으로10년": years_ahead(r, today.year)}
