@@ -1,0 +1,11 @@
+{
+  "name": "사주냥이 — 2천 년 산 고양이 도사의 사주",
+  "short_name": "사주냥이",
+  "description": "오늘의 운세, 사주 풀이, 궁합, 그리고 지난 해를 돌아보고 앞으로를 준비하는 나의 길",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff4f1",
+  "theme_color": "#fff4f1",
+  "lang": "ko",
+  "icons": [{ "src": "/nyang.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

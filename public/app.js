@@ -104,6 +104,8 @@ document.addEventListener("click", (e) => {
   if (t) { e.preventDefault(); openTerm(t.dataset.t); return; }
   const a = e.target.closest("[data-ask]");
   if (a) { closeSheet(); askNyang(a.dataset.ask); return; }
+  const md = e.target.closest("[data-mood]");
+  if (md) { saveMood(md.dataset.mood, md.dataset.day); return; }
   const tg = e.target.closest("[data-tg]");
   if (tg) {
     const box = document.getElementById(tg.dataset.tg);
@@ -185,6 +187,7 @@ function showTab(tab, sub) {
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
   if (tab === "luck" && sub) setLuck(sub);
   if (tab === "talk") startTalk();
+  if (tab === "path") renderPath(sub);
   if (tab === "saju") {
     const pane = ["basic", "ogo", "manse"].includes(sub) ? sub : "basic";
     setSajuPane(pane);
@@ -197,7 +200,7 @@ function renderAll() {
   const d = S.d, i = d["입력"];
   $("#me-name").textContent = d["이름"] || "나";
   $("#me-sub").textContent = `${i["띠"]}띠 · ${d["원국"]["일주"]["한글"]}일주`;
-  renderHome(); renderLuck(); renderSaju(); renderCompat(); $("#tab-talk").innerHTML = "";
+  renderHome(); renderLuck(); renderSaju(); renderCompat(); renderPath(); $("#tab-talk").innerHTML = "";
   paintNyang($("#main"));
 }
 
@@ -219,6 +222,7 @@ function todayStory(st, label = "냥이 도사의 오늘 한마디") {
 }
 function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
+  markVisit(t);
   const nm = d["이름"] || "너";
   const key = "nyang:mission:" + t.date;
   const done = localStorage.getItem(key) === "1";
@@ -241,7 +245,11 @@ function renderHome() {
         <button class="btn lav" type="button" data-read="tomorrow">🌙 내일 운세 (${f["내일운세"]["점수"]}점)</button></div>
     </div>
     ${todayStory(d["이야기"]?.["오늘"])}
+    <div id="checkin-slot">${checkinCard()}</div>
+    ${wisdomCard(d["나의길"]?.["한구절"])}
     ${readMenu()}
+    ${pathTeaser()}
+    <div id="install-slot"></div>
     <button class="banner" data-go="luck:new" type="button"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
       <div class="t">'${esc(y["테마"])}'</div><small>총운 ${y["총운"]}점 · 좋은 달 ${y["좋은달"].join("·")}월</small></div><span class="big">🧧</span></button>
     <div class="menu" style="margin-bottom:16px">
@@ -880,6 +888,190 @@ async function openReading(kind, o = {}) {
   if (text && !err && !fallback && key) { try { localStorage.setItem(key, text); } catch { /* 저장 공간 부족 */ } }
   if (text) finish(text, fallback ? "지금은 AI 냥이 도사가 잠들어 있어 기본 풀이로 들려줬다냥." : "");
 }
+
+// ───────────────────────── 나의 기록 (이 기기에만 저장) — 출석·오늘 어땠냥·돌아보기·준비하기
+const meKey = () => hashStr(JSON.stringify(S.birth));
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(`nyang:${k}:${meKey()}`)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(`nyang:${k}:${meKey()}`, JSON.stringify(v)); } catch { /* 저장 공간 부족 */ } },
+};
+const MOODS = [["😣", "별로"], ["🙂", "보통"], ["😆", "좋았음"]];
+function markVisit(t) {
+  const days = store.get("days", {});
+  days[t.date] = { 십성: t["십성"].split("/")[0], 점수: t["점수"], 일진: t["일진"] };
+  const keys = Object.keys(days).sort();
+  keys.slice(0, Math.max(0, keys.length - 400)).forEach((k) => delete days[k]);
+  store.set("days", days);
+}
+function streak() {
+  const days = store.get("days", {});
+  let n = 0;
+  for (let i = 0; i < 400; i++) { if (days[kstDate(-i)]) n++; else break; }
+  return n;
+}
+function checkinCard() {
+  const diary = store.get("diary", {}), days = store.get("days", {});
+  const today = kstDate(0), yest = kstDate(-1);
+  const n = streak(), week = [...Array(7)].map((_, i) => kstDate(i - 6));
+  const target = !diary[yest] && days[yest] && !diary[today] && new Date(Date.now() + 9 * 3600e3).getUTCHours() < 12 ? yest : today;
+  const done = diary[target];
+  const label = target === today ? "오늘 하루 어땠냥?" : "어제는 어땠냥?";
+  const hit = diaryStats().hit;
+  return `<div class="card checkin"><div class="card-head"><h2>🐾 냥이 출석부</h2><span class="badge pink">${n}일 연속</span></div>
+    <div class="stamps">${week.map((dd) => `<div class="${days[dd] ? "on" : ""} ${dd === today ? "is-today" : ""}"><span>${days[dd] ? (diary[dd] ? MOODS[diary[dd].mood][0] : "🐾") : ""}</span><small>${"일월화수목금토"[new Date(dd + "T00:00:00").getDay()]}</small></div>`).join("")}</div>
+    <p class="sub" style="margin:10px 0 6px">${n >= 7 ? `일주일 개근! 냥이가 꾹꾹이 해 준다냥 🐾` : n >= 3 ? `${n}일째 출석 중, 이 기세로 가자냥!` : "매일 들르면 도장이 쌓인다냥. 7일 개근에 도전!"}</p>
+    <div class="mood-q"><b>${label}</b>${done ? `<span class="sub"> — ${MOODS[done.mood][0]} 기록 완료!${hit != null ? ` · 냥이 적중률 ${hit}%` : ""}</span>` : ""}</div>
+    ${done ? "" : `<div class="moods">${MOODS.map(([e, l], i) => `<button type="button" data-mood="${i}" data-day="${target}">${e}<small>${l}</small></button>`).join("")}</div>
+      <input class="note-in" id="mood-note" maxlength="80" placeholder="한 줄 메모 (선택) — 예) 회의에서 칭찬받음">`}
+    </div>`;
+}
+function saveMood(i, day) {
+  const diary = store.get("diary", {}), days = store.get("days", {});
+  diary[day] = { mood: +i, note: ($("#mood-note")?.value || "").trim(), 십성: days[day]?.["십성"] || "", 점수: days[day]?.["점수"] ?? null };
+  store.set("diary", diary);
+  $("#checkin-slot").innerHTML = checkinCard();
+  const say = +i === 2 ? "좋은 날이었구나! 냥이도 꼬리가 살랑살랑 🐾" : +i === 1 ? "무난한 하루도 소중하다냥. 푹 쉬어!" : "고생 많았다냥… 오늘은 따뜻한 거 먹고 일찍 자라냥.";
+  $("#checkin-slot .card").insertAdjacentHTML("beforeend", `<div class="say" style="margin-top:10px"><span class="who" data-nyang="${+i === 0 ? "think" : "happy"}" data-size="44"></span><div class="bubble">${say}</div></div>`);
+  paintNyang($("#checkin-slot"));
+}
+function diaryStats() {
+  const diary = store.get("diary", {}), arr = Object.entries(diary).map(([d, v]) => ({ d, ...v }));
+  const scored = arr.filter((x) => x["점수"] != null);
+  // 점수로 기대한 기분(63↑ 좋음, 47↓ 별로, 그 사이 보통)과 실제 기분이 같으면 1, 한 칸 차이면 0.5
+  const exp = (sc) => (sc >= 63 ? 2 : sc <= 47 ? 0 : 1);
+  const pts = scored.reduce((a, x) => a + (x.mood === exp(x["점수"]) ? 1 : Math.abs(x.mood - exp(x["점수"])) === 1 ? 0.5 : 0), 0);
+  const ok = pts;
+  const by = {};
+  arr.forEach((x) => { if (!x["십성"]) return; (by[x["십성"]] ||= []).push(x.mood); });
+  return { arr: arr.sort((a, b) => (a.d < b.d ? 1 : -1)), hit: scored.length >= 3 ? Math.round((ok / scored.length) * 100) : null, by };
+}
+function wisdomCard(w) {
+  if (!w) return "";
+  return `<div class="card wisdom"><div class="card-head"><h2>📖 오늘의 명리 한 구절</h2>${w["나에게"] ? `<span class="badge">딱 너한테!</span>` : ""}</div>
+    <div class="orig">${esc(w["원문"])}</div><div class="src">— ${esc(w["출전"])}</div>
+    <p class="mean">${esc(w["뜻"])}</p>
+    <div class="say"><span class="who" data-nyang="wink" data-size="44"></span><div class="bubble">${esc(w["풀이"])}</div></div></div>`;
+}
+function pathTeaser() {
+  const past = store.get("past", {}), n = Object.keys(past).length;
+  return `<div class="card tint-mint path-teaser"><h2>🧭 나의 길</h2>
+    <p>사주는 과거를 돌아보고 미래를 준비하는 거울이다냥. ${n ? `지난 해 기록 <b>${n}개</b>가 쌓였어. 패턴이 보이기 시작한다냥!` : "기억나는 해에 무슨 일이 있었는지 남기면, 냥이가 네 운의 패턴을 찾아 준다냥."}</p>
+    <div class="rd-cta"><button class="btn lav" type="button" data-go="path:past">🪞 지난 해 돌아보기</button><button class="btn lav" type="button" data-go="path:future">🌱 앞으로 준비하기</button></div></div>`;
+}
+
+// ───────────────────────── 나의 길 탭
+const TAGS = ["이직·취업", "승진·성과", "시험·합격", "이사", "연애·결혼", "이별", "출산·육아", "돈 들어옴", "돈 나감", "건강", "가족 일", "힘든 시기", "좋은 시기", "새 시작"];
+const GRP_OF = { 비견: "비겁", 겁재: "비겁", 식신: "식상", 상관: "식상", 편재: "재성", 정재: "재성", 편관: "관성", 정관: "관성", 편인: "인성", 정인: "인성" };
+const GRP_DESC = { 비겁: "나·경쟁의 해", 식상: "표현·재능의 해", 재성: "돈·기회의 해", 관성: "책임·시험의 해", 인성: "배움·도움의 해" };
+let pathSub = "past";
+function renderPath(sub) {
+  if (!S.d) return;
+  if (sub) pathSub = sub;
+  const J = S.d["나의길"] || {};
+  $("#tab-path").innerHTML = `
+    <div class="segtabs" role="tablist"><button data-psub="past" type="button">🪞 돌아보기</button><button data-psub="future" type="button">🌱 준비하기</button><button data-psub="diary" type="button">📔 운세 일기</button></div>
+    <div data-ppane="past" hidden>${renderPast(J["지난해들"] || [])}</div>
+    <div data-ppane="future" hidden>${renderFuture(J["앞으로"] || [])}</div>
+    <div data-ppane="diary" hidden>${renderDiary()}</div>`;
+  $$("#tab-path [data-psub]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.psub === pathSub); b.addEventListener("click", () => renderPath(b.dataset.psub)); });
+  $$("#tab-path [data-ppane]").forEach((p) => (p.hidden = p.dataset.ppane !== pathSub));
+  $$("#tab-path [data-year]").forEach((b) => b.addEventListener("click", () => openYear(+b.dataset.year)));
+  $$("#tab-path [data-prep]").forEach((c) => c.addEventListener("change", () => {
+    const pr = store.get("prep", {}); pr[c.dataset.prep] = c.checked; store.set("prep", pr);
+    const card = c.closest(".fut"), n = $$("[data-prep]:checked", card).length, el = $(".prep-n", card);
+    if (el) el.textContent = `준비 ${n}/3${n === 3 ? " · 완벽 준비! 냥이가 도장 쾅 🐾" : ""}`;
+  }));
+  $$("#tab-path [data-vow]").forEach((c) => c.addEventListener("change", () => { const v = store.get("vow", {}); v[c.dataset.vow] = c.value.trim(); store.set("vow", v); }));
+  $("#btn-journey")?.addEventListener("click", () => openReading("journey", { text: journeyText(), title: "인생 패턴 돌아보기" }));
+  paintNyang($("#tab-path"));
+}
+function journeyText() {
+  const past = store.get("past", {}), J = S.d["나의길"]["지난해들"];
+  return Object.keys(past).sort().map((y) => { const e = J.find((x) => x["연도"] === +y); const p = past[y];
+    return `${y}년(${e ? e["간지"] + "·" + e["십성"] : ""}): ${(p.tags || []).join("·")}${p.memo ? " — " + p.memo : ""}`; }).join("\n").slice(0, 1900);
+}
+function pastPattern(list) {
+  const past = store.get("past", {});
+  const tagged = list.filter((y) => past[y["연도"]] && ((past[y["연도"]].tags || []).length || past[y["연도"]].memo));
+  if (tagged.length < 2) return "";
+  const cnt = {};
+  tagged.forEach((y) => { cnt[y["그룹"]] = (cnt[y["그룹"]] || 0) + 1; });
+  const [g, c] = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+  const yrs = tagged.filter((y) => y["그룹"] === g).map((y) => y["연도"]);
+  const next = (S.d["운세"]["앞으로10년"] || []).filter((x) => GRP_OF[x["십성"]] === g).map((x) => x["연도"]).slice(0, 2);
+  const changes = tagged.filter((y) => (past[y["연도"]].tags || []).some((t) => ["이직·취업", "이사", "새 시작", "이별", "연애·결혼"].includes(t)));
+  return `<div class="card tint-lav"><div class="card-head"><h2>🔍 냥이가 찾은 패턴</h2><span class="badge">기록 ${tagged.length}개</span></div>
+    <div class="say"><span class="who" data-nyang="think" data-size="50"></span><div class="bubble">
+    큰일을 남긴 해 ${tagged.length}개 중 <b>${c}개</b>가 <b>${g}(${GRP_DESC[g]})</b>였다냥 (${yrs.join("·")}년).
+    ${next.length ? `<br>다음 ${g}의 해는 <b>${next.join("·")}년</b>! 그때를 미리 준비해 두자냥.` : ""}
+    ${changes.length >= 2 ? `<br>변화(이사·이직·만남·이별)가 있던 해: ${changes.map((y) => `${y["연도"]}(${y["십성"]})`).join(", ")}` : ""}
+    ${c < 2 ? "<br><small>아직은 우연일 수도 있다냥. 기록이 쌓일수록 정확해진다냥.</small>" : ""}</div></div>
+    <button class="btn primary wide" type="button" id="btn-journey" style="margin-top:12px">🪞 냥이 도사에게 내 인생 패턴 자세히 듣기</button></div>`;
+}
+function renderPast(list) {
+  const past = store.get("past", {});
+  return `<div class="say" style="margin-bottom:12px"><span class="who" data-nyang="normal" data-size="54"></span><div class="bubble">
+    지나온 해를 돌아보면 앞으로가 보인다냥. 기억나는 해를 눌러 그해 있었던 일을 남겨 봐. <b>기록은 이 폰에만</b> 저장된다냥.</div></div>
+    ${pastPattern(list)}
+    <div class="card"><h2>📜 지나온 해들</h2><div class="years">${list.map((y) => { const p = past[y["연도"]]; const has = p && ((p.tags || []).length || p.memo);
+      return `<button type="button" class="yr ${has ? "has" : ""}" data-year="${y["연도"]}"><span class="y">${y["연도"]}<small>${y["나이"]}세</small></span>
+        <span class="g">${esc(y["간지"])} · ${esc(y["십성"])}<small>${esc(y["테마"])}</small>${has ? `<em>${esc((p.tags || []).join(" · ") || "메모")}</em>` : ""}</span>
+        <span class="s ${y["점수"] >= 63 ? "good" : y["점수"] <= 47 ? "bad" : ""}">${y["점수"]}</span></button>`; }).join("")}</div></div>`;
+}
+function openYear(y) {
+  const e = S.d["나의길"]["지난해들"].find((x) => x["연도"] === y);
+  if (!e) return;
+  const past = store.get("past", {}), cur = past[y] || { tags: [], memo: "" };
+  openSheet(`<div class="term-head"><span data-nyang="think" data-size="60"></span><div><h2>${y}년 · ${e["나이"]}세</h2>
+      <div class="term-mean">${esc(e["간지"])}(${esc(e["한글"])}) · ${esc(e["십성"])}의 해 · ${e["점수"]}점 · 대운 ${esc(e["대운"])}</div></div></div>
+    <div class="bubble lav" style="margin-bottom:12px"><b>${esc(e["테마"])}</b><br>${esc(e["질문"][0])}<br><span class="sub">${esc(e["질문"][1])}</span></div>
+    <div class="tagpick">${TAGS.map((t) => `<label><input type="checkbox" value="${t}" ${cur.tags.includes(t) ? "checked" : ""}><span>${t}</span></label>`).join("")}</div>
+    <textarea class="dream-box" id="yr-memo" maxlength="200" placeholder="그해의 기억을 한두 줄로 — 예) 첫 직장 입사, 밤샘 많았지만 사람을 얻었다">${esc(cur.memo)}</textarea>
+    <button class="btn primary wide" type="button" id="yr-save" style="margin-bottom:8px">기록 남기기</button>`);
+  $("#yr-save").addEventListener("click", () => {
+    const tags = $$("#sheet .tagpick input:checked").map((i) => i.value), memo = $("#yr-memo").value.trim();
+    const p = store.get("past", {});
+    if (tags.length || memo) p[y] = { tags, memo }; else delete p[y];
+    store.set("past", p); closeSheet(); renderPath("past"); renderHomeTeaser();
+  });
+}
+function renderHomeTeaser() { const el = $("#tab-home .path-teaser"); if (el) { el.outerHTML = pathTeaser(); paintNyang($("#tab-home")); } }
+function renderFuture(list) {
+  const pr = store.get("prep", {}), vow = store.get("vow", {});
+  return `<div class="say" style="margin-bottom:12px"><span class="who" data-nyang="happy" data-size="54"></span><div class="bubble">
+    운은 날씨, 준비는 우산이다냥. 해마다 할 일을 체크하면서 한 해를 미리 그려 보자냥!</div></div>
+    ${list.map((y, i) => { const done = y["준비"].filter((_, k) => pr[`${y["연도"]}:${k}`]).length;
+      return `<div class="card fut ${i === 0 ? "tint-pink" : ""}"><div class="card-head"><h2>${y["연도"]}년 <small class="sub">${esc(y["간지"])} · ${esc(y["십성"])} · ${y["나이"]}세</small></h2><span class="badge ${y["점수"] >= 63 ? "" : "pink"}">${y["점수"]}점</span></div>
+      <div class="kw">🎯 ${esc(y["키워드"])}</div>
+      <p class="sub" style="margin:6px 0 10px">${esc(y["한마디"])}</p>
+      <div class="checks">${y["준비"].map((t, k) => `<label><input type="checkbox" data-prep="${y["연도"]}:${k}" ${pr[`${y["연도"]}:${k}`] ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div>
+      <p class="care">⚠️ 조심: ${esc(y["조심"])}</p>
+      <input class="note-in" data-vow="${y["연도"]}" maxlength="60" value="${esc(vow[y["연도"]] || "")}" placeholder="${y["연도"]}년 나의 다짐 한 줄">
+      <p class="sub" style="margin:8px 0 0"><span class="prep-n">준비 ${done}/3${done === 3 ? " · 완벽 준비! 냥이가 도장 쾅 🐾" : ""}</span> · 대운 ${esc(y["대운"])}</p></div>`; }).join("")}
+    <button class="btn lav wide" type="button" data-read="year">🧧 냥이 도사의 신년운세 풀이 듣기</button>`;
+}
+function renderDiary() {
+  const st = diaryStats();
+  if (!st.arr.length) return `<div class="say"><span class="who" data-nyang="wink" data-size="54"></span><div class="bubble">아직 일기가 없다냥. 홈의 <b>'오늘 하루 어땠냥?'</b>에 기분을 눌러 주면 여기 쌓인다냥. 쌓일수록 냥이가 '너만의 날씨 패턴'을 찾아 준다냥!</div></div>`;
+  const rows = Object.entries(st.by).map(([g, ms]) => [g, ms.reduce((a, b) => a + b, 0) / ms.length, ms.length]).sort((a, b) => b[1] - a[1]);
+  const best = rows.find((r) => r[2] >= 2), worst = [...rows].reverse().find((r) => r[2] >= 2 && r !== best);
+  return `<div class="card tint-lav"><div class="card-head"><h2>📊 나의 운세 날씨</h2><span class="badge">일기 ${st.arr.length}일</span></div>
+    ${st.hit != null ? `<div class="hit">냥이 적중률 <b>${st.hit}%</b><small>운세 점수와 실제 기분이 맞은 비율</small></div>` : ""}
+    <div class="say"><span class="who" data-nyang="think" data-size="50"></span><div class="bubble">${best ? `너는 <b>${esc(best[0])}</b>의 날에 기분이 제일 좋았다냥 (${best[2]}번).` : "조금만 더 쌓이면 패턴이 보인다냥!"}
+      ${worst ? `<br><b>${esc(worst[0])}</b>의 날엔 조금 지쳤었네. 그런 날은 미리 일정을 가볍게!` : ""}</div></div>
+    <div class="dom" style="margin-top:12px">${rows.map(([g, avg, n]) => `<div class="dom-row" style="grid-template-columns:52px 1fr 40px"><span class="n">${esc(g)}</span><div class="track"><div class="fill" style="width:${Math.round(avg * 50)}%"></div></div><span class="v">${n}일</span></div>`).join("")}</div></div>
+    <div class="card"><h2>📔 최근 기록</h2><div class="dlist">${st.arr.slice(0, 30).map((x) => `<div><span>${MOODS[x.mood][0]}</span><b>${+x.d.slice(5, 7)}/${+x.d.slice(8)}</b><small>${esc(x["십성"] || "")}${x["점수"] != null ? ` · ${x["점수"]}점` : ""}</small><p>${esc(x.note || "")}</p></div>`).join("")}</div></div>`;
+}
+
+// ───────────────────────── 홈 화면에 설치(PWA)
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); installEvt = e;
+  const slot = $("#install-slot");
+  if (slot) slot.innerHTML = `<button class="ghost wide" type="button" id="btn-install">📲 홈 화면에 냥이 집 만들기</button>`;
+  $("#btn-install")?.addEventListener("click", async () => { installEvt?.prompt(); installEvt = null; $("#install-slot").innerHTML = ""; });
+});
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
 
 // ───────────────────────── 초기화
 async function init() {

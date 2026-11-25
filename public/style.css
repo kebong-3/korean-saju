@@ -95,7 +95,7 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .me-chip small { color: var(--sub); font-size: 12px; }
 .logo { font-size: 22px; color: var(--pink-d); }
 .bottom { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom));
-  width: min(500px, calc(100% - 20px)); display: grid; grid-template-columns: repeat(5, 1fr); background: rgba(255, 255, 255, .92);
+  width: min(500px, calc(100% - 20px)); display: grid; grid-template-columns: repeat(6, 1fr); background: rgba(255, 255, 255, .92);
   backdrop-filter: blur(14px); border-radius: 26px; box-shadow: 0 10px 34px rgba(120, 80, 140, .2); padding: 6px; }
 .bottom button { border: 0; background: none; display: grid; justify-items: center; gap: 1px; padding: 6px 0; border-radius: 20px; font: 12px var(--title); color: var(--sub); cursor: pointer; }
 .bottom button i { font-style: normal; font-size: 21px; line-height: 1.2; filter: grayscale(.6); opacity: .8; }
@@ -391,3 +391,47 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .sheet-story { margin-bottom: 12px; }
 .sheet-story .story-head h2 { font-size: 17px; }
 .one:last-child:nth-child(odd) { grid-column: span 2; }
+
+/* ── 출석·오늘 어땠냥 ── */
+.stamps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.stamps div { display: grid; justify-items: center; gap: 2px; }
+.stamps span { width: 38px; height: 38px; border-radius: 50%; border: 2px dashed var(--line); display: grid; place-items: center; font-size: 18px; }
+.stamps .on span { border: 0; background: var(--pink-l); }
+.stamps .is-today span { outline: 2px solid var(--pink-d); outline-offset: 2px; }
+.stamps small { font-size: 11.5px; color: var(--sub); }
+.mood-q { font: 16px var(--title); margin-top: 4px; }
+.moods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 8px; }
+.moods button { border: 0; background: #fbf8fd; border-radius: 16px; padding: 10px 0 8px; font-size: 26px; cursor: pointer; display: grid; justify-items: center; }
+.moods button small { font: 13px var(--title); color: var(--sub); }
+.moods button:active { transform: scale(.95); }
+.note-in { width: 100%; font: 15px var(--body); border: 2px solid var(--line); border-radius: 12px; padding: 9px 12px; background: #fff; color: var(--ink); }
+/* ── 명리 한 구절 ── */
+.wisdom .orig { font: 19px/1.6 "Noto Serif KR", "Gowun Dodum", serif; letter-spacing: .04em; color: #5a4a3a; background: #fffaf0; border-radius: 14px; padding: 12px 14px; }
+.wisdom .src { text-align: right; font-size: 13px; color: var(--sub); margin: 6px 2px 0; }
+.wisdom .mean { margin: 8px 0 12px; font-size: 15px; line-height: 1.7; }
+.path-teaser p { margin: 4px 0 0; line-height: 1.7; }
+/* ── 나의 길 ── */
+.years { display: grid; gap: 6px; }
+.yr { border: 0; background: #fbf8fd; border-radius: 14px; padding: 10px 12px; display: grid; grid-template-columns: 58px 1fr 38px; gap: 8px; align-items: center; text-align: left; cursor: pointer; font: 15px var(--body); color: var(--ink); }
+.yr.has { background: var(--mint-l); }
+.yr .y { font: 17px var(--title); display: grid; } .yr .y small, .yr .g small { font: 12px var(--body); color: var(--sub); }
+.yr .g { display: grid; gap: 1px; } .yr .g em { font-style: normal; font-size: 13px; color: var(--lav-d); }
+.yr .s { font: 16px var(--title); text-align: right; } .yr .s.good { color: #2f9e74; } .yr .s.bad { color: var(--pink-d); }
+.tagpick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tagpick input { display: none; }
+.tagpick span { display: inline-block; padding: 7px 12px; border-radius: 99px; background: #f3eef7; font: 14px var(--title); cursor: pointer; }
+.tagpick input:checked + span { background: var(--lav-d); color: #fff; }
+.fut .kw { font: 18px var(--title); color: var(--lav-d); }
+.fut .card-head h2 small { font: 13px var(--body); }
+.checks { display: grid; gap: 6px; }
+.checks label { display: flex; gap: 10px; align-items: center; background: #fbf8fd; border-radius: 12px; padding: 9px 12px; font-size: 15px; cursor: pointer; }
+.checks input { width: 20px; height: 20px; accent-color: var(--lav-d); flex: none; }
+.checks input:checked + span { text-decoration: line-through; color: var(--sub); }
+.care { margin: 10px 0 8px; font-size: 14.5px; color: var(--pink-d); }
+.hit { display: grid; justify-items: center; background: #fff; border-radius: 16px; padding: 10px; margin-bottom: 12px; font: 16px var(--title); }
+.hit b { font-size: 30px; color: var(--pink-d); font-weight: 400; } .hit small { font: 12.5px var(--body); color: var(--sub); }
+.dlist { display: grid; gap: 8px; }
+.dlist div { display: grid; grid-template-columns: 30px 46px 1fr; gap: 2px 8px; align-items: center; background: #fbf8fd; border-radius: 12px; padding: 8px 10px; }
+.dlist span { font-size: 20px; grid-row: span 2; } .dlist b { font: 15px var(--title); font-weight: 400; } .dlist small { color: var(--sub); font-size: 12.5px; }
+.dlist p { grid-column: 2 / 4; margin: 0; font-size: 14px; }
+.bottom button { font-size: 11.5px; }

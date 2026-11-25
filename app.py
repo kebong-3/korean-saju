@@ -39,6 +39,7 @@ def _opt(mod: str):
 
 
 story_me, story_luck, story_compat = _opt("story_me"), _opt("story_luck"), _opt("story_compat")
+journey = _opt("journey")
 
 
 def _safe(fn, *args, **kw):
@@ -132,6 +133,9 @@ def saju(b: Birth):
     d["오고"] = ogo.build(r, d["운세"])
     d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
     d["이야기"] = _stories(r, d["운세"], b.name.strip())
+    if journey:
+        seed = f"{b.year}{b.month}{b.day}{b.hour}{b.gender}"
+        d["나의길"] = _safe(journey.build, r, d["운세"], today_kst(), seed)
     return d
 
 
@@ -245,7 +249,7 @@ class ReadingReq(BaseModel):
     kind: str
     partner: Optional[Birth] = None
     day: Optional[date] = None
-    text: str = Field(default="", max_length=600)
+    text: str = Field(default="", max_length=2000)
     long: bool = False
 
 
@@ -260,6 +264,8 @@ def reading(req: ReadingReq):
         raise HTTPException(400, "그런 풀이는 냥이도 처음 듣는다냥")
     if req.kind == "compat" and not req.partner:
         raise HTTPException(400, "궁합은 상대방 생일이 필요하다냥")
+    if req.kind == "journey" and not req.text.strip():
+        raise HTTPException(400, "먼저 지난 해에 있었던 일을 한두 개라도 기록해 달라냥")
     if req.kind == "dream" and not req.text.strip():
         raise HTTPException(400, "어떤 꿈을 꿨는지 적어 달라냥")
     if CRISIS.search(req.text):
