@@ -435,3 +435,8 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .dlist span { font-size: 20px; grid-row: span 2; } .dlist b { font: 15px var(--title); font-weight: 400; } .dlist small { color: var(--sub); font-size: 12.5px; }
 .dlist p { grid-column: 2 / 4; margin: 0; font-size: 14px; }
 .bottom button { font-size: 11.5px; }
+.wisdom .w-title { font: 21px/1.4 var(--title); color: var(--ink); margin: 2px 0 6px; }
+.wisdom .w-now { font-size: 15.5px; color: var(--lav-d); background: var(--lav-l); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+.wisdom .w-me { display: inline-block; margin-top: 6px; font-weight: 400; font-family: var(--title); color: var(--pink-d); }
+.w-mission { width: 100%; text-align: left; border: 0; background: var(--butter-l); border-radius: 14px; padding: 10px 12px; margin-top: 12px; font: 15px var(--body); color: var(--ink); cursor: pointer; }
+.w-mission.done { background: var(--mint-l); text-decoration: line-through; color: var(--sub); }

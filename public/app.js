@@ -104,6 +104,11 @@ document.addEventListener("click", (e) => {
   if (t) { e.preventDefault(); openTerm(t.dataset.t); return; }
   const a = e.target.closest("[data-ask]");
   if (a) { closeSheet(); askNyang(a.dataset.ask); return; }
+  const wn = e.target.closest("[data-wnext]");
+  if (wn) { wIdx = (wIdx ?? 0) + 1; $("#wisdom").outerHTML = wisdomCard(S.d["나의길"]["한구절"]); paintNyang($("#wisdom")); return; }
+  const wm = e.target.closest("[data-wm]");
+  if (wm) { const on = localStorage.getItem(wm.dataset.wm) !== "1"; localStorage.setItem(wm.dataset.wm, on ? "1" : "0");
+    wm.classList.toggle("done", on); wm.innerHTML = wm.innerHTML.replace(on ? "⬜" : "✅", on ? "✅" : "⬜"); return; }
   const md = e.target.closest("[data-mood]");
   if (md) { saveMood(md.dataset.mood, md.dataset.day); return; }
   const tg = e.target.closest("[data-tg]");
@@ -945,12 +950,20 @@ function diaryStats() {
   arr.forEach((x) => { if (!x["십성"]) return; (by[x["십성"]] ||= []).push(x.mood); });
   return { arr: arr.sort((a, b) => (a.d < b.d ? 1 : -1)), hit: scored.length >= 3 ? Math.round((ok / scored.length) * 100) : null, by };
 }
+let wIdx = null;
 function wisdomCard(w) {
   if (!w) return "";
-  return `<div class="card wisdom"><div class="card-head"><h2>📖 오늘의 명리 한 구절</h2>${w["나에게"] ? `<span class="badge">딱 너한테!</span>` : ""}</div>
-    <div class="orig">${esc(w["원문"])}</div><div class="src">— ${esc(w["출전"])}</div>
-    <p class="mean">${esc(w["뜻"])}</p>
-    <div class="say"><span class="who" data-nyang="wink" data-size="44"></span><div class="bubble">${esc(w["풀이"])}</div></div></div>`;
+  const all = w["전체"] || [w];
+  if (wIdx == null) wIdx = w["오늘"] ?? 0;
+  const x = all[wIdx % all.length], isToday = wIdx === (w["오늘"] ?? 0);
+  const mk = `nyang:wm:${kstDate(0)}:${x.key}`, done = localStorage.getItem(mk) === "1";
+  return `<div class="card wisdom" id="wisdom"><div class="card-head"><h2>📖 ${isToday ? "오늘의" : "한 줄 더!"} 냥이 고전 한 줄</h2><span class="badge">${esc(x["출전"].split(" · ")[0])}</span></div>
+    <div class="w-title">${esc(x["제목"])}</div>
+    <div class="w-now">“${esc(x["요즘말"])}”</div>
+    <div class="say"><span class="who" data-nyang="wink" data-size="46"></span><div class="bubble">${esc(x["풀이"])}${x["나에게"] ? `<br><b class="w-me">🐾 ${esc(x["나에게"])}</b>` : ""}</div></div>
+    <button type="button" class="w-mission ${done ? "done" : ""}" data-wm="${mk}">${done ? "✅" : "⬜"} 오늘의 미션: ${esc(x["미션"])}</button>
+    ${moreSet([["📜 원문 보기", `<div class="orig">${esc(x["원문"])}</div><div class="src">— ${esc(x["출전"])}</div><p class="mean">${esc(x["뜻"])}</p>`]])}
+    ${all.length > 1 ? `<button type="button" class="ghost wide w-next" data-wnext style="margin-top:10px">🔄 다른 구절 보여줘냥</button>` : ""}</div>`;
 }
 function pathTeaser() {
   const past = store.get("past", {}), n = Object.keys(past).length;
