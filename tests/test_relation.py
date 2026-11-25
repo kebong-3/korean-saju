@@ -84,13 +84,16 @@ class ShareFlowTest(unittest.TestCase):
                 else:
                     out.append(1)
             return out
-        self._orig = (share_store._pipe, share_store.configured)
-        share_store._pipe, share_store.configured = fake, (lambda: True)
+        self._orig = share_store._pipe
+        share_store._pipe = fake
+        os.environ["KV_REST_API_URL"], os.environ["KV_REST_API_TOKEN"] = "http://fake", "t"
         self.ss = share_store
         self.c = TestClient(app.app)
 
     def tearDown(self):
-        self.ss._pipe, self.ss.configured = self._orig
+        self.ss._pipe = self._orig
+        os.environ.pop("KV_REST_API_URL", None)
+        os.environ.pop("KV_REST_API_TOKEN", None)
 
     def test_flow_and_privacy(self):
         c = self.c
@@ -113,6 +116,41 @@ class ShareFlowTest(unittest.TestCase):
         self.assertEqual(c.delete(f"/api/map/{mid}/member/{pid}?token=nope").status_code, 403)
         self.assertTrue(c.delete(f"/api/map/{mid}/member/{pid}?token={jj['token']}").json()["ok"])
         self.assertEqual(c.get("/api/map/zz").status_code, 404)
+
+
+class BlobFlowTest(unittest.TestCase):
+    """Vercel Blob 백엔드(가짜)로 같은 흐름."""
+
+    def setUp(self):
+        os.environ["VERCEL"] = "1"
+        from fastapi.testclient import TestClient
+        import app
+        from sajunyang import share_store as ss
+        self.files = {}
+        self.ss = ss
+        self._orig = (ss._bput, ss._bget, ss._blist, ss._bdel)
+        ss._bput = lambda path, obj: self.files.__setitem__(path, json.dumps(obj))
+        ss._bget = lambda path: json.loads(self.files[path]) if path in self.files else None
+        ss._blist = lambda prefix: [k for k in self.files if k.startswith(prefix)]
+        ss._bdel = lambda paths: [self.files.pop(k, None) for k in paths]
+        os.environ["BLOB_READ_WRITE_TOKEN"] = "fake"
+        self.c = TestClient(app.app)
+
+    def tearDown(self):
+        self.ss._bput, self.ss._bget, self.ss._blist, self.ss._bdel = self._orig
+        os.environ.pop("BLOB_READ_WRITE_TOKEN", None)
+
+    def test_blob_flow(self):
+        c = self.c
+        self.assertEqual(self.ss.backend(), "blob")
+        r = c.post("/api/map", json={"owner": {"year": 1999, "month": 8, "day": 21, "name": "지은"}, "consent": True}).json()
+        for i, (y, mo, d) in enumerate([(1992, 7, 3), (1988, 11, 20), (1995, 1, 9)]):
+            self.assertEqual(c.post(f"/api/map/{r['id']}/join", json={"name": f"친구{i}", "birth": {"year": y, "month": mo, "day": d}, "consent": True}).status_code, 200)
+        pub = c.get(f"/api/map/{r['id']}").json()
+        self.assertEqual(len(pub["멤버"]), 3)
+        self.assertNotIn("1992", json.dumps(self.files, ensure_ascii=False))
+        self.assertTrue(c.delete(f"/api/map/{r['id']}?token={r['token']}").json()["ok"])
+        self.assertEqual(self.files, {})
 
 
 if __name__ == "__main__":

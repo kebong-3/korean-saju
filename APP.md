@@ -71,14 +71,19 @@ Vercel → Project → Settings → Environment Variables
 
 ## 귀인 지도 공유 저장소 연결 (한 번만)
 
-친구가 공유 링크에서 생일을 넣으면 내 지도에 자동으로 올라오게 하려면 작은 저장소가 필요합니다.
+친구가 공유 링크에서 생일을 넣으면 내 지도에 자동으로 올라오게 하려면 저장소가 필요합니다. **Vercel Blob**을 권장합니다(Marketplace 불필요).
 
-1. Vercel 대시보드 → 이 프로젝트 → **Storage** → **Create Database / Browse Marketplace** → **Upstash for Redis** 선택
-2. 무료 플랜으로 만들고 **이 프로젝트에 연결(Connect)** — `KV_REST_API_URL`, `KV_REST_API_TOKEN` 환경변수가 자동으로 생깁니다
-3. **Redeploy** 한 번
+1. Vercel 대시보드 왼쪽 메뉴 **Storage → Blob** → **Create Blob Store**
+2. 이름 아무거나(예: `nyang-map`), 접근 방식은 **Private** 선택 → 만들기
+3. 만든 스토어 화면의 **Projects** 탭(또는 Connect Project) → **korean-saju** 프로젝트 선택 → 환경은 Production·Preview 모두 체크 → Connect
+   → `BLOB_READ_WRITE_TOKEN`이 프로젝트 환경변수에 자동으로 추가됩니다
+4. 프로젝트 → **Deployments** → 최신 배포 오른쪽 `…` → **Redeploy**
+
+확인: `https://korean-saju-six.vercel.app/api/status` 에서 `"share": true`
+
+(대안) Upstash Redis를 연결해도 됩니다: 왼쪽 메뉴 **Integrations** → Marketplace에서 **Upstash** 검색 → Install → 프로젝트 연결. `KV_REST_API_URL`/`KV_REST_API_TOKEN`이 있으면 Redis를 우선 사용합니다.
 
 연결 전에는 앱이 자동으로 **'내 폰에만 저장' 모드**로 동작합니다(친구 생일을 직접 넣어 지도를 만들 수 있고, 링크 공유만 꺼짐).
-`/api/status`의 `"share": true`로 연결 여부를 확인할 수 있습니다.
 
 저장 원칙: 친구의 생년월일은 저장하지 않고(관계 계산 결과와 별명만), 지도 주인의 생년월일만 지도 재계산용으로 저장합니다.
-비밀 토큰은 해시로만 보관하며, 400일 동안 활동이 없으면 자동 삭제됩니다. 주인·본인은 언제든 별을 지울 수 있습니다.
+비밀 토큰은 해시로만 보관합니다. 주인·본인은 언제든 별을 지울 수 있습니다.
