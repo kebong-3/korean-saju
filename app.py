@@ -27,7 +27,26 @@ sys.path.insert(0, str(ROOT))
 from ksaju import read_compatibility, read_saju  # noqa: E402
 from ksaju.core import BRANCH_ELEMENT, ELEMENTS  # noqa: E402
 from sajunyang import counsel, llm, ogo, persona, readings  # noqa: E402
-from sajunyang.fortune import bundle  # noqa: E402
+from sajunyang.fortune import bundle, day_fortune, hourly  # noqa: E402
+
+# 냥이 도사 이야기(규칙 기반 서술형). 모듈 하나가 실패해도 나머지와 계산 결과는 그대로 나간다.
+def _opt(mod: str):
+    try:
+        return __import__(f"sajunyang.{mod}", fromlist=[mod])
+    except Exception as e:  # noqa: BLE001
+        print(f"[story] {mod} 불러오기 실패: {e!r}")
+        return None
+
+
+story_me, story_luck, story_compat = _opt("story_me"), _opt("story_luck"), _opt("story_compat")
+
+
+def _safe(fn, *args, **kw):
+    try:
+        return fn(*args, **kw)
+    except Exception as e:  # noqa: BLE001
+        print(f"[story] {getattr(fn, '__module__', '')}.{getattr(fn, '__name__', fn)} 실패: {e!r}")
+        return None
 
 app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None)
 
@@ -81,9 +100,17 @@ def _reading(b: Birth):
 
 # ---------------------------------------------------------------- 계산 API
 @app.get("/api/status")
-def status():
-    p = llm.provider()  # 키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만
-    return {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"]}
+def status(check: int = 0):
+    """키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만. ?check=1 이면 실제로 짧게 호출해 본다."""
+    p = llm.provider()
+    out = {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"]}
+    if check and p["name"]:
+        try:
+            txt = "".join(llm.stream("한 단어로만 답해.", [{"role": "user", "content": "고양이 울음소리?"}], max_tokens=200))
+            out.update({"live": "ok", "sample": txt[:40], "model": llm.LAST_MODEL.get("name")})
+        except llm.LLMError as e:
+            out.update({"live": "error", "error": str(e)})
+    return out
 
 
 @app.get("/api/meta")
@@ -104,7 +131,34 @@ def saju(b: Birth):
     d["상담"] = counsel.build(r, d["운세"], d["옛이야기"])
     d["오고"] = ogo.build(r, d["운세"])
     d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
+    d["이야기"] = _stories(r, d["운세"], b.name.strip())
     return d
+
+
+def _stories(r, fx: dict, name: str) -> dict:
+    out = {}
+    if story_me:
+        out["사주"] = _safe(story_me.build, r, name)
+    if story_luck:
+        out["오늘"] = _safe(story_luck.today, r, fx["오늘운세"], fx["시간대"], name)
+        out["신년"] = _safe(story_luck.year, r, fx["신년운세"], name)
+        out["평생"] = _safe(story_luck.life, r, fx["평생운"], fx["앞으로10년"], name)
+    return out
+
+
+class DayReq(BaseModel):
+    birth: Birth
+    day: date
+
+
+@app.post("/api/day")
+def day(req: DayReq):
+    if abs((req.day - today_kst()).days) > 400:
+        raise HTTPException(400, "냥이 달력은 앞뒤 1년까지만 본다냥")
+    r = _reading(req.birth)
+    df, hr = day_fortune(r, req.day), hourly(r, req.day)
+    st = _safe(story_luck.today, r, df, hr, req.birth.name.strip()) if story_luck else None
+    return {"운세": df, "시간대": hr, "이야기": st}
 
 
 @app.post("/api/compat")
@@ -113,6 +167,8 @@ def compat(req: CompatReq):
     res = read_compatibility(r1, r2)
     res["names"] = [req.a.name.strip() or "나", req.b.name.strip() or "상대"]
     res["띠"] = [r1.to_dict()["입력"]["띠"], r2.to_dict()["입력"]["띠"]]
+    if story_compat:
+        res["이야기"] = _safe(story_compat.build, r1, r2, res, [req.a.name.strip(), req.b.name.strip()])
     return res
 
 

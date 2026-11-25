@@ -38,6 +38,25 @@ function md(src, auto = false) {
   return html + (list ? "</ul>" : "");
 }
 
+// ───────────────────────── 냥이 도사 이야기 블록 (규칙 기반 서술형 — 서버 sajunyang/story_*.py)
+const paras = (arr) => (arr || []).filter(Boolean).map((x) => `<p>${esc(x).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")}</p>`).join("");
+function chapter(ch, open = false) {
+  if (!ch || !ch.story?.length) return "";
+  return `<details class="chap" ${open ? "open" : ""}><summary><i>${ch.icon || "🐾"}</i><div><b>${esc(ch.title)}</b>${ch.summary ? `<small>${esc(ch.summary)}</small>` : ""}</div></summary>
+    <div class="chap-body">${paras(ch.story)}${ch.tip ? `<div class="chap-tip"><span data-nyang="wink" data-size="38"></span><div><small>냥이 도사의 한마디</small>${esc(ch.tip)}</div></div>` : ""}</div></details>`;
+}
+function storyCard(title, intro, mood = "happy", more = "") {
+  if (!intro?.length) return "";
+  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="${mood}" data-size="58"></span><h2>${title}</h2></div>
+    <div class="story-text">${paras(intro)}</div>${more}</div>`;
+}
+/** 첫 n문단만 보여주고 나머지는 '이어서 듣기'로 접는다 */
+function foldParas(arr, n = 2, label = "이야기 이어서 듣기") {
+  if (!arr?.length) return "";
+  if (arr.length <= n) return paras(arr);
+  return paras(arr.slice(0, n)) + `<details class="fold"><summary>${label} ▾</summary>${paras(arr.slice(n))}</details>`;
+}
+
 // ───────────────────────── 바텀시트
 function openSheet(html) {
   $("#sheet-content").innerHTML = html;
@@ -158,6 +177,13 @@ function renderAll() {
 function ring(score, label, cls = "", color = "var(--pink)") {
   return `<div class="ring ${cls}" style="--p:${score};--c:${color}"><div><span><b>${score}</b><small>${esc(label)}</small></span></div></div>`;
 }
+function todayStory(st) {
+  if (!st?.story?.length) return "";
+  return `<div class="card story-card"><div class="story-head"><span class="float" data-nyang="normal" data-size="58"></span>
+      <div><small class="sub">냥이 도사의 오늘 이야기</small><h2>${esc(st["제목"])}</h2></div></div>
+    <div class="story-text">${foldParas(st.story, 2)}</div>
+    ${st.tip ? `<div class="chap-tip"><span data-nyang="wink" data-size="38"></span><div><small>오늘의 한마디</small>${esc(st.tip)}</div></div>` : ""}</div>`;
+}
 function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
   const nm = d["이름"] || "너";
@@ -181,6 +207,7 @@ function renderHome() {
       <div class="rd-cta"><button class="btn primary" type="button" data-read="day">☀️ 오늘 운세 자세히</button>
         <button class="btn lav" type="button" data-read="tomorrow">🌙 내일 운세 (${f["내일운세"]["점수"]}점)</button></div>
     </div>
+    ${todayStory(d["이야기"]?.["오늘"])}
     ${readMenu()}
     <button class="banner" data-go="luck:new" type="button"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
       <div class="t">'${esc(y["테마"])}'</div><small>총운 ${y["총운"]}점 · 좋은 달 ${y["좋은달"].join("·")}월</small></div><span class="big">🧧</span></button>
@@ -210,12 +237,12 @@ function renderHome() {
 // ───────────────────────── 운세
 const DOM_IC = { 재물운: "💰", 직업운: "💼", 연애운: "💗", 건강운: "🌿", 학업운: "📚", 인간관계: "👥" };
 function renderLuck() {
-  const f = S.d["운세"], y = f["신년운세"], life = f["평생운"];
+  const f = S.d["운세"], y = f["신년운세"], life = f["평생운"], SY = S.d["이야기"]?.["신년"] || {}, SL = S.d["이야기"]?.["평생"] || {};
   const months = y["월별"].map((m) => {
     const cls = y["좋은달"].includes(m["월"]) ? "good" : y["조심할달"].includes(m["월"]) ? "bad" : "";
     return `<div class="mon ${cls}"><div class="m">${m["월"]}월</div><div class="gz">${esc(m["절기"])} ${esc(m["시작"])}~ · ${esc(m["간지"])}</div>
       <span class="s">${m["점수"]}</span><div class="track"><div class="fill" style="width:${m["점수"]}%"></div></div>
-      <p>${T(m["한마디"])}</p><p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
+      <p>${esc(SY["월"]?.[m["월"]] || m["한마디"])}</p><p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
   }).join("");
   $("#tab-luck").innerHTML = `
     <div class="segtabs" role="tablist"><button data-sub="cal" type="button">운세 달력</button><button data-sub="new" type="button">${y["연도"]} 신년</button><button data-sub="month" type="button">월별 운세</button><button data-sub="life" type="button">평생 총운</button></div>
@@ -228,13 +255,17 @@ function renderLuck() {
           <div class="sub">${chip("세운")} 12운성 ${chip(y["12운성"])}</div></div></div>
         <div class="say" style="margin-top:14px"><span class="who" data-nyang="wink" data-size="54"></span><div class="bubble">${T(y["총평"])}</div></div>
       </div>
+      ${storyCard(`${y["연도"]}년, 냥이 도사의 이야기`, SY["서문"], "wink")}
       <div class="card"><h2>분야별 운세</h2><div class="dom">
-        ${Object.entries(y["분야"]).map(([k, v]) => `<div class="dom-row"><span class="ic">${DOM_IC[k]}</span><span class="n">${k}</span>
-          <div class="track"><div class="fill" style="width:${v}%"></div></div><span class="v">${v}</span></div>`).join("")}</div>
+        ${Object.entries(y["분야"]).map(([k, v]) => { const row = `<div class="dom-row"><span class="ic">${DOM_IC[k]}</span><span class="n">${k}</span>
+          <div class="track"><div class="fill" style="width:${v}%"></div></div><span class="v">${v}</span></div>`;
+          return SY["분야"]?.[k]?.length ? `<details class="dom-story"><summary>${row}</summary><div class="story-text">${paras(SY["분야"][k])}</div></details>` : row; }).join("")}</div>
+        ${SY["분야"] ? `<p class="sub" style="margin:10px 0 0">분야를 누르면 냥이 도사가 자세히 이야기해 준다냥 👆</p>` : ""}
         <p class="sub" style="margin:12px 0 0">점수는 올해 기운이 내 ${chip("용신")}과 맞는지, 원국과 ${chip("합")}·${chip("충")}이 생기는지로 계산한 '순풍/역풍' 지표다냥.</p></div>
       <div class="card"><h2>냥이의 ${y["연도"]}년 조언</h2><ul class="tips">${y["조언"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>
         ${y["작용"].length ? `<h3 style="margin-top:16px">원국과 만나는 작용</h3><div class="chips">${y["작용"].map((x) => `<span class="chip">${T(x, true)}</span>`).join("")}</div>` : ""}
         <p class="sub" style="margin:14px 0 0">좋은 달 <b>${y["좋은달"].join("·")}월</b> · 살살 갈 달 <b>${y["조심할달"].join("·")}월</b></p></div>
+      ${storyCard("한 해를 마무리하며", SY["맺음"], "happy")}
       <button class="btn lav wide" type="button" data-ask="${y["연도"]}년 내 운세를 연애·일·돈으로 나눠서 자세히 풀어줘">💬 냥이에게 ${y["연도"]}년 더 물어보기</button>
     </div>
     <div data-pane="month" hidden>
@@ -249,6 +280,13 @@ function renderLuck() {
         <div class="say" style="margin-top:10px"><span class="who" data-nyang="happy" data-size="54"></span>
           <div class="bubble">앞으로 가장 크게 피어나는 시기는 <b>${life["전성기"]["나이"]}세(${life["전성기"]["시작"]}년~)</b> '${esc(life["전성기"]["테마"])}'다냥!
           ${life["현재"] ? `<br>지금은 ${life["현재"]["나이"]}세 대운 '${esc(life["현재"]["테마"])}'의 한가운데에 있다냥.` : ""}</div></div></div>
+      ${storyCard("냥이 도사가 읽은 너의 인생 지도", SL["서문"], "think")}
+      ${SL["지금"]?.length ? storyCard("지금, 그리고 앞으로 10년", SL["지금"], "wink") : ""}
+      ${SL["대운"]?.length ? `<div class="card"><h2>📜 대운 이야기 — 10년마다 바뀌는 인생의 계절</h2><div class="chaps">${SL["대운"].map((x, i) => {
+        const cur = life["대운"][i]?.["현재"];
+        return chapter({ icon: cur ? "⭐" : "🍂", title: `${x["나이"]}세 ${x["간지"]} · ${x["제목"]}`, summary: cur ? "지금 지나고 있는 계절" : `${life["대운"][i]?.["시작"] ?? ""}년~ · ${life["대운"][i]?.["점수"] ?? ""}점`, story: x.story }, cur);
+      }).join("")}</div></div>` : ""}
+      ${storyCard("너의 전성기", SL["전성기"], "happy")}
       <div class="card"><h2>대운 한눈에 보기</h2><div class="dw-list">${life["대운"].map((p) => `<div class="dw ${p["현재"] ? "now" : ""}">
         <div class="age">${p["나이"]}세</div><div class="gz">${esc(p["간지"])}</div><div>${p["점수"]}점</div><div class="th">${esc(p["테마"])}<br>${T(p["십성"], true)}</div></div>`).join("")}</div></div>
       <div class="card"><h2>앞으로 10년</h2><div class="dom">${f["앞으로10년"].map((x) => `<div class="dom-row" style="grid-template-columns:52px 1fr 34px">
@@ -281,7 +319,7 @@ function lifeChart(pts) {
 // ───────────────────────── 내 사주
 const STRENGTH_TERM = (s) => (s.includes("강") ? "신강" : s.includes("약") ? "신약" : "중화");
 function renderSaju() {
-  const d = S.d, a = d["해석"], y = d["용신"], mt = d["운세"]["맞춤"], gw = d["운세"]["개운법"];
+  const d = S.d, a = d["해석"], y = d["용신"], mt = d["운세"]["맞춤"], gw = d["운세"]["개운법"], SM = d["이야기"]?.["사주"] || {};
   const order = ["시주", "일주", "월주", "연주"];
   const pillars = order.map((k) => {
     const p = d["원국"][k], lbl = k[0];
@@ -319,7 +357,11 @@ function renderSaju() {
       <p class="sub" style="margin:12px 0 0">위는 ${chip("천간")}, 아래는 ${chip("지지")}. 글자 위아래 작은 글씨는 ${chip("십성")}과 ${chip("12운성")}, 맨 아래는 ${chip("지장간")}이다냥. 밑줄 친 말을 누르면 냥이가 설명해 준다냥!</p></div>
     <div class="card"><h2>${chip("오행")} 밸런스</h2><div class="bars">${bars}</div>
       <p class="sub" style="margin:12px 0 0">십성 비중 · ${Object.entries(d["십성 비중(%)"]).map(([k, v]) => `${chip(k)} ${v}%`).join(" · ")}</p></div>
-    <div class="card tint-lav"><div class="card-head"><h2>냥이의 쉬운 해석</h2><span class="float" data-nyang="normal" data-size="50"></span></div><div class="easy">${easy}</div></div>
+    ${SM["장"]?.length ? `${storyCard("냥이 도사가 펼친 너의 두루마리", SM["서문"], "think")}
+      <div class="card tint-lav"><div class="card-head"><h2>📜 사주 이야기 ${SM["장"].length}장</h2><span class="badge">눌러서 펼치기</span></div>
+        <div class="chaps">${SM["장"].map((c, i) => chapter(c, i === 0)).join("")}</div></div>
+      ${storyCard("두루마리를 말며", SM["맺음"], "happy")}`
+    : `<div class="card tint-lav"><div class="card-head"><h2>냥이의 쉬운 해석</h2><span class="float" data-nyang="normal" data-size="50"></span></div><div class="easy">${easy}</div></div>`}
     <div class="card tint-mint" id="fit"><h2>🎯 나에게 맞는</h2><div class="grid2">
       <div class="fit full"><small>맞는 일</small><b>${esc(mt["직업"]["유형"])}</b><br>${esc(mt["직업"]["추천"])}<div class="sub">용신 분야: ${esc(mt["직업"]["용신분야"])}</div></div>
       <div class="fit full"><small>공부·일하는 법</small>${T(mt["공부일하는법"])}</div>
@@ -496,15 +538,20 @@ async function runCompat() {
     const mood = r.score >= 72 ? "happy" : r.score >= 58 ? "wink" : "think";
     const say = r.score >= 85 ? "와, 이건 2천 년 동안 몇 번 못 본 궁합이다냥!" : r.score >= 72 ? "서로에게 힘이 되는 좋은 궁합이다냥."
       : r.score >= 58 ? "다른 점이 있어서 오히려 배울 게 많은 궁합이다냥." : "부딪히는 곳이 있지만, 알고 맞춰 가면 충분하다냥. 궁합은 '사용 설명서'다냥!";
-    const who = (t) => String(t).replace(/1번/g, r.names[0]).replace(/2번/g, r.names[1]);
+    const who = (t) => String(t).replace(/1번/g, r.names[0]).replace(/2번/g, r.names[1]), SC = r["이야기"] || {};
     r.items.forEach((x) => { x["항목"] = who(x["항목"]); x["해석"] = who(x["해석"]); });
     out.innerHTML = `<div class="card tint-pink"><div class="yhead">${ring(r.score, r.grade)}<div>
         <div class="theme">${esc(r.names[0])} 💞 ${esc(r.names[1])}</div><div class="sub">${esc(r["띠"][0])}띠 · ${esc(r["띠"][1])}띠</div></div></div>
         <div class="say" style="margin-top:12px"><span class="who" data-nyang="${mood}" data-size="54"></span><div class="bubble">${say}</div></div>
         <p class="sub" style="margin:6px 0 0">${esc(r.names[0])}: ${T(r["1번"], true)}<br>${esc(r.names[1])}: ${T(r["2번"], true)}</p></div>
-      <div class="card"><h2>항목별 궁합</h2>${r.items.map((x) => `<div class="citem"><b>${T(x["항목"], true)}</b>
-        <span class="pt ${x["점수"] > 0 ? "pos" : x["점수"] < 0 ? "neg" : ""}">${x["점수"] > 0 ? "+" : ""}${x["점수"]}</span><p>${T(x["해석"], true)}</p></div>`).join("")}
+      ${SC["서문"] ? storyCard(esc(SC["제목"] || "두 사람의 이야기"), SC["서문"], mood) : ""}
+      ${SC["장"]?.length ? `<div class="card tint-pink"><div class="card-head"><h2>💞 궁합 이야기 ${SC["장"].length}장</h2><span class="badge pink">눌러서 펼치기</span></div>
+        <div class="chaps">${SC["장"].map((c, i) => chapter(c, i === 0)).join("")}</div></div>` : ""}
+      <div class="card"><h2>항목별 궁합</h2>${r.items.map((x, i) => `<div class="citem"><b>${T(x["항목"], true)}</b>
+        <span class="pt ${x["점수"] > 0 ? "pos" : x["점수"] < 0 ? "neg" : ""}">${x["점수"] > 0 ? "+" : ""}${x["점수"]}</span>
+        <p class="sub" style="margin:2px 0 0">${T(x["해석"], true)}</p>${SC["항목"]?.[i]?.["이야기"] ? `<p>${esc(SC["항목"][i]["이야기"])}</p>` : ""}</div>`).join("")}
         <p class="sub">${esc(r.note)}</p></div>
+      ${storyCard("오래 가는 비결", SC["맺음"], "happy")}
       <button class="btn primary wide" type="button" id="btn-compat-read" style="margin-bottom:10px">💞 냥이 도사의 궁합 대풀이 듣기</button>
       ${S.ai ? `<button class="btn lav wide" type="button" id="btn-compat-ai">💬 냥이에게 우리 궁합 상담하기</button>` : ""}`;
     paintNyang(out);
@@ -679,7 +726,15 @@ function openDay(dt) {
   openSheet(`<div class="term-head"><span data-nyang="${mood}" data-size="64"></span><div><h2>${+dt.slice(5, 7)}월 ${+dt.slice(8)}일 (${x["요일"]})</h2>
       <div class="term-mean">${esc(x["간지"])}(${esc(x["한글"])})일 · ${esc(x["십성"])} · ${x["점수"]}점</div></div></div>
     <div class="bubble lav" style="margin-bottom:14px">${T(x["한마디"])}${x["충"] ? "<br>원국과 부딪히는 글자가 들어오니 말과 일정은 여유 있게!" : ""}${x["합"] ? "<br>합이 들어 사람 운이 붙는 날이다냥." : ""}</div>
-    <button class="btn primary wide" type="button" data-read="day" data-day="${dt}" style="margin-bottom:8px">☀️ 이 날 운세 자세히 듣기</button>`);
+    <div id="day-story"><div class="loading" style="padding:14px 0"><span data-nyang="think" data-size="48"></span>냥이 도사가 그날을 들여다보는 중…</div></div>
+    <button class="btn primary wide" type="button" data-read="day" data-day="${dt}" style="margin-bottom:8px">☀️ AI 냥이 도사에게 더 길게 듣기</button>`);
+  api("/api/day", { birth: S.birth, day: dt }).then((j) => {
+    const st = j["이야기"], el = $("#day-story");
+    if (!el) return;
+    el.innerHTML = st?.story?.length ? `<h3 style="margin:4px 0 8px">${esc(st["제목"])}</h3><div class="story-text">${foldParas(st.story, 3)}</div>
+      ${st.tip ? `<div class="chap-tip" style="margin-bottom:12px"><span data-nyang="wink" data-size="38"></span><div><small>그날의 한마디</small>${esc(st.tip)}</div></div>` : ""}` : "";
+    paintNyang(el);
+  }).catch(() => { const el = $("#day-story"); if (el) el.innerHTML = ""; });
 }
 
 // ───────────────────────── 냥이 도사 대풀이 (서술형 AI 풀이)
