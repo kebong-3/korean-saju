@@ -41,6 +41,8 @@ def _opt(mod: str):
 story_me, story_luck, story_compat = _opt("story_me"), _opt("story_luck"), _opt("story_compat")
 journey = _opt("journey")
 ipmyeong = _opt("ipmyeong")
+relation = _opt("relation")
+share_store = _opt("share_store")
 family = _opt("family")
 
 
@@ -135,7 +137,8 @@ def _reading(b: Birth, who: str = ""):
 def status(check: int = 0):
     """키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만. ?check=1 이면 실제로 짧게 호출해 본다."""
     p = llm.provider()
-    out = {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"]}
+    out = {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"],
+           "share": bool(share_store and share_store.configured())}
     if check and p["name"]:
         try:
             txt = "".join(llm.stream("한 단어로만 답해.", [{"role": "user", "content": "고양이 울음소리?"}], max_tokens=200))
@@ -368,6 +371,151 @@ def reading(req: ReadingReq):
 
 def _sse(obj: dict) -> str:
     return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+
+
+# ---------------------------------------------------------------- 관계 지도(귀인 지도)
+def _target_year() -> int:
+    t = today_kst()
+    return t.year + 1 if t.month >= 10 else t.year
+
+
+def _nick(v: str) -> str:
+    v = re.sub(r"[<>\"\r\n]", "", v or "").strip()[:12]
+    if not v:
+        raise HTTPException(400, "별명을 적어 달라냥")
+    return v
+
+
+class MapOther(BaseModel):
+    name: str = Field(max_length=20)
+    birth: Birth
+
+
+class MapCalcReq(BaseModel):
+    me: Birth
+    others: list[MapOther] = Field(default_factory=list, max_length=60)
+
+
+def _member(me_r, name: str, other_r, year: int) -> dict:
+    rel = relation.relate(me_r, other_r, year)
+    return relation.member_view(name, rel, other_r.analysis.element_weight[me_r.analysis.yongshin])
+
+
+def _map_out(me_r, me_name: str, members: list[dict], year: int) -> dict:
+    return {"주인": {"이름": me_name or "나", "유형": relation.person_type(me_r), "올해": relation.year_type(me_r, year),
+                   "용신": me_r.analysis.yongshin},
+            "연도": year, "멤버": sorted(members, key=lambda m: -m["케미"]),
+            "요약": relation.summary(me_r, members, year), "종류": relation.KIND, "순서": relation.KIND_ORDER}
+
+
+@app.post("/api/mapcalc")
+def mapcalc(req: MapCalcReq):
+    """저장소 없이(내 폰에만 저장) 지도 계산 — 친구 생일은 이 요청에서만 쓰고 저장하지 않는다."""
+    if not relation:
+        raise HTTPException(503, "관계 지도를 준비 중이다냥")
+    year = _target_year()
+    me_r = _reading(req.me, "내 생일: ")
+    members = []
+    for i, o in enumerate(req.others):
+        m = _member(me_r, _nick(o.name), _reading(o.birth, f"{o.name} 생일: "), year)
+        m["id"] = f"local{i}"
+        members.append(m)
+    return _map_out(me_r, req.me.name, members, year)
+
+
+class MapCreateReq(BaseModel):
+    owner: Birth
+    consent: bool
+
+
+def _need_store():
+    if not (relation and share_store and share_store.configured()):
+        raise HTTPException(503, "공유 저장소가 아직 연결되지 않았다냥 — 지금은 '내 폰에만 저장' 모드로 쓸 수 있어")
+
+
+@app.post("/api/map")
+def map_create(req: MapCreateReq):
+    _need_store()
+    if not req.consent:
+        raise HTTPException(400, "지도를 만들려면 동의가 필요하다냥")
+    _reading(req.owner)  # 날짜 검증
+    try:
+        mid, token = share_store.create_map({"birth": req.owner.model_dump(), "name": _nick(req.owner.name or "나")})
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"id": mid, "token": token}
+
+
+def _load_map(mid: str):
+    _need_store()
+    if not re.fullmatch(r"[A-Za-z0-9]{4,16}", mid):
+        raise HTTPException(404, "지도를 찾을 수 없다냥")
+    try:
+        rec, ms = share_store.load(mid)
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    if rec is None:
+        raise HTTPException(404, "지도를 찾을 수 없다냥 (지워졌거나 기간이 지났어)")
+    return rec, ms
+
+
+@app.get("/api/map/{mid}")
+def map_get(mid: str, token: str = ""):
+    rec, ms = _load_map(mid)
+    owner = Birth(**rec["owner"]["birth"])
+    me_r = _reading(owner)
+    year = _target_year()
+    members = []
+    for pid, e in ms.items():
+        v = dict(e["view"])
+        v["id"] = pid
+        members.append(v)
+    out = _map_out(me_r, rec["owner"]["name"], members, year)
+    out["주인권한"] = share_store.owner_ok(rec, token)
+    return out
+
+
+class MapJoinReq(BaseModel):
+    name: str = Field(max_length=20)
+    birth: Birth
+    consent: bool
+
+
+@app.post("/api/map/{mid}/join")
+def map_join(mid: str, req: MapJoinReq):
+    rec, _ = _load_map(mid)
+    if not req.consent:
+        raise HTTPException(400, "지도에 이름을 올리려면 동의가 필요하다냥")
+    name = _nick(req.name)
+    owner_r = _reading(Birth(**rec["owner"]["birth"]))
+    me_r = _reading(req.birth, "내 생일: ")
+    year = _target_year()
+    view = _member(owner_r, name, me_r, year)          # 주인 지도에 올라갈 정보(내 생일은 저장 안 함)
+    mine = relation.relate(me_r, owner_r, year)        # 내 입장에서 본 주인
+    try:
+        pid, mtoken = share_store.add_member(mid, view)
+    except share_store.StoreError as e:
+        raise HTTPException(409, str(e)) from e
+    return {"id": pid, "token": mtoken, "주인이름": rec["owner"]["name"], "나": relation.person_type(me_r),
+            "나의올해": relation.year_type(me_r, year), "내시선": mine, "주인시선": view}
+
+
+@app.delete("/api/map/{mid}/member/{pid}")
+def map_member_delete(mid: str, pid: str, token: str = ""):
+    _load_map(mid)
+    try:
+        return {"ok": share_store.remove_member(mid, pid, token)}
+    except share_store.StoreError as e:
+        raise HTTPException(403, str(e)) from e
+
+
+@app.delete("/api/map/{mid}")
+def map_delete(mid: str, token: str = ""):
+    _load_map(mid)
+    try:
+        return {"ok": share_store.delete_map(mid, token)}
+    except share_store.StoreError as e:
+        raise HTTPException(403, str(e)) from e
 
 
 # ---------------------------------------------------------------- 로컬 개발용 정적 파일

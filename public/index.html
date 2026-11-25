@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=11">
+  <link rel="stylesheet" href="/style.css?v=13">
 </head>
 <body>
   <div id="app">
@@ -33,6 +33,9 @@
       <form id="form-me" class="card form" autocomplete="off"></form>
       <p class="fine">입력한 정보는 이 기기에만 저장되고, 계산할 때만 서버로 보내져요.</p>
     </section>
+
+    <!-- 링크로 들어온 친구: 귀인 지도 손님 화면 -->
+    <section id="guest" class="screen" hidden></section>
 
     <!-- 메인 -->
     <div id="main" hidden>
@@ -55,7 +58,7 @@
         <button data-tab="home" aria-selected="true"><i>🏠</i>홈</button>
         <button data-tab="luck"><i>🔮</i>운세</button>
         <button data-tab="saju"><i>📜</i>내 사주</button>
-        <button data-tab="compat"><i>💞</i>궁합</button>
+        <button data-tab="compat"><i>🌌</i>인연</button>
         <button data-tab="path"><i>🧭</i>나의 길</button>
         <button data-tab="talk"><i>💬</i>상담</button>
       </nav>
@@ -109,6 +112,6 @@
   </template>
 
   <script src="/nyang.js?v=2"></script>
-  <script src="/app.js?v=11" defer></script>
+  <script src="/app.js?v=13" defer></script>
 </body>
 </html>

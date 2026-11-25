@@ -577,6 +577,16 @@ function renderManse(d) {
     <p class="sub" style="margin:10px 0 0">절입 ${esc(d["절입"]["직전"])} → ${esc(d["절입"]["직후"])} · ${(d["입력"]["보정"] || []).map(esc).join(" · ")}</p>
     ${(d["주의"] || []).map((x) => `<p class="error">⚠ ${esc(x)}</p>`).join("")}</div>`;
 }
+function saveSvgPng(svg, filename) {
+  if (!svg) return;
+  const xml = new XMLSerializer().serializeToString(svg), vb = svg.viewBox.baseVal, scale = 3, img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas"); cv.width = vb.width * scale; cv.height = vb.height * scale;
+    const ctx = cv.getContext("2d"); ctx.scale(scale, scale); ctx.drawImage(img, 0, 0, vb.width, vb.height);
+    const a = document.createElement("a"); a.download = filename; a.href = cv.toDataURL("image/png"); a.click();
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+}
 function saveMansePng() {
   const svg = $("#manse-svg svg");
   const xml = new XMLSerializer().serializeToString(svg);
@@ -593,11 +603,12 @@ function saveMansePng() {
 }
 
 // ───────────────────────── 궁합
-let compatMode = "love";
+let compatMode = "map";
 function renderCompat() {
   const m = married(), kidsN = S.birth?.kids || 0;
   $("#tab-compat").innerHTML = `
-    <div class="segtabs" role="tablist"><button data-cmode="love" type="button">${m ? "💑 부부 궁합" : "💞 연인 궁합"}</button><button data-cmode="child" type="button">👨‍👧 자녀 궁합${kidsN ? "" : ""}</button></div>
+    <div class="segtabs" role="tablist"><button data-cmode="map" type="button">🌌 귀인 지도</button><button data-cmode="love" type="button">${m ? "💑 부부 궁합" : "💞 연인 궁합"}</button><button data-cmode="child" type="button">👨‍👧 자녀</button></div>
+    <div data-cpane="map" ${compatMode === "map" ? "" : "hidden"}></div>
     <div data-cpane="love" ${compatMode === "love" ? "" : "hidden"}>
       <div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">${m ? "두 사람의 본성부터 마음의 안방(일지)까지, 우리 부부 사용 설명서를 펼쳐 주겠다냥 💑" : `두 사람의 ${chip("일간")}, 배우자 자리(${chip("일지")}), 서로의 ${chip("용신")}까지 정밀하게 보는 궁합이다냥 💞`}</div></div>
       <div class="pair"><form id="form-b" class="card form" autocomplete="off"></form></div>
@@ -612,6 +623,211 @@ function renderCompat() {
     b.addEventListener("click", () => { compatMode = b.dataset.cmode; renderCompat(); }); });
   bindKidPane();
   paintNyang($("#tab-compat"));
+  if (compatMode === "map") renderMapPane();
+}
+
+// ───────────────────────── 귀인 지도(관계 지도)
+const KCOL = { guiin: "#ffd66b", jjak: "#7fd3b8", mine: "#a7e27a", arm: "#8ab4ff", tiger: "#ff8f8f" };
+const ELC = { 목: "#6fd39a", 화: "#ff9b8a", 토: "#f6c96b", 금: "#d9dde6", 수: "#8fb0ff" };
+let mapData = null, mapBusy = false;
+const localFriends = () => store.get("friends", []);
+const setLocalFriends = (v) => store.set("friends", v);
+const mapRef = () => store.get("mapref", null);
+
+function starMap(M, opts = {}) {
+  const W = 360, C = 180, order = M["순서"], members = M["멤버"];
+  const sector = (k) => order.indexOf(k);
+  const ang = (i, n, sec) => (-90 + sec * 72 - 30 + (n === 1 ? 30 : (60 * i) / (n - 1))) * Math.PI / 180;
+  const by = {};
+  members.forEach((m) => { (by[m["나에게"]["키"]] ||= []).push(m); });
+  const rad = (chem) => 62 + (98 - chem) / 68 * 100;
+  let stars = "", lines = "", labels = "";
+  order.forEach((k, sec) => {
+    const a = (-90 + sec * 72) * Math.PI / 180, lx = Math.min(W - 50, Math.max(50, C + Math.cos(a) * 150)), ly = Math.min(W - 40, Math.max(22, C + Math.sin(a) * 150));
+    const info = M["종류"][Object.keys(M["종류"]).find((c) => M["종류"][c][0] === k)];
+    const n = (by[k] || []).length;
+    labels += `<g opacity="${n ? 1 : 0.45}"><rect x="${lx - 44}" y="${ly - 12}" width="88" height="24" rx="12" fill="#2a2140" stroke="${KCOL[k]}" stroke-opacity=".6"/>
+      <text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="11" fill="#f3eefc">${info[1]} ${info[2]} ${n}</text></g>`;
+    (by[k] || []).forEach((m, i, arr) => {
+      const t = ang(i, arr.length, sec), r = rad(m["케미"]), x = C + Math.cos(t) * r, y = C + Math.sin(t) * r;
+      const sz = 13 + (m["나에게"]["영향력"] - 40) / 60 * 9, col = ELC[m["유형"]["오행"]] || "#fff";
+      lines += `<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="${KCOL[k]}" stroke-opacity="${0.15 + (m["케미"] - 30) / 68 * 0.5}" stroke-width="1.5"/>`;
+      stars += `<g class="mstar" data-mid="${esc(m.id)}" style="cursor:pointer">
+        ${m["나에게"]["천을귀인"] ? `<circle cx="${x}" cy="${y}" r="${sz + 7}" fill="none" stroke="#ffd66b" stroke-dasharray="3 3" opacity=".9"/>` : ""}
+        <circle cx="${x}" cy="${y}" r="${sz + 4}" fill="${col}" opacity=".18"/>
+        <circle cx="${x}" cy="${y}" r="${sz}" fill="${col}" stroke="#fff" stroke-width="1.5"/>
+        <text x="${x}" y="${y + 4}" text-anchor="middle" font-size="${Math.min(12, 30 / Math.max(2, m["이름"].length))}" font-weight="700" fill="#2a2140">${esc(m["이름"].slice(0, 4))}</text></g>`;
+    });
+  });
+  const sky = Array.from({ length: 40 }, (_, i) => `<circle cx="${(i * 97) % W}" cy="${(i * 53 + 17) % W}" r="${i % 5 ? 0.8 : 1.4}" fill="#fff" opacity="${0.2 + (i % 4) * 0.12}"/>`).join("");
+  return `<svg class="starmap" viewBox="0 0 ${W} ${W}" role="img" aria-label="관계 지도">
+    <defs><radialGradient id="moon" cx="40%" cy="35%"><stop offset="0" stop-color="#fff8e8"/><stop offset="1" stop-color="#f3c98b"/></radialGradient>
+      <radialGradient id="nightsky" cx="50%" cy="50%"><stop offset="0" stop-color="#4a2d4f"/><stop offset="1" stop-color="#1d1733"/></radialGradient></defs>
+    <rect width="${W}" height="${W}" rx="28" fill="url(#nightsky)"/>${sky}
+    ${[70, 110, 150].map((r) => `<circle cx="${C}" cy="${C}" r="${r}" fill="none" stroke="#fff" stroke-opacity=".08" stroke-dasharray="2 5"/>`).join("")}
+    ${lines}
+    <circle cx="${C}" cy="${C}" r="44" fill="#f3c98b" opacity=".15"/><circle cx="${C}" cy="${C}" r="34" fill="url(#moon)" stroke="#fff" stroke-width="2"/>
+    <text x="${C}" y="${C + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#3b2f4a">${esc((M["주인"]["이름"] || "나").slice(0, 4))}</text>
+    ${stars}${labels}
+    ${opts.slot ? `<g><circle cx="${C + 110}" cy="${C + 60}" r="20" fill="#2a2140" stroke="#ffd66b" stroke-dasharray="4 3"/><text x="${C + 110}" y="${C + 66}" text-anchor="middle" font-size="18" fill="#ffd66b">?</text>
+      <text x="${C + 110}" y="${C + 96}" text-anchor="middle" font-size="11" fill="#f3eefc">내 자리는?</text></g>` : ""}
+    <text x="${C}" y="${W - 12}" text-anchor="middle" font-size="10" fill="#cfc4e6">달에 가까울수록 케미↑ · 별이 클수록 주는 힘↑ · 금빛 테두리 = 천을귀인</text></svg>`;
+}
+
+function mapBody(M, owner = true) {
+  const sm = M["요약"], ms = M["멤버"], kinds = M["순서"];
+  const kindName = (k) => { const c = Object.keys(M["종류"]).find((c) => M["종류"][c][0] === k); return M["종류"][c]; };
+  const groups = {};
+  ms.forEach((m) => { (groups[m["올해"]["이름"]] ||= { e: m["올해"], names: [] }).names.push(m["이름"]); });
+  const medal = (i) => ["🥇", "🥈", "🥉"][i] || `${i + 1}`;
+  return `
+    <div class="card map-card"><div class="card-head"><h2>관계 지도 <span class="sub">· ${sm["인원"]}명</span></h2><span class="badge">${esc(sm["칭호"])}</span></div>
+      <div class="map-me">${esc(M["주인"]["유형"]["이모지"])} ${esc(M["주인"]["이름"])}님 · <b>${esc(M["주인"]["유형"]["이름"])}</b> · ${M["연도"]} ${esc(M["주인"]["올해"]["이모지"])} ${esc(M["주인"]["올해"]["이름"])}</div>
+      ${starMap(M, { slot: !owner })}
+      <div class="kcount">${kinds.map((k) => { const i = kindName(k); return `<div><b style="color:${KCOL[k] === "#ffd66b" ? "#c99a1e" : "inherit"}">${sm["유형수"][k]}</b><small>${i[1]} ${i[2]}</small></div>`; }).join("")}</div></div>
+    ${owner ? `<div class="card tint-butter"><div class="today">${ring(sm["귀인점수"], "귀인 점수", "", "#e0a92b")}
+      <div><h3 style="margin:0 0 4px">나의 귀인 점수</h3><p class="sub" style="margin:0">지도에 있는 사람들이 내 용신을 채워 주는 정도, 천을귀인, 귀인 관계를 모아 계산했다냥.</p>
+      ${sm["가장큰귀인"] ? `<p style="margin:6px 0 0">🌟 가장 큰 힘이 되는 사람: <b>${esc(sm["가장큰귀인"]["이름"])}</b> (${sm["가장큰귀인"]["영향력"]})</p>` : ""}
+      ${sm["내가귀인"] ? `<p style="margin:2px 0 0">🤲 내가 가장 힘이 되는 사람: <b>${esc(sm["내가귀인"]["이름"])}</b> (${sm["내가귀인"]["영향력"]})</p>` : ""}</div></div>
+      <p class="map-line">🐾 ${esc(sm["한줄"])}</p></div>` : `<p class="map-line card">🐾 ${esc(sm["한줄"])}</p>`}
+    ${Object.keys(groups).length ? `<div class="card"><h2>${M["연도"]}년, 같은 한 해를 보내는 사람들</h2>${Object.values(groups).map((g) => `<div class="yg"><b>${esc(g.e["이모지"])} ${esc(g.e["이름"])}</b> <span class="sub">${esc(g.e["설명"])}</span><div>${g.names.map(esc).join(" · ")}</div></div>`).join("")}</div>` : ""}
+    <div class="card"><h2>케미 순위</h2><div class="mlist">${ms.length ? ms.map((m, i) => `<button type="button" class="mrow" data-mid="${esc(m.id)}">
+      <span class="md">${medal(i)}</span><span class="mn"><b>${esc(m["이름"])}</b> <small>${esc(m["유형"]["이모지"])} ${esc(m["유형"]["이름"])}</small>
+      <small>${esc(m["나에게"]["이모지"])} ${esc(m["나에게"]["세부"])}${m["나에게"]["천을귀인"] ? " · ✨천을귀인" : ""} · ${esc(m["올해"]["이모지"])} ${esc(m["올해"]["이름"])}</small></span>
+      <span class="ms">${m["케미"]}</span></button>`).join("") : `<p class="sub">아직 아무도 없다냥. 아래에서 친구를 초대해 봐!</p>`}</div></div>`;
+}
+
+function openMember(m, owner, onDelete) {
+  const a = m["나에게"], b = m["상대에게"];
+  openSheet(`<div class="term-head"><span data-nyang="think" data-size="60"></span><div><h2>${esc(m["이름"])} · 케미 ${m["케미"]}</h2>
+      <div class="term-mean">${esc(m["유형"]["이모지"])} ${esc(m["유형"]["이름"])} · ${esc(m["올해"]["이모지"])} ${esc(m["올해"]["이름"])}</div></div></div>
+    <div class="grid2" style="margin-bottom:10px"><div class="fit"><small>${owner ? "이 사람이 나에게" : "이 사람이 주인에게"}</small><b>${esc(a["이모지"])} ${esc(a["세부"])}</b>
+      <div class="sub">용신 채움 ${a["보완"]} · 영향력 ${a["영향력"]}</div></div>
+      <div class="fit"><small>${owner ? "내가 이 사람에게" : "주인이 이 사람에게"}</small><b>${esc(b["이모지"])} ${esc(b["세부"])}</b>
+      <div class="sub">용신 채움 ${b["보완"]} · 영향력 ${b["영향력"]}</div></div></div>
+    <div class="bubble lav" style="margin-bottom:10px">🔄 ${esc(m["흐름"])}</div>
+    ${m["좋은점"].length ? `<h3>👍 좋은 기운</h3><ul class="tips">${m["좋은점"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>` : ""}
+    ${m["아쉬운점"].length ? `<h3 style="margin-top:10px">🤏 조율할 점</h3><ul class="tips">${m["아쉬운점"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>` : ""}
+    <p class="fine">궁합 점수는 서로를 이해하는 참고용이다냥. 사람은 점수보다 행동으로 알아 가는 거야!</p>
+    ${onDelete ? `<button class="ghost wide" type="button" id="m-del" style="margin-bottom:8px">지도에서 지우기</button>` : ""}`);
+  $("#m-del")?.addEventListener("click", () => { closeSheet(); onDelete(); });
+}
+
+function bindMap(root, M, owner, onDelete) {
+  $$("[data-mid]", root).forEach((el) => el.addEventListener("click", () => {
+    const m = M["멤버"].find((x) => x.id === el.dataset.mid);
+    if (m) openMember(m, owner, onDelete ? () => onDelete(m) : null);
+  }));
+}
+
+async function renderMapPane() {
+  const pane = $("#tab-compat [data-cpane=map]");
+  if (!pane || !S.d) return;
+  const ref = mapRef();
+  if (S.share && !ref) {
+    pane.innerHTML = `<div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">내 귀인 지도를 만들고 링크를 보내 봐! 친구가 <b>별명과 생일만</b> 넣으면 내 지도에 별로 떠오른다냥 🌌</div></div>
+      <div class="card"><h2>🌌 내 귀인 지도 만들기</h2>
+        <p class="sub">지도를 다시 계산하려고 <b>내 생년월일은 서버에 저장</b>돼요(지도 삭제 시 함께 삭제). 친구의 생년월일은 저장하지 않고, 계산된 관계 결과와 별명만 남아요.</p>
+        <label class="check consent"><input type="checkbox" id="map-consent"> 위 내용에 동의하고 만 14세 이상이에요</label>
+        <button class="btn primary wide" type="button" id="map-create">지도 만들기 ✨</button></div>`;
+    $("#map-create").addEventListener("click", async (e) => {
+      if (!$("#map-consent").checked) { alert("동의에 체크해 달라냥"); return; }
+      e.currentTarget.disabled = true;
+      try { const r = await api("/api/map", { owner: S.birth, consent: true }); store.set("mapref", r); renderMapPane(); }
+      catch (err) { alert(err.message); e.currentTarget.disabled = false; }
+    });
+    paintNyang(pane); return;
+  }
+  loading(pane);
+  try {
+    if (S.share && ref) mapData = await api(`/api/map/${ref.id}?token=${encodeURIComponent(ref.token)}`);
+    else mapData = await api("/api/mapcalc", { me: S.birth, others: localFriends() });
+  } catch (err) {
+    if (S.share && ref && /찾을 수 없/.test(err.message)) { store.set("mapref", null); return renderMapPane(); }
+    pane.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`; return;
+  }
+  const link = S.share && ref ? `${location.origin}/?map=${ref.id}` : "";
+  pane.innerHTML = mapBody(mapData, true) + (S.share ? `
+    <div class="card tint-pink"><h2>🙋 친구에게 공유하기</h2><p>친구가 생일만 넣으면 나와 어떤 인연인지, 그 친구의 ${mapData["연도"]}년 한 줄까지 지도에 자동으로 떠요.</p>
+      <div class="rd-cta"><button class="btn primary" type="button" id="map-share">📤 지도 링크 보내기</button><button class="ghost" type="button" id="map-copy">🔗 링크 복사</button></div>
+      <button class="ghost wide" type="button" id="map-png" style="margin-top:8px">🖼️ 지도 이미지로 저장(단톡방용)</button>
+      <p class="fine" style="margin:8px 0 0">${esc(link)}</p></div>` : `
+    <div class="card tint-pink"><h2>➕ 친구 직접 넣기</h2><p class="sub">지금은 공유 저장소 연결 전이라 <b>이 폰에만 저장</b>돼요. 연결되면 링크 한 번으로 친구가 직접 올라온다냥.</p>
+      <label class="field"><span>친구 별명</span><input id="fr-name" maxlength="12" placeholder="예) 단짝 지수"></label>
+      <form id="form-fr" class="form" autocomplete="off"></form>
+      <button class="btn primary wide" type="button" id="fr-add">지도에 올리기</button></div>`);
+  if (!S.share) { buildForm($("#form-fr"), "fr", "친구 생일"); $("#form-fr .form-title")?.remove(); { const nf = $("#form-fr [name=nm]")?.closest(".field"); if (nf) nf.hidden = true; } }
+  bindMap(pane, mapData, true, async (m) => {
+    if (S.share && ref) { await fetch(`/api/map/${ref.id}/member/${m.id}?token=${encodeURIComponent(ref.token)}`, { method: "DELETE" }); }
+    else { const fr = localFriends(); fr.splice(+m.id.replace("local", ""), 1); setLocalFriends(fr); }
+    renderMapPane();
+  });
+  $("#map-share")?.addEventListener("click", async () => {
+    const text = `${S.d["이름"] || "나"}의 귀인 지도에 내 자리를 찾아 줘! 생일만 넣으면 우리 사이가 나온다냥 🐾`;
+    if (navigator.share) { try { await navigator.share({ title: "사주냥이 귀인 지도", text, url: link }); } catch { /* 취소 */ } }
+    else { await navigator.clipboard?.writeText(`${text} ${link}`); alert("링크를 복사했다냥!"); }
+  });
+  $("#map-png")?.addEventListener("click", () => saveSvgPng($(".starmap", pane), `귀인지도_${S.d["이름"] || "나"}.png`));
+  $("#map-copy")?.addEventListener("click", async () => { await navigator.clipboard?.writeText(link); alert("링크를 복사했다냥!"); });
+  $("#fr-add")?.addEventListener("click", async () => {
+    const name = $("#fr-name").value.trim();
+    if (!name) { alert("친구 별명을 적어 달라냥"); return; }
+    let b; try { b = birthOf($("#form-fr")); } catch (err) { alert(err.message); return; }
+    if (mapBusy) return; mapBusy = true;
+    const fr = localFriends(); fr.push({ name, birth: { ...b, name } });
+    try { await api("/api/mapcalc", { me: S.birth, others: [fr[fr.length - 1]] }); setLocalFriends(fr); renderMapPane(); }
+    catch (err) { alert(err.message); } finally { mapBusy = false; }
+  });
+  paintNyang(pane);
+}
+
+// 링크로 들어온 친구(손님) 화면
+async function guestMap(mid) {
+  const box = $("#guest");
+  $("#onboard").hidden = true; $("#main").hidden = true; box.hidden = false;
+  loading(box);
+  let M;
+  try { M = await api(`/api/map/${encodeURIComponent(mid)}`); }
+  catch (err) { box.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p><button class="btn primary wide" type="button" id="g-home">사주냥이 홈으로</button></div>`;
+    $("#g-home").addEventListener("click", () => { location.href = "/"; }); return; }
+  const owner = M["주인"]["이름"];
+  box.innerHTML = `<div class="hero" style="margin-bottom:6px"><div data-nyang="happy" data-size="110"></div>
+      <div class="bubble big">${esc(owner)}님의 귀인 지도에 초대받았다냥!<br><b>나는 ${esc(owner)}님에게 어떤 사람일까?</b></div></div>
+    ${mapBody(M, false)}
+    <div class="card" id="g-join"><h2>🙋 생일 넣고 내 자리 찾기</h2>
+      <label class="field"><span>이름 또는 별명 <em>지도에 보여요 · 별명 권장</em></span><input id="g-name" maxlength="12" placeholder="예) 고양이 집사"></label>
+      <form id="form-g" class="form" autocomplete="off"></form>
+      <p class="sub">내 생년월일은 <b>저장하지 않아요</b>. 계산된 관계 결과와 별명만 ${esc(owner)}님의 지도에 올라가요.</p>
+      <label class="check consent"><input type="checkbox" id="g-consent"> 만 14세 이상이며, 별명과 관계 결과를 지도에 올리는 데 동의해요</label>
+      <button class="btn primary wide" type="button" id="g-go">지도에 이름 올리기 ✨</button></div>
+    <div id="g-result"></div>
+    <p class="foot">사주는 정답지가 아니라 지도다냥 · 언제든 내 별을 지울 수 있어요</p>`;
+  buildForm($("#form-g"), "g", "내 생일"); $("#form-g .form-title")?.remove(); { const nf = $("#form-g [name=nm]")?.closest(".field"); if (nf) nf.hidden = true; }
+  bindMap(box, M, false, null);
+  paintNyang(box);
+  $("#g-go").addEventListener("click", async (e) => {
+    const name = $("#g-name").value.trim();
+    if (!name) { alert("별명을 적어 달라냥"); return; }
+    if (!$("#g-consent").checked) { alert("동의에 체크해 달라냥"); return; }
+    let b; try { b = birthOf($("#form-g")); } catch (err) { alert(err.message); return; }
+    e.currentTarget.disabled = true;
+    try {
+      const r = await api(`/api/map/${encodeURIComponent(mid)}/join`, { name, birth: { ...b, name }, consent: true });
+      try { localStorage.setItem(`nyang:joined:${mid}`, JSON.stringify({ id: r.id, token: r.token })); } catch { /* 저장 불가 */ }
+      const me = r["내시선"]["나에게"], ow = r["주인시선"]["나에게"];
+      $("#g-join").hidden = true;
+      $("#g-result").innerHTML = `<div class="card tint-pink"><h2>🎉 ${esc(owner)}님 지도에 올라갔다냥!</h2>
+        <div class="grid2"><div class="fit"><small>${esc(owner)}님에게 나는</small><b>${esc(ow["이모지"])} ${esc(ow["세부"])}</b><div class="sub">케미 ${r["주인시선"]["케미"]}</div></div>
+          <div class="fit"><small>나에게 ${esc(owner)}님은</small><b>${esc(me["이모지"])} ${esc(me["세부"])}</b><div class="sub">용신 채움 ${me["보완"]}</div></div></div>
+        <p style="margin:10px 0 4px">나는 <b>${esc(r["나"]["이모지"])} ${esc(r["나"]["이름"])}</b> · ${r["나의올해"]["이모지"]} ${esc(r["나의올해"]["이름"])} — ${esc(r["나의올해"]["설명"])}</p>
+        <p class="sub">🔄 ${esc(r["내시선"]["흐름"])}</p>
+        <button class="btn primary wide" type="button" id="g-mine">🗺 내 귀인 지도도 만들기 (내 사주 보기)</button>
+        <button class="ghost wide" type="button" id="g-undo" style="margin-top:8px">내 별 지우기</button></div>`;
+      $("#g-mine").addEventListener("click", () => { try { localStorage.setItem("nyang:me", JSON.stringify({ ...b, name })); } catch { /* 저장 불가 */ } location.href = "/"; });
+      $("#g-undo").addEventListener("click", async () => { await fetch(`/api/map/${encodeURIComponent(mid)}/member/${r.id}?token=${encodeURIComponent(r.token)}`, { method: "DELETE" }); location.reload(); });
+      $("#g-result").scrollIntoView({ behavior: "smooth" });
+    } catch (err) { alert(err.message); e.currentTarget.disabled = false; }
+  });
 }
 
 // ───────────────────────── 자녀 궁합
@@ -1258,7 +1474,9 @@ async function init() {
 
   const [meta, st, kinds] = await Promise.all([api("/api/meta").catch(() => ({ glossary: {} })), api("/api/status").catch(() => ({ ai: false })),
     api("/api/readings").catch(() => [])]);
-  S.gloss = meta.glossary || {}; S.ai = !!st.ai; S.kinds = kinds; buildTermRe();
+  S.gloss = meta.glossary || {}; S.ai = !!st.ai; S.share = !!st.share; S.kinds = kinds; buildTermRe();
+  const guest = new URLSearchParams(location.search).get("map");
+  if (guest) { guestMap(guest); return; }
   $("#rd-back").addEventListener("click", () => (history.state?.reader ? history.back() : closeReader()));
   window.addEventListener("popstate", () => { if (!$("#reader").hidden) closeReader(); });
 
