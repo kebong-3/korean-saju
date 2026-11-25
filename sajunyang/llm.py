@@ -19,6 +19,9 @@ MODELS = ("gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse"
 
 
+LAST_MODEL: dict = {}
+
+
 class LLMError(Exception):
     """사용자에게 그대로 보여줄 수 있는 냥이체 오류."""
 
@@ -122,6 +125,7 @@ def _gemini(system, messages, max_tokens, temperature) -> Iterator[str]:
                 raise LLMError("냥이와 연결이 끊겼다냥. 잠시 후 다시 시도해 줘!") from e
         if resp is None:
             continue
+        LAST_MODEL["name"] = model
         yield from _read_sse(resp)
         return
     if last.startswith("429"):

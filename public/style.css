@@ -340,3 +340,32 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .top-days { display: grid; gap: 8px; }
 .top-days button { border: 0; background: #fbf8fd; border-radius: 14px; padding: 10px 12px; display: grid; grid-template-columns: 74px 1fr auto; gap: 8px; text-align: left; cursor: pointer; font: 14.5px var(--body); align-items: center; }
 .top-days b { font-family: var(--title); font-weight: 400; }
+
+/* ── 냥이 도사 이야기 ── */
+.story-card { background: #fffdf8; border-top: 6px solid #eadcbe; }
+.story-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.story-head h2 { margin: 0; font-size: 19px; }
+.story-head small { display: block; font: 13px var(--title); }
+.story-text p, .chap-body p { margin: 0 0 12px; line-height: 1.85; word-break: keep-all; font-size: 16px; }
+.story-text p:last-child { margin-bottom: 0; }
+.fold summary { list-style: none; cursor: pointer; color: var(--lav-d); font: 15px var(--title); padding: 6px 0 10px; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold[open] summary { display: none; }
+.chaps { display: grid; gap: 10px; }
+.chap { background: #fff; border-radius: 18px; box-shadow: 0 1px 4px rgba(150, 100, 160, .12); overflow: hidden; }
+.chap summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 42px 1fr 18px; gap: 10px; align-items: center; padding: 12px 14px; }
+.chap summary::-webkit-details-marker { display: none; }
+.chap summary::after { content: "▾"; color: var(--sub); transition: transform .2s; }
+.chap[open] summary::after { transform: rotate(180deg); }
+.chap summary i { font-style: normal; font-size: 22px; width: 42px; height: 42px; border-radius: 14px; background: var(--lav-l); display: grid; place-items: center; }
+.chap summary b { font: 16.5px var(--title); font-weight: 400; display: block; }
+.chap summary small { color: var(--sub); font-size: 13px; line-height: 1.4; display: block; }
+.chap-body { padding: 2px 16px 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
+.chap-tip { display: flex; gap: 10px; align-items: center; background: var(--butter-l); border-radius: 16px; padding: 10px 12px; margin-top: 6px; font-size: 15px; line-height: 1.6; }
+.chap-tip small { display: block; font: 12.5px var(--title); color: #b07a10; }
+.chap-tip span { flex: none; }
+.dom-story summary { list-style: none; cursor: pointer; }
+.dom-story summary::-webkit-details-marker { display: none; }
+.dom-story[open] summary .n { color: var(--lav-d); }
+.dom-story .story-text { background: #fbf8fd; border-radius: 14px; padding: 12px 14px; margin: 6px 0 10px; }
+.dom-story .story-text p { font-size: 15px; }
