@@ -1,6 +1,6 @@
 :root {
-  --bg: #fff4f1; --bg2: #f4efff; --card: #ffffff; --ink: #3b2f4a; --sub: #8a7f99; --line: #f0e6ef;
-  --pink: #ff8fa3; --pink-d: #f0607d; --pink-l: #ffe4ea;
+  --bg: #fff4f1; --bg2: #f4efff; --card: #ffffff; --ink: #3b2f4a; --sub: #6b6080; --line: #f0e6ef;
+  --pink: #ff8fa3; --pink-d: #c2385a; --pink-l: #ffe4ea;
   --lav: #a78bfa; --lav-d: #7c5cf0; --lav-l: #efe9ff;
   --mint: #6fd3b8; --mint-l: #dff7ef; --butter: #ffd66b; --butter-l: #fff4cf; --peach: #ffb570; --peach-l: #ffeedd;
   --wood: #4fb37f; --fire: #ff6b6b; --earth: #f0a63a; --metal: #9aa3b5; --water: #5b7fe0;
@@ -448,3 +448,24 @@ input[type="checkbox"] { appearance: auto; -webkit-appearance: auto; width: 20px
 .kid-type { display: inline-block; margin-top: 6px; background: var(--mint-l); border-radius: 99px; padding: 4px 12px; font: 14px var(--title); color: #2f7d63; }
 .kid-year { margin-top: 14px; background: var(--butter-l); border-radius: 16px; padding: 12px 14px; }
 .kid-year b { font: 15px var(--title); font-weight: 400; } .kid-year p { margin: 4px 0 0; font-size: 15px; line-height: 1.7; }
+
+/* ── 입명 노트 · 분기 플랜 · 이번 달 ── */
+.easy-rel { margin-top: 8px; }
+.easy-rel li { font-size: 14px; padding: 8px 10px 8px 32px; }
+.raw-rel summary { cursor: pointer; margin-top: 6px; }
+button.mission { width: 100%; border: 0; text-align: left; font: inherit; color: inherit; }
+.month-now .fit div { font-size: 14px; margin-top: 2px; }
+.quarters { display: grid; gap: 10px; }
+.qtr { background: #fff; border-radius: 18px; padding: 12px 14px; }
+.qh { display: flex; justify-content: space-between; font-family: var(--title); }
+.qm { font-size: 14px; padding: 5px 0; border-top: 1px dashed var(--line); }
+.qm small { display: block; color: var(--sub); }
+.timing { display: grid; gap: 10px; }
+.tm { background: #fbf8fd; border-radius: 16px; padding: 10px 12px; font-size: 14px; }
+.tm b { font-family: var(--title); font-weight: 400; display: block; margin-bottom: 2px; }
+.ip-line { font-size: 16px; margin: 0 0 8px; padding-left: 12px; border-left: 3px solid var(--lav); }
+.ip-plan { padding: 8px 0; border-top: 1px dashed var(--line); font-size: 14.5px; }
+.ip-plan b { font-family: var(--title); font-weight: 400; }
+.src { padding: 12px 0; border-top: 1px solid var(--line); font-size: 14.5px; display: grid; gap: 4px; }
+.src-orig { font-family: "Noto Serif KR", serif; color: var(--lav-d); font-size: 15px; }
+.principles { margin: 6px 0 0; padding-left: 20px; font-size: 14.5px; }

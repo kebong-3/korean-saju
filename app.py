@@ -16,9 +16,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -40,6 +40,7 @@ def _opt(mod: str):
 
 story_me, story_luck, story_compat = _opt("story_me"), _opt("story_luck"), _opt("story_compat")
 journey = _opt("journey")
+ipmyeong = _opt("ipmyeong")
 family = _opt("family")
 
 
@@ -50,7 +51,7 @@ def _safe(fn, *args, **kw):
         print(f"[story] {getattr(fn, '__module__', '')}.{getattr(fn, '__name__', fn)} 실패: {e!r}")
         return None
 
-app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None)
+app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None, openapi_url=None)
 
 GUIDE = (ROOT / "skills/saju-reading/references/interpretation-guide.md").read_text(encoding="utf-8")
 KST = timezone(timedelta(hours=9))
@@ -77,6 +78,12 @@ class Birth(BaseModel):
     marital: Literal["", "미혼", "연애중", "기혼", "기타"] = ""
     kids: int = Field(default=0, ge=0, le=10)
 
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, v: str) -> str:
+        # 프롬프트 태그(<saju who="…">)를 깨지 않도록 꺾쇠·따옴표·줄바꿈 제거
+        return re.sub(r"[<>\"\r\n]", "", v).strip()
+
 
 def _prof(b: Birth) -> dict:
     return {"결혼": b.marital, "자녀": b.kids}
@@ -99,23 +106,28 @@ class CompatReq(BaseModel):
 
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
-    content: str = Field(max_length=4000)
+    content: str = Field(max_length=8000)
 
 
 class AIReq(BaseModel):
     birth: Birth
     partner: Optional[Birth] = None
     partner_role: Literal["love", "child"] = "love"
-    messages: list[ChatMsg] = Field(default_factory=list, max_length=30)
+    messages: list[ChatMsg] = Field(default_factory=list, max_length=20)
 
 
-def _reading(b: Birth):
+def _reading(b: Birth, who: str = ""):
+    import calendar as _cal
+    if b.calendar == "solar":
+        last = _cal.monthrange(b.year, b.month)[1]
+        if b.day > last:
+            raise HTTPException(400, f"{who}{b.year}년 {b.month}월은 {last}일까지다냥")
     try:
         return read_saju(b.year, b.month, b.day, b.hour, b.minute, gender=b.gender,
                          calendar=b.calendar, leap=b.leap, longitude=b.longitude,
                          zi_mode=b.zi_mode, name=b.name.strip(), today=today_kst())
     except (ValueError, KeyError) as e:
-        raise HTTPException(400, f"날짜를 확인해 달라냥: {e}") from e
+        raise HTTPException(400, f"{who}날짜를 확인해 달라냥: {e}") from e
 
 
 # ---------------------------------------------------------------- 계산 API
@@ -134,7 +146,8 @@ def status(check: int = 0):
 
 
 @app.get("/api/meta")
-def meta():
+def meta(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
     return {"profile": persona.PROFILE,
             "glossary": {k: {"뜻": v[0], "냥이": v[1]} for k, v in persona.GLOSSARY.items()},
             "stories": persona.STORIES}
@@ -152,9 +165,21 @@ def saju(b: Birth):
     d["오고"] = ogo.build(r, d["운세"])
     d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
     d["이야기"] = _stories(r, d["운세"], b.name.strip(), _prof(b))
+    seed = f"{b.year}{b.month}{b.day}{b.hour}{b.gender}"
     if journey:
-        seed = f"{b.year}{b.month}{b.day}{b.hour}{b.gender}"
         d["나의길"] = _safe(journey.build, r, d["운세"], today_kst(), seed)
+    if ipmyeong:
+        d["입명"] = _safe(ipmyeong.build, r, d["운세"], today_kst(), seed)
+    syn = (d.get("오고") or {}).get("synth") or {}
+    rx = syn.get("계절처방")
+    gw = d["운세"].get("개운법")
+    if gw is not None:
+        if rx and rx != r.analysis.yongshin:
+            gw["조후"] = (f"계절 처방으로는 {rx} 기운도 필요하다냥 — "
+                         + ("덥고 건조한 사주라 물·휴식으로 열을 식혀 주기" if rx == "수" else "차고 습한 사주라 햇볕·운동으로 몸을 데우기")
+                         + " (보약은 그대로, 온도 조절용으로만!)")
+        else:
+            gw["조후"] = ""
     return d
 
 
@@ -186,7 +211,7 @@ def day(req: DayReq):
 
 @app.post("/api/compat")
 def compat(req: CompatReq):
-    r1, r2 = _reading(req.a), _reading(req.b)
+    r1, r2 = _reading(req.a, "내 생일: "), _reading(req.b, "상대 생일: ")
     res = read_compatibility(r1, r2)
     res["names"] = [req.a.name.strip() or "나", req.b.name.strip() or "상대"]
     res["띠"] = [r1.to_dict()["입력"]["띠"], r2.to_dict()["입력"]["띠"]]
@@ -281,6 +306,8 @@ def ai(req: AIReq):
     if not _ai_ready():
         raise HTTPException(503, "AI 상담이 아직 설정되지 않았다냥 (Gemini API 키 필요)")
     history = [m.model_dump() for m in req.messages]
+    if sum(len(m["content"]) for m in history) > 24000:
+        raise HTTPException(413, "대화가 너무 길어졌다냥. 새로 시작해 줘!")
     if not history or history[0]["role"] != "user":
         history.insert(0, {"role": "user", "content": GREETING})
     if history[-1]["role"] != "user":
@@ -289,7 +316,7 @@ def ai(req: AIReq):
         return _stream_text(CRISIS_MSG)
     # 계산 결과는 서버에서 다시 만들어 첫 메시지 앞에 붙인다(클라이언트가 조작할 수 없음).
     history[0] = {"role": "user", "content": _context(req) + "\n\n" + history[0]["content"]}
-    return _stream_llm(SYSTEM, history, 3000)
+    return _stream_llm(SYSTEM, history, 1500)
 
 
 # ---------------------------------------------------------------- 냥이 도사 서술형 대풀이

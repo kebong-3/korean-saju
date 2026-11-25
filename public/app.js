@@ -20,7 +20,7 @@ const chip = (t, label) => `<button type="button" class="term" data-t="${esc(t)}
 function linkify(html, auto = false) {
   const once = auto instanceof Set ? auto : null;
   const mk = (t, label) => { if (once) { if (once.has(t)) return label; once.add(t); } return chip(t, label); };
-  if (html.includes("[[")) return html.replace(/\[\[(.+?)\]\]/g, (_, t) => (S.gloss[t] ? mk(t, t) : esc(t)));
+  if (html.includes("[[")) return html.replace(/\[\[(.+?)\]\]/g, (_, t) => (S.gloss[t] ? mk(t, t) : t));
   return auto && TERM_RE ? html.replace(TERM_RE, (m) => mk(m, m)) : html;
 }
 const T = (s, auto = false) => linkify(esc(s), auto);
@@ -151,6 +151,7 @@ function buildForm(form, key, title) {
 const val = (form, n) => (form.querySelector(`input[name$="-${n}"]:checked`) || {}).value;
 function birthOf(form) {
   const unknown = form.unknown.checked;
+  if (!unknown && !form.time.value) throw new Error("태어난 시간을 모르면 '몰라요'를 눌러 줘 — 냥이가 시주를 빼고 정확히 본다냥");
   const [h, mi] = (form.time.value || "12:00").split(":").map(Number);
   return {
     name: form.nm.value.trim(), gender: val(form, "gender"), calendar: val(form, "calendar"),
@@ -241,26 +242,28 @@ function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
   markVisit(t);
   const nm = d["이름"] || "너";
-  const key = "nyang:mission:" + t.date;
-  const done = localStorage.getItem(key) === "1";
+  const key = "mission:" + t.date;
+  const done = store.get(key, 0) === 1;
   const moods = t["점수"] >= 72 ? "happy" : t["점수"] >= 50 ? "normal" : "think";
   $("#tab-home").innerHTML = `
     <div class="greet"><span class="float" data-nyang="${moods}" data-size="92"></span>
-      <div class="bubble">${esc(nm)}, 오늘의 [일진]은 <b>${esc(t["일진"])}</b>이다냥.<br>${T(t["한마디"])}</div></div>
+      <div class="bubble">${esc(nm)}, 오늘의 ${chip("일진")}은 <b>${esc(t["일진"])}</b>이다냥.<br>${T(t["한마디"])}</div></div>
     <div class="card tint-pink" style="margin-top:14px">
-      <div class="card-head"><h2>오늘의 운세</h2><span class="badge pink">${esc(t.date.slice(5).replace("-", "월 "))}일</span></div>
+      <div class="card-head"><h2>오늘의 운세</h2><span class="badge pink">${+t.date.slice(5, 7)}월 ${+t.date.slice(8, 10)}일 ${esc(t["신호"] || "")}</span></div>
       <div class="today">${ring(t["점수"], t["등급"])}
         <div><div class="sub">${chip("일진")} 십성 · ${T(t["십성"], true)}</div>
         <div style="margin-top:6px">${T(t["한마디"])}</div>
-        ${t["작용"].length ? `<div class="sub" style="margin-top:6px">${T(t["작용"].slice(0, 2).join(" · "), true)}</div>` : ""}</div></div>
+        ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        ${t["작용"].length ? `<details class="raw-rel"><summary class="sub">명리 원문 보기</summary><p class="sub">${T(t["작용"].join(" · "), true)}</p></details>` : ""}</div></div>
       <div class="lucky"><div><small>행운 색</small>${esc(t["행운"]["색"])}</div><div><small>숫자</small>${esc(t["행운"]["숫자"])}</div>
         <div><small>방위</small>${esc(t["행운"]["방위"])}</div><div><small>음식</small>${esc(t["행운"]["음식"])}</div></div>
-      <div class="mission ${done ? "done" : ""}" id="mission"><span>${done ? "✅" : "⬜"}</span><span>오늘의 개운 미션: ${esc(t["미션"])}</span></div>
+      <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span><span>오늘의 개운 미션: ${esc(t["미션"])}</span></button>
       ${hoursStrip(f["시간대"])}
       <p class="sub" style="margin:6px 0 0">시간대별 기운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b> · 살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p>
       <div class="rd-cta"><button class="btn primary" type="button" data-read="day">☀️ 오늘 운세 자세히</button>
         <button class="btn lav" type="button" data-read="tomorrow">🌙 내일 운세 (${f["내일운세"]["점수"]}점)</button></div>
     </div>
+    ${monthCard(f["이번달"])}
     ${todayStory(d["이야기"]?.["오늘"])}
     <div id="checkin-slot">${checkinCard()}</div>
     ${wisdomCard(d["나의길"]?.["한구절"])}
@@ -268,7 +271,7 @@ function renderHome() {
     ${pathTeaser()}
     <div id="install-slot"></div>
     <button class="banner" data-go="luck:new" type="button"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
-      <div class="t">'${esc(y["테마"])}'</div><small>총운 ${y["총운"]}점 · 좋은 달 ${y["좋은달"].join("·")}월</small></div><span class="big">🧧</span></button>
+      <div class="t">'${esc(y["테마"])}'</div><small>총운 ${y["총운"]}점 · 좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")}</small></div><span class="big">🧧</span></button>
     <div class="menu" style="margin-bottom:16px">
       ${[["luck:new", "🧧", `${y["연도"]} 신년운세`, "var(--pink-l)"], ["luck:month", "📅", "월별 운세", "var(--butter-l)"], ["luck:life", "📈", "평생 총운", "var(--lav-l)"],
         ["saju:fit", "🎯", "나에게 맞는", "var(--mint-l)"], ["saju:rx", "🍀", "개운 처방전", "var(--mint-l)"], ["compat", "💞", "궁합", "var(--pink-l)"],
@@ -282,14 +285,23 @@ function renderHome() {
     </div>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
       계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a> · 천문 계산 만세력 · 옛이야기는 창작 설화예요</p>`;
-  $("#tab-home .bubble").innerHTML = $("#tab-home .bubble").innerHTML.replace("[일진]", chip("일진"));
   $("#mission").addEventListener("click", (e) => {
-    const on = localStorage.getItem(key) !== "1";
-    localStorage.setItem(key, on ? "1" : "0");
+    const on = store.get(key, 0) !== 1;
+    store.set(key, on ? 1 : 0);
     e.currentTarget.classList.toggle("done", on);
+    e.currentTarget.setAttribute("aria-pressed", on);
     e.currentTarget.firstElementChild.textContent = on ? "✅" : "⬜";
   });
   $("#btn-gloss").addEventListener("click", openGlossary);
+}
+
+function monthCard(m) {
+  if (!m) return "";
+  return `<div class="card tint-butter month-now"><div class="card-head"><h2>🗓️ 이번 달 냥이 플랜</h2><span class="badge">${esc(m["신호"])}</span></div>
+    <p class="sub" style="margin:0 0 8px">${esc(m["절기"])} ${esc(m["시작"])} ~ ${esc(m["끝"] || "")} · ${esc(m["간지"])} · ${T(m["십성"], true)}</p>
+    <p style="margin:0 0 10px">${esc(m["한마디"])}</p>
+    <div class="grid2"><div class="fit"><small>✅ 할 일</small>${m["할일"].map((x) => `<div>· ${esc(x)}</div>`).join("")}</div>
+      <div class="fit"><small>🙅 피할 일</small>${m["피할일"].map((x) => `<div>· ${esc(x)}</div>`).join("")}</div></div></div>`;
 }
 
 // ───────────────────────── 운세
@@ -325,7 +337,7 @@ function renderLuck() {
       <div class="card"><h2>냥이의 ${y["연도"]}년 조언</h2><ul class="tips">${y["조언"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>
         ${y["작용"].length ? `<h3 style="margin-top:16px">원국과 만나는 작용</h3><div class="chips">${y["작용"].map((x) => `<span class="chip">${T(x, true)}</span>`).join("")}</div>` : ""}
         <p class="sub" style="margin:14px 0 0">좋은 달 <b>${y["좋은달"].join("·")}월</b> · 살살 갈 달 <b>${y["조심할달"].join("·")}월</b></p></div>
-      <button class="btn lav wide" type="button" data-ask="${y["연도"]}년 내 운세를 연애·일·돈으로 나눠서 자세히 풀어줘">💬 냥이에게 ${y["연도"]}년 더 물어보기</button>
+      ${S.ai ? `<button class="btn lav wide" type="button" data-ask="${y["연도"]}년 내 운세를 연애·일·돈으로 나눠서 자세히 풀어줘">💬 냥이에게 ${y["연도"]}년 더 물어보기</button>` : ""}
     </div>
     <div data-pane="month" hidden>
       <div class="say"><span class="who" data-nyang="normal" data-size="54"></span><div class="bubble">사주 달력은 양력 1일이 아니라 ${chip("절입")}일에 달이 바뀐다냥. 초록 카드가 냥이 추천 달!</div></div>
@@ -487,7 +499,9 @@ function renderOgo(d) {
       <div class="axes">${ax}</div>
       <h3 style="margin-top:16px">세 관점의 용신 비교</h3>
       <table class="vtable"><thead><tr><th>관점</th><th>오행</th><th>의미</th></tr></thead><tbody>${yt}</tbody></table>
-      <div class="final"><small>냥이의 최종 판단 · 가장 먼저 챙길 기운</small><b>${esc(sy["최종용신"])}</b><p>${T(sy["최종근거"], true)}</p></div>
+      <div class="final"><small>다섯 고전을 겹쳐 본 처방 · 기본 보약${sy["계절처방"] && sy["계절처방"] !== sy["최종용신"] ? " + 계절 처방" : ""}</small>
+        <b>${esc(sy["최종용신"])}${sy["계절처방"] && sy["계절처방"] !== sy["최종용신"] ? ` <span class="sub" style="font-size:22px">+ ${esc(sy["계절처방"])}</span>` : ""}</b>
+        <p>${md(sy["최종근거"], true)}</p></div>
       ${list(sy["입체해석"], new Set())}
     </div>
     <div class="card"><h2>대운 · 세운을 세 렌즈로</h2>
@@ -661,7 +675,7 @@ async function runCompat() {
     const mood = r.score >= 72 ? "happy" : r.score >= 58 ? "wink" : "think";
     const say = r.score >= 85 ? "와, 이건 2천 년 동안 몇 번 못 본 궁합이다냥!" : r.score >= 72 ? "서로에게 힘이 되는 좋은 궁합이다냥."
       : r.score >= 58 ? "다른 점이 있어서 오히려 배울 게 많은 궁합이다냥." : "부딪히는 곳이 있지만, 알고 맞춰 가면 충분하다냥. 궁합은 '사용 설명서'다냥!";
-    const who = (t) => String(t).replace(/1번/g, r.names[0]).replace(/2번/g, r.names[1]), SC = r["이야기"] || {};
+    const who = (t) => String(t).replace(/([12])번/g, (_, n) => r.names[n - 1]), SC = r["이야기"] || {};
     r.items.forEach((x) => { x["항목"] = who(x["항목"]); x["해석"] = who(x["해석"]); });
     out.innerHTML = `<div class="card tint-pink"><div class="yhead">${ring(r.score, r.grade)}<div>
         <div class="theme">${esc(r.names[0])} 💞 ${esc(r.names[1])}</div><div class="sub">${esc(r["띠"][0])}띠 · ${esc(r["띠"][1])}띠</div></div></div>
@@ -687,13 +701,13 @@ async function runCompat() {
 }
 
 // ───────────────────────── 상담
-const CRISIS = /(죽고\s*싶|자살|사라지고\s*싶|살기\s*싫|자해|목숨|끝내고\s*싶)/;
+const CRISIS = /(죽고\s*싶|죽어\s*버리고|죽고\s*말|죽는\s*게\s*나|죽을\s*래|자살(?!골)|자해|극단\s*적\s*(인\s*)?선택|스스로\s*목숨|목숨을\s*끊|사라지고\s*싶|사라져\s*버리|없어지고\s*싶|없어져\s*버리|살(기|고)\s*(가\s*)?싫|살고\s*싶지\s*않|그만\s*살|더\s*(는\s*)?못\s*살|살\s*이유가?\s*없|사는\s*게\s*(의미|무의미)|뛰어\s*내리|목을?\s*매|(다|삶을|인생을?)\s*끝내|세상을?\s*떠나고|suicid|kill\s*myself|want\s*to\s*die)/i;
 const ROUTE = [
   [/썸|짝사랑|고백|좋아하는 사람/, "love", "some"], [/헤어|이별|전남친|전여친|재회/, "love", "breakup"],
   [/인연|언제.*(만나|생겨|연애)|솔로|소개팅/, "love", "when"], [/남친|여친|애인|연인|싸웠|권태/, "love", "dating"], [/이상형|잘 맞는 사람/, "love", "type"],
   [/상사|팀장|부장|동료|직장 사람/, "work", "boss"], [/퇴사|그만두|이직|회사 가기 싫/, "work", "quit"], [/취업|합격|면접|서류/, "work", "job"], [/적성|맞는 일|직업/, "work", "fit"],
   [/투자|주식|코인|부업/, "money", "invest"], [/돈.*(언제|운)|재물운/, "money", "when"], [/돈|저축|월급|빚|카드값/, "money", "save"],
-  [/친구|서운|손절/, "people", "friend"], [/엄마|아빠|부모|가족|언니|오빠|동생|형/, "people", "family"], [/사람.*(지쳐|피곤)|인간관계/, "people", "tired"],
+  [/친구|서운|손절/, "people", "friend"], [/엄마|아빠|부모|가족|언니|오빠|동생|누나|형(이|한테|랑|과|이랑)/, "people", "family"], [/사람.*(지쳐|피곤)|인간관계/, "people", "tired"],
   [/시험|자격증|공부.*붙/, "study", "exam"], [/진로|전공|뭘 해야|꿈/, "study", "path"], [/집중|공부가 안/, "study", "focus"],
   [/불안|잠이|불면|우울/, "mind", "anxious"], [/지쳐|피곤|아파|번아웃|힘들어/, "mind", "tired"],
   [/언제 풀|인생.*언제/, "life", "when"], [/안 풀|되는 일이 없/, "life", "why"], [/이야기|옛날/, "life", "story"], [/위로|외로/, "life", "comfort"],
@@ -744,6 +758,7 @@ async function answer(tid, oid, label) {
   choices([...rest, ["🔁 다른 고민 말하기", () => { addMsg("me", "다른 고민도 있어"); nyangSays(["좋다냥, 뭐든 말해 보라냥."]).then(topicMenu); }]]);
 }
 function startTalk() {
+  if (!S.d) return;
   const tab = $("#tab-talk");
   if (tab.dataset.ready === "1" && chatEl()) return;
   tab.dataset.ready = "1";
@@ -763,7 +778,14 @@ function startTalk() {
   });
   nyangSays([S.d["상담"].intro], "happy").then(topicMenu);
 }
+let talkBusy = false;
 async function handleFree(q) {
+  if (!S.d || talkBusy) return;
+  talkBusy = true;
+  try { await handleFreeInner(q); } finally { talkBusy = false; }
+}
+async function handleFreeInner(q) {
+  $$(".worry", chatEl()).forEach((r) => r.remove());
   if (CRISIS.test(q)) {
     addMsg("me", esc(q));
     await nyangSays(["말해 줘서 정말 고마워. 지금 많이 힘들구나… 냥이는 네가 꼭 괜찮았으면 좋겠다냥.",
@@ -1066,10 +1088,11 @@ function renderPath(sub) {
   if (sub) pathSub = sub;
   const J = S.d["나의길"] || {};
   $("#tab-path").innerHTML = `
-    <div class="segtabs" role="tablist"><button data-psub="past" type="button">🪞 돌아보기</button><button data-psub="future" type="button">🌱 준비하기</button><button data-psub="diary" type="button">📔 운세 일기</button></div>
+    <div class="segtabs" role="tablist"><button data-psub="past" type="button">🪞 돌아보기</button><button data-psub="future" type="button">🌱 준비하기</button><button data-psub="diary" type="button">📔 운세 일기</button><button data-psub="ipmyeong" type="button">🌿 입명 노트</button></div>
     <div data-ppane="past" hidden>${renderPast(J["지난해들"] || [])}</div>
     <div data-ppane="future" hidden>${renderFuture(J["앞으로"] || [])}</div>
-    <div data-ppane="diary" hidden>${renderDiary()}</div>`;
+    <div data-ppane="diary" hidden>${renderDiary()}</div>
+    <div data-ppane="ipmyeong" hidden>${renderIpmyeong(S.d["입명"])}</div>`;
   $$("#tab-path [data-psub]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.psub === pathSub); b.addEventListener("click", () => renderPath(b.dataset.psub)); });
   $$("#tab-path [data-ppane]").forEach((p) => (p.hidden = p.dataset.ppane !== pathSub));
   $$("#tab-path [data-year]").forEach((b) => b.addEventListener("click", () => openYear(+b.dataset.year)));
@@ -1080,6 +1103,13 @@ function renderPath(sub) {
   }));
   $$("#tab-path [data-vow]").forEach((c) => c.addEventListener("change", () => { const v = store.get("vow", {}); v[c.dataset.vow] = c.value.trim(); store.set("vow", v); }));
   $("#btn-journey")?.addEventListener("click", () => openReading("journey", { text: journeyText(), title: "인생 패턴 돌아보기" }));
+  $("#ip-reflect")?.addEventListener("change", (e) => store.set("reflect", e.target.value.trim()));
+  $("#ip-deed")?.addEventListener("click", (e) => {
+    const k = "deed:" + S.d["운세"]["오늘운세"].date, on = store.get(k, 0) !== 1; store.set(k, on ? 1 : 0);
+    e.currentTarget.classList.toggle("done", on); e.currentTarget.setAttribute("aria-pressed", on);
+    e.currentTarget.firstElementChild.textContent = on ? "✅" : "⬜";
+  });
+  $("[data-psub-go]", $("#tab-path"))?.addEventListener("click", (e) => renderPath(e.currentTarget.dataset.psubGo));
   paintNyang($("#tab-path"));
 }
 function journeyText() {
@@ -1133,9 +1163,48 @@ function openYear(y) {
   });
 }
 function renderHomeTeaser() { const el = $("#tab-home .path-teaser"); if (el) { el.outerHTML = pathTeaser(); paintNyang($("#tab-home")); } }
+function planBlock() {
+  const f = S.d["운세"], plan = f["분기플랜"] || [], tm = f["타이밍"] || [], tr = f["대운전환"], rm = f["로드맵"], y = f["신년운세"];
+  if (!plan.length) return "";
+  return `<div class="card tint-lav"><div class="card-head"><h2>📋 ${y["연도"]} 분기 플랜</h2><span class="badge">절기 기준</span></div>
+    <p class="sub" style="margin:0 0 10px">☀️ 밀기 · ⛅ 실행 · 🌧️ 정비 — 점수가 아니라 '어떻게 움직일지'로 보면 된다냥.</p>
+    <div class="quarters">${plan.map((q) => `<div class="qtr"><div class="qh"><b>${esc(q["분기"])}</b><span>${esc(q["신호"])}</span></div>
+      <p class="sub" style="margin:2px 0 6px">핵심: ${esc(q["핵심"])}</p>
+      ${q["달별"].map((m) => `<div class="qm"><b>${esc(m["표시"])}</b> ${esc(m["신호"])} · ${esc(m["할일"])}${m["주의"] ? `<small>⚠ ${esc(m["주의"])}</small>` : ""}</div>`).join("")}</div>`).join("")}</div></div>
+    <div class="card"><h2>⏱️ 타이밍 도우미</h2>
+      <div class="timing">${tm.map((t) => `<div class="tm"><b>${esc(t["목적"])}</b>
+        <div>👍 ${t["추천"].length ? t["추천"].map(esc).join("·") : "특정 달보다 준비가 먼저"}${t["추천해"].length ? ` <span class="sub">· 해: ${t["추천해"].join("·")}</span>` : ""}</div>
+        <div class="sub">🙅 ${t["피할"].map(esc).join("·")} · ${esc(t["이유"])}</div></div>`).join("")}</div>
+      <p class="fine" style="margin:10px 0 0">냥이는 '바람 방향'만 알려 준다냥. 연봉·건강·계약 조건이 언제나 먼저야!</p></div>
+    ${tr ? `<div class="card tint-mint"><div class="card-head"><h2>🌗 대운 전환 준비</h2><span class="badge mint">D-${tr["남은해"]}년</span></div>
+      <p style="margin:0 0 8px">${esc(tr["문구"])}</p>${tr["씨앗"].map((x) => `<div>🌱 ${esc(x)}</div>`).join("")}</div>` : ""}
+    ${rm ? `<div class="card"><h2>🗺️ 10년 로드맵</h2><p style="margin:0">수확의 해 <b>${rm["수확"]["연도"]}년</b>(${esc(rm["수확"]["테마"])}, ${rm["수확"]["점수"]}점) — <b>${rm["준비"]}년</b>부터 씨앗을 심어 두자냥.</p></div>` : ""}`;
+}
+function renderIpmyeong(I) {
+  if (!I) return `<p class="sub">입명 노트를 불러오지 못했다냥.</p>`;
+  const done = store.get("deed:" + S.d["운세"]["오늘운세"].date, 0) === 1;
+  return `<div class="say" style="margin-bottom:12px"><span class="who" data-nyang="happy" data-size="54"></span><div class="bubble">${esc(I["소개"])}</div></div>
+    <div class="card"><h2>${esc(I["지명"]["제목"])}</h2>${I["지명"]["문장"].map((x) => `<p class="ip-line">${T(x, true)}</p>`).join("")}</div>
+    <div class="card tint-lav"><h2>${esc(I["개과"]["제목"])}</h2>
+      <p><b>되풀이하기 쉬운 모습</b> — ${esc(I["개과"]["패턴"])}</p>
+      <div class="bubble lav" style="margin:8px 0">🪞 ${esc(I["개과"]["질문"])}</div>
+      <p>👉 바꿀 행동 하나: <b>${esc(I["개과"]["행동"])}</b></p>
+      <textarea class="dream-box" id="ip-reflect" maxlength="300" placeholder="떠오른 일을 적어 봐 — 이 폰에만 저장된다냥">${esc(store.get("reflect", ""))}</textarea>
+      <p class="sub" style="margin:4px 0 0">${esc(I["개과"]["근거"])}</p></div>
+    <div class="card tint-mint"><h2>${esc(I["적선"]["제목"])}</h2>
+      <button type="button" class="mission ${done ? "done" : ""}" id="ip-deed" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span><span>오늘의 나눔: ${esc(I["적선"]["오늘"])}</span></button>
+      <p class="sub" style="margin:8px 0 0">${esc(I["적선"]["근거"])}</p></div>
+    <div class="card"><h2>${esc(I["겸덕"]["제목"])}</h2><p style="margin:0">🙇 ${esc(I["겸덕"]["한줄"])}</p><p class="sub" style="margin:6px 0 0">${esc(I["겸덕"]["근거"])}</p></div>
+    <div class="card tint-butter"><h2>${esc(I["입명"]["제목"])}</h2>${I["입명"]["계획"].map((x) => `<div class="ip-plan"><b>${esc(x["기간"])}</b> ${esc(x["신호"] || "")}${x["할일"].filter(Boolean).map((t) => `<div>· ${esc(t)}</div>`).join("")}</div>`).join("")}
+      <button class="ghost wide" type="button" data-psub-go="future" style="margin-top:10px">🌱 준비하기에서 분기 플랜 보기</button></div>
+    <div class="card"><h2>📖 이 노트의 근거</h2>${I["출처"].map((x) => `<div class="src"><b>${esc(x["제목"])}</b>
+      ${x["원문"] ? `<div class="src-orig">${esc(x["원문"])}</div>` : ""}<div>${esc(x["뜻"])}</div><div class="sub">🐱 ${esc(x["냥이"])}</div>
+      <a href="${esc(x["url"])}" target="_blank" rel="noopener" class="sub">${esc(x["출처"])} ↗</a></div>`).join("")}
+      <h3 style="margin-top:14px">사주냥이의 다섯 가지 원칙</h3><ol class="principles">${I["원칙"].map((x) => `<li>${esc(x)}</li>`).join("")}</ol></div>`;
+}
 function renderFuture(list) {
   const pr = store.get("prep", {}), vow = store.get("vow", {});
-  return `<div class="say" style="margin-bottom:12px"><span class="who" data-nyang="happy" data-size="54"></span><div class="bubble">
+  return planBlock() + `<div class="say" style="margin-bottom:12px"><span class="who" data-nyang="happy" data-size="54"></span><div class="bubble">
     운은 날씨, 준비는 우산이다냥. 해마다 할 일을 체크하면서 한 해를 미리 그려 보자냥!</div></div>
     ${list.map((y, i) => { const done = y["준비"].filter((_, k) => pr[`${y["연도"]}:${k}`]).length;
       return `<div class="card fut ${i === 0 ? "tint-pink" : ""}"><div class="card-head"><h2>${y["연도"]}년 <small class="sub">${esc(y["간지"])} · ${esc(y["십성"])} · ${y["나이"]}세</small></h2><span class="badge ${y["점수"] >= 63 ? "" : "pink"}">${y["점수"]}점</span></div>
@@ -1193,7 +1262,8 @@ async function init() {
   $("#rd-back").addEventListener("click", () => (history.state?.reader ? history.back() : closeReader()));
   window.addEventListener("popstate", () => { if (!$("#reader").hidden) closeReader(); });
 
-  const saved = JSON.parse(localStorage.getItem("nyang:me") || "null");
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem("nyang:me") || "null"); } catch { saved = null; }
   if (saved) {
     fillForm(form, saved);
     $("#main").hidden = false; loading($("#tab-home"));

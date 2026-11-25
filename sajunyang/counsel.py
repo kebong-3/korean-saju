@@ -13,10 +13,15 @@ NATURE_SHORT = {"甲": "곧게 뻗는 큰 나무", "乙": "어디서든 피어�
                 "壬": "깊고 넓은 바다", "癸": "세상을 적시는 단비"}
 
 
-def _months(ms: list[dict], groups: set[str] | None = None, top: int = 3) -> str:
-    pool = [m for m in ms if not groups or set(m["그룹"]) & groups] or ms
-    pick = sorted(pool, key=lambda m: -m["점수"])[:top]
-    return "·".join(f"{m['월']}월" for m in sorted(pick, key=lambda m: ms.index(m)))
+def _months(ms: list[dict], groups: set[str] | None = None, top: int = 3, bad: list[int] | None = None) -> str:
+    """추천 달 — 운세 탭과 같은 규칙(fortune.pick_months): 살살 갈 달 제외, 50점 이상, 원하는 기운 우선."""
+    from .fortune import pick_months
+    bad = bad if bad is not None else _BAD.get(id(ms), [])
+    pick = pick_months(ms, groups, bad, n=top)
+    return "·".join(m.get("표시", f"{m['월']}월") for m in pick) or "올해는 특정 달보다 꾸준함"
+
+
+_BAD: dict[int, list[int]] = {}
 
 
 def _pct(a, g: str) -> float:
@@ -29,10 +34,11 @@ def build(r, fx: dict, story: dict) -> dict:
     name = c.birth.name or "너"
     y, life, mt, ahead = fx["신년운세"], fx["평생운"], fx["맞춤"], fx["앞으로10년"]
     ms, f, Y = y["월별"], y["분야"], y["연도"]
+    _BAD[id(ms)] = y["조심할달"]
     dm = STEMS[c.day_stem]
     nature = NATURE_SHORT[dm]
     spouse_g = "관성" if female else "재성"
-    spouse_word = "[[관성]](남자·연인 자리)" if female else "[[재성]](여자·연인 자리)"
+    spouse_word = "[[관성]](연인·파트너 기운)" if female else "[[재성]](연인·파트너 기운)"
     sinsal = {s.name for s in a.sinsal}
     top_g = max(a.group_weight, key=a.group_weight.get)
     cur, nxt, best = life["현재"], life["다음"], life["전성기"]
@@ -75,7 +81,7 @@ def build(r, fx: dict, story: dict) -> dict:
              if y["일지충"] else "올해는 [[일지]](배우자 자리)와 [[합]]이 드는 해라, 관계가 한 단계 깊어지기 좋다냥. 진지한 대화를 나눠 보라냥."
              if y["일지합"] else "올해 배우자 자리(일지)는 큰 충돌 없이 조용하다냥. 문제는 운보다 '대화 습관'에 있을 가능성이 크다냥."),
             f"너는 {mt['연애스타일']} 상대에게 이 점을 솔직하게 말해 주면 오해가 많이 줄어든다냥.",
-            f"함께 시간을 보내기 좋은 달: **{_months(ms)}**, 예민해지기 쉬운 달: **{'·'.join(f'{m}월' for m in y['조심할달'])}**. 그 달엔 중요한 결정을 미루라냥.",
+            f"함께 시간을 보내기 좋은 달: **{_months(ms)}**, 예민해지기 쉬운 달: **{'·'.join(y.get('조심할달표시') or [f'{m}월' for m in y['조심할달']])}**. 그 달엔 중요한 결정을 미루라냥.",
         ]},
         {"id": "breakup", "label": "헤어졌어…", "answer": [
             "많이 힘들었겠다냥… 일단 여기 와서 말해 준 것만으로도 잘한 거다냥. 🐾",
@@ -85,7 +91,7 @@ def build(r, fx: dict, story: dict) -> dict:
             f"새 인연의 기운이 들어오는 달은 **{love_months}**. 그 전까지는 {mt['힐링']} 같은 걸로 나를 먼저 돌봐라냥.",
         ]},
         {"id": "when", "label": "내 인연은 언제 와?", "answer": [
-            f"{'여자' if female else '남자'}의 사주에서 연인은 {spouse_word}으로 본다냥. 너의 원국에 그 기운은 **{_pct(a, spouse_g)}%** 있다냥"
+            f"전통 명리에서 네 연인·파트너 기운은 {spouse_word}으로 본다냥. 너의 원국에 그 기운은 **{_pct(a, spouse_g)}%** 있다냥"
             + (" — 인연 기운이 충분한 편!" if _pct(a, spouse_g) >= 15 else " — 적은 편이라, 운에서 들어올 때를 잡는 게 중요하다냥."),
             f"{Y}년에 연인 기운이 들어오는 달은 **{_months(ms, {spouse_g}, 4)}**이다냥. 이 달엔 소개팅·모임 제안을 거절하지 마라냥!",
             "앞으로 연인 기운이 들어오는 해: " + (", ".join(f"{x['연도']}년" for x in ahead if spouse_g in x["십성그룹"])[:60] or "특정 해에 몰려 있지 않다냥 — 매년 기회가 고르게 온다냥") + ".",
