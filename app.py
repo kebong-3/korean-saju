@@ -373,6 +373,22 @@ def _sse(obj: dict) -> str:
     return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
 
 
+# ---------------------------------------------------------------- Vercel OIDC(Blob 자격 증명)
+# Blob 스토어를 프로젝트에 연결하면 BLOB_STORE_ID + 요청 헤더의 OIDC 토큰으로 인증한다.
+# 런타임이 헤더를 SDK에 넘겨주지 않는 경우를 대비해 요청마다 직접 등록한다.
+@app.middleware("http")
+async def _vercel_oidc(request, call_next):
+    tok = request.headers.get("x-vercel-oidc-token")
+    if tok:
+        os.environ["VERCEL_OIDC_TOKEN"] = tok
+        try:
+            from vercel.headers import set_headers
+            set_headers({k: v for k, v in request.headers.items()})
+        except Exception:  # noqa: BLE001
+            pass
+    return await call_next(request)
+
+
 # ---------------------------------------------------------------- 관계 지도(귀인 지도)
 def _target_year() -> int:
     t = today_kst()
