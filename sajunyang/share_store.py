@@ -197,6 +197,63 @@ def remove_member(mid: str, pid: str, token: str) -> bool:
     return True
 
 
+# ------------------------------------------------------------------ 범용 문서(백업·알림 구독)
+def put_doc(key: str, obj: dict, ttl: int = TTL, index: str | None = None) -> None:
+    """key 예: backups/<id>, push/<id>. index를 주면 Redis에서 목록을 뽑을 수 있게 집합에도 넣는다."""
+    if backend() == "redis":
+        cmds = [["SET", f"doc:{key}", json.dumps(obj, ensure_ascii=False), "EX", ttl]]
+        if index:
+            cmds.append(["SADD", f"idx:{index}", key])
+        _pipe(cmds)
+    elif backend() == "blob":
+        _bput(f"{key}.json", obj)
+    else:
+        raise StoreError("저장소가 아직 연결되지 않았다냥")
+
+
+def get_doc(key: str) -> dict | None:
+    if backend() == "redis":
+        v = _pipe([["GET", f"doc:{key}"]])[0]
+        return json.loads(v) if v else None
+    if backend() == "blob":
+        return _bget(f"{key}.json")
+    raise StoreError("저장소가 아직 연결되지 않았다냥")
+
+
+def del_doc(key: str, index: str | None = None) -> None:
+    if backend() == "redis":
+        cmds = [["DEL", f"doc:{key}"]]
+        if index:
+            cmds.append(["SREM", f"idx:{index}", key])
+        _pipe(cmds)
+    elif backend() == "blob":
+        _bdel([f"{key}.json"])
+
+
+def list_docs(index: str) -> list[tuple[str, dict]]:
+    """index 접두어(예: push) 아래 문서를 모두 읽는다(알림 보내기용)."""
+    if backend() == "redis":
+        keys = _pipe([["SMEMBERS", f"idx:{index}"]])[0] or []
+        if not keys:
+            return []
+        vals = _pipe([["GET", f"doc:{k}"] for k in keys])
+        out, gone = [], []
+        for k, v in zip(keys, vals):
+            if v:
+                out.append((k, json.loads(v)))
+            else:
+                gone.append(k)
+        if gone:
+            _pipe([["SREM", f"idx:{index}", *gone]])
+        return out
+    if backend() == "blob":
+        paths = _blist(f"{index}/")
+        with ThreadPoolExecutor(max_workers=12) as ex:
+            data = list(ex.map(_bget, paths))
+        return [(p.removesuffix(".json"), d) for p, d in zip(paths, data) if d]
+    raise StoreError("저장소가 아직 연결되지 않았다냥")
+
+
 def delete_map(mid: str, token: str) -> bool:
     rec, ms = load(mid)
     if rec is None:

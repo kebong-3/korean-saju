@@ -514,3 +514,34 @@ button.mission { width: 100%; border: 0; text-align: left; font: inherit; color:
 .home-more > summary::-webkit-details-marker { display: none; }
 .home-more[open] > summary { margin-bottom: 12px; }
 .home-more .card { box-shadow: none; border: 1px solid var(--line); }
+
+/* ── 2단계: 일기장·택일·백업 ── */
+.menu { grid-template-columns: repeat(3, 1fr); }
+.book-line { display: grid; gap: 2px; width: 100%; text-align: left; border: 1px dashed var(--line); background: #fffafc; border-radius: 16px; padding: 10px 12px; margin: 4px 0 10px; cursor: pointer; font: inherit; color: var(--ink); }
+.book-line small { color: var(--sub); }
+.book-line.fresh { border: 1.5px solid var(--pink); background: var(--pink-l); }
+.book-line .new { font-style: normal; font-size: 12px; color: #fff; background: var(--pink); border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
+.book-title { background: var(--lav-l); border-radius: 16px; padding: 10px 12px; margin: 0 0 10px; }
+.book-list { display: grid; gap: 8px; }
+.book-item { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff; }
+.book-item summary { cursor: pointer; }
+.book-item p { margin: 8px 0; line-height: 1.7; }
+.book-item.locked { background: #f7f4fa; color: var(--sub); display: grid; gap: 2px; }
+.tg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tg-chips button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+.tg-chips button.on { background: var(--pink); border-color: var(--pink); color: #fff; }
+.tg-h { margin: 12px 0 6px; font-size: 16px; }
+.tg-day { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; background: #fff; display: grid; gap: 4px; }
+.tg-d { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tg-d .badge { margin-left: auto; }
+.tg-why { font-size: 14px; color: var(--lav-d); }
+.bk-code { display: grid; gap: 8px; justify-items: center; text-align: center; background: var(--mint-l); border-radius: 18px; padding: 14px; }
+.bk-code b { font: 26px/1.2 var(--title); letter-spacing: 2px; color: var(--ink); user-select: all; }
+.bk-code small { color: var(--sub); }
+.bk-note { font-size: 13.5px; color: var(--sub); background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin: 10px 0; line-height: 1.6; }
+.bk-hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+.bk-restore { display: flex; gap: 8px; }
+.bk-restore input { flex: 1; text-transform: uppercase; letter-spacing: 1px; }
+.push-line { width: 100%; border: 0; background: var(--butter-l); border-radius: 14px; padding: 9px 12px; margin: 0 0 10px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; }
+.push-line.on { background: #f3f0f7; color: var(--sub); }
+.push-hint { margin: 0 0 10px; }

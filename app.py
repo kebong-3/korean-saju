@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, Header, HTTPException, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
@@ -44,6 +44,8 @@ ipmyeong = _opt("ipmyeong")
 relation = _opt("relation")
 share_store = _opt("share_store")
 family = _opt("family")
+taegil = _opt("taegil")
+push = _opt("push")
 
 
 def _safe(fn, *args, **kw):
@@ -138,7 +140,8 @@ def status(check: int = 0):
     """키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만. ?check=1 이면 실제로 짧게 호출해 본다."""
     p = llm.provider()
     out = {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"],
-           "share": bool(share_store and share_store.configured())}
+           "share": bool(share_store and share_store.configured()),
+           "push_key": push.public_key() if push and share_store and share_store.configured() else None}
     if check and p["name"]:
         try:
             txt = "".join(llm.stream("한 단어로만 답해.", [{"role": "user", "content": "고양이 울음소리?"}], max_tokens=200))
@@ -403,6 +406,137 @@ def _nick(v: str) -> str:
     if not v:
         raise HTTPException(400, "별명을 적어 달라냥")
     return v
+
+
+class TaegilReq(BaseModel):
+    birth: Birth
+    purpose: Literal["move", "contract", "interview", "date", "exam", "start"] = "move"
+
+
+@app.post("/api/taegil")
+def taegil_api(req: TaegilReq):
+    """택일 도우미: 앞으로 60일 중 목적에 맞는 날(규칙 기반, 무료)."""
+    if not taegil:
+        raise HTTPException(503, "택일 도우미를 준비 중이다냥")
+    return taegil.pick(_reading(req.birth), req.purpose, today_kst(), 60)
+
+
+# ---------------------------------------------------------------- 기록 백업(복구 코드)
+# 브라우저가 복구 코드로 AES-GCM 암호화한 덩어리만 받는다. 서버는 코드도, 내용도 모른다.
+_BID = re.compile(r"[0-9a-f]{32}")
+BACKUP_DAYS = 400
+
+
+class BackupReq(BaseModel):
+    id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    iv: str = Field(min_length=8, max_length=40, pattern=r"^[A-Za-z0-9+/=]+$")
+    ct: str = Field(min_length=16, max_length=600_000, pattern=r"^[A-Za-z0-9+/=]+$")
+
+
+def _need_store():
+    if not (share_store and share_store.configured()):
+        raise HTTPException(503, "백업 저장소를 준비 중이다냥")
+
+
+@app.post("/api/backup")
+def backup_put(req: BackupReq):
+    _need_store()
+    try:
+        share_store.put_doc(f"backups/{req.id}", {"iv": req.iv, "ct": req.ct, "at": today_kst().isoformat()})
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"ok": True}
+
+
+@app.get("/api/backup/{bid}")
+def backup_get(bid: str, response: Response):
+    _need_store()
+    response.headers["Cache-Control"] = "no-store"
+    if not _BID.fullmatch(bid):
+        raise HTTPException(404, "복구 코드를 찾을 수 없다냥")
+    try:
+        rec = share_store.get_doc(f"backups/{bid}")
+        if rec and (today_kst() - date.fromisoformat(rec.get("at", "2000-01-01"))).days > BACKUP_DAYS:
+            share_store.del_doc(f"backups/{bid}")
+            rec = None
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    if not rec:
+        raise HTTPException(404, "그 복구 코드로 저장된 기록이 없다냥 (코드를 다시 확인하거나, 400일이 지나 지워졌을 수 있어)")
+    return {"iv": rec["iv"], "ct": rec["ct"], "at": rec.get("at")}
+
+
+@app.delete("/api/backup/{bid}")
+def backup_del(bid: str):
+    _need_store()
+    if not _BID.fullmatch(bid):
+        raise HTTPException(404, "복구 코드를 찾을 수 없다냥")
+    try:
+        share_store.del_doc(f"backups/{bid}")
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- 아침 운세 알림(웹 푸시)
+class PushKeys(BaseModel):
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=60)
+
+
+class PushSub(BaseModel):
+    endpoint: str = Field(max_length=800)
+    keys: PushKeys
+
+
+class PushReq(BaseModel):
+    sub: PushSub
+    ilgan: int = Field(ge=0, le=9)
+    yong: list[Literal["목", "화", "토", "금", "수"]] = Field(default_factory=list, max_length=2)
+
+
+class UnpushReq(BaseModel):
+    endpoint: str = Field(max_length=800)
+
+
+def _need_push():
+    if not (push and push.public_key() and share_store and share_store.configured()):
+        raise HTTPException(503, "아침 알림을 준비 중이다냥")
+
+
+@app.post("/api/push")
+def push_subscribe(req: PushReq):
+    """생년월일 없이 일간·용신만 받아 둔다(알림 문구용)."""
+    _need_push()
+    if not push.endpoint_ok(req.sub.endpoint):
+        raise HTTPException(400, "지원하지 않는 알림 주소다냥")
+    rec = {"sub": req.sub.model_dump(), "ilgan": req.ilgan, "yong": req.yong, "at": today_kst().isoformat()}
+    try:
+        share_store.put_doc(push.key_of(req.sub.endpoint), rec, index=push.INDEX)
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"ok": True}
+
+
+@app.post("/api/push/off")
+def push_unsubscribe(req: UnpushReq):
+    _need_push()
+    try:
+        share_store.del_doc(push.key_of(req.endpoint), index=push.INDEX)
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"ok": True}
+
+
+@app.get("/api/cron/morning")
+def push_cron(authorization: str = Header(default="")):
+    """Vercel Cron(매일 07시 KST)이 부른다. CRON_SECRET이 맞아야만 보낸다."""
+    import secrets as _s
+    sec = os.environ.get("CRON_SECRET", "")
+    if not sec or not _s.compare_digest(authorization, f"Bearer {sec}"):
+        raise HTTPException(401, "권한이 없다냥")
+    _need_push()
+    return push.send_all(share_store, today_kst())
 
 
 class MapOther(BaseModel):

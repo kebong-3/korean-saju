@@ -15,6 +15,7 @@ dependencies = [
   "fastapi>=0.117",
   "anthropic>=1.0; python_version >= '3.10'",
   "vercel>=0.13; python_version >= '3.11'",
+  "pywebpush>=2.0",
 ]
 keywords = ["saju", "사주", "만세력", "bazi", "four pillars", "korean lunar calendar", "mcp"]
 classifiers = [
