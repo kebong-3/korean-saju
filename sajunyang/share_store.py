@@ -23,7 +23,8 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 TTL = 400 * 24 * 3600
-MAX_MEMBERS = 60
+MAX_MEMBERS = 60   # 지도 + 대기 명단 합계
+ACTIVE_MAX = 10    # 지도에 별로 뜨는 최대 인원(넘치면 대기 명단)
 
 
 class StoreError(Exception):
@@ -168,20 +169,49 @@ def load(mid: str) -> tuple[dict | None, dict]:
     raise StoreError("공유 저장소가 아직 연결되지 않았다냥")
 
 
-def add_member(mid: str, view: dict) -> tuple[str, str]:
-    rec, ms = load(mid)
-    if rec is None:
-        raise StoreError("지도를 찾을 수 없다냥 (지워졌거나 기간이 지났어)")
-    if len(ms) >= MAX_MEMBERS:
-        raise StoreError(f"이 지도는 {MAX_MEMBERS}명이 꽉 찼다냥")
-    pid, token = new_id(), secrets.token_urlsafe(12)
-    entry = {"view": view, "token": _h(token)}
+def active_count(ms: dict) -> int:
+    return sum(1 for e in ms.values() if not e.get("wait"))
+
+
+def _put_member(mid: str, pid: str, entry: dict) -> None:
     if backend() == "redis":
         _pipe([["HSET", f"map:{mid}:m", pid, json.dumps(entry, ensure_ascii=False)],
                ["EXPIRE", f"map:{mid}", TTL], ["EXPIRE", f"map:{mid}:m", TTL]])
     else:
         _bput(f"maps/{mid}/m/{pid}.json", entry)
-    return pid, token
+
+
+def add_member(mid: str, view: dict, src: str | None = None) -> tuple[str | None, str | None, bool]:
+    """(pid, token, 대기여부). src(상대 지도 id)가 같은 별이 이미 있으면 (None, None, False) — 중복 방지."""
+    rec, ms = load(mid)
+    if rec is None:
+        raise StoreError("지도를 찾을 수 없다냥 (지워졌거나 기간이 지났어)")
+    if src and any(e.get("src") == src for e in ms.values()):
+        return None, None, False
+    if len(ms) >= MAX_MEMBERS:
+        raise StoreError(f"이 지도는 대기 명단까지 {MAX_MEMBERS}명이 꽉 찼다냥")
+    pid, token = new_id(), secrets.token_urlsafe(12)
+    wait = active_count(ms) >= ACTIVE_MAX
+    entry = {"view": view, "token": _h(token), "wait": wait}
+    if src:
+        entry["src"] = src
+    _put_member(mid, pid, entry)
+    return pid, token, wait
+
+
+def set_wait(mid: str, pid: str, token: str, wait: bool) -> bool:
+    """주인만: 별을 대기 명단으로 내리거나 지도로 올린다."""
+    rec, ms = load(mid)
+    if rec is None or pid not in ms:
+        return False
+    if not owner_ok(rec, token):
+        raise StoreError("바꿀 권한이 없다냥")
+    e = ms[pid]
+    if not wait and e.get("wait") and active_count(ms) >= ACTIVE_MAX:
+        raise StoreError(f"지도에는 {ACTIVE_MAX}명까지만 떠요. 먼저 한 명을 대기 명단으로 내려 줘")
+    e["wait"] = bool(wait)
+    _put_member(mid, pid, e)
+    return True
 
 
 def remove_member(mid: str, pid: str, token: str) -> bool:

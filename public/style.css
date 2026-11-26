@@ -545,3 +545,65 @@ button.mission { width: 100%; border: 0; text-align: left; font: inherit; color:
 .push-line { width: 100%; border: 0; background: var(--butter-l); border-radius: 14px; padding: 9px 12px; margin: 0 0 10px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; }
 .push-line.on { background: #f3f0f7; color: var(--sub); }
 .push-hint { margin: 0 0 10px; }
+
+/* ── 모바일 최적화: 가로 넘침 방지 · 한글 줄바꿈 · 작은 화면 가독성 ── */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { overflow-x: hidden; }
+@supports (overflow: clip) { html, body { overflow-x: clip; } }
+body { word-break: keep-all; overflow-wrap: break-word; }
+img, svg, video { max-width: 100%; }
+/* 숨긴 라디오(성별·양력/음력)가 화면보다 넓어져 페이지가 축소되던 문제 */
+.seg label { position: relative; }
+.seg input { width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; margin: 0; left: 0; top: 0; }
+.check { white-space: normal; }
+.check input[type="checkbox"] { flex: none; margin-top: 2px; }
+.consent.mutual { background: var(--lav-l); border-radius: 14px; padding: 10px 12px; }
+.consent.mutual small { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+.note-box { background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin: 8px 0; font-size: 14.5px; line-height: 1.6; }
+.card, .bubble, .fit, .mrow { min-width: 0; }
+.mrow .mn, .wrow .mn { min-width: 0; }
+/* 관계 지도 유형 칸: 색 점 + 두 줄 이름 */
+.kcount div { padding: 8px 2px 7px; display: grid; justify-items: center; gap: 1px; }
+.kcount .kdot { width: 7px; height: 7px; border-radius: 50%; display: block; }
+.kcount small { font-size: 11.5px; line-height: 1.3; }
+/* 대기 명단 */
+.wrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; background: #fbf8fd; border-radius: 16px; padding: 10px 12px; }
+.wrow .mn small { display: block; color: var(--sub); font-size: 12.5px; }
+.wbtn { display: flex; gap: 6px; }
+.wbtn .ghost { padding: 7px 12px; font-size: 14px; }
+.wbtn .ghost:disabled { opacity: .45; cursor: not-allowed; }
+
+@media (max-width: 400px) {
+  main { padding: 10px 12px 104px; }
+  .screen { padding: 18px 12px; }
+  .card { padding: 16px 14px; border-radius: 20px; }
+  h2 { font-size: 19px; }
+  .bubble { font-size: 15px; padding: 11px 13px; }
+  .bubble.big { font-size: 15.5px; padding: 14px 14px; }
+  .seg b { padding: 8px 14px; }
+  .menu { gap: 8px; }
+  .menu button { font-size: 13px; padding: 12px 4px 10px; }
+  .menu button i { width: 46px; height: 46px; font-size: 25px; }
+  .lucky { gap: 6px; }
+  .lucky div { font-size: 12.5px; padding: 8px 2px; }
+  .rd-cta .btn { font-size: 14.5px; }
+  .grid2 { gap: 8px; }
+  .fit { padding: 10px 11px; font-size: 14px; }
+  .bottom button { font-size: 11px; }
+  .ring { width: 96px; height: 96px; } .ring > div { width: 76px; height: 76px; } .ring b { font-size: 26px; }
+  .today { gap: 12px; }
+  .segtabs button { font-size: 14px; }
+  .kcount { gap: 4px; }
+  .kcount b { font-size: 20px; }
+  .kcount small { font-size: 10.5px; }
+  .mrow { grid-template-columns: 28px 1fr 40px; padding: 10px; }
+}
+@media (max-width: 340px) {
+  .grid2, .rd-cta { grid-template-columns: 1fr; }
+  .lucky { grid-template-columns: repeat(2, 1fr); }
+  .menu button { font-size: 12.5px; }
+}
+/* 출석 도장: 좁은 화면에서도 7칸이 넘치지 않게 */
+.stamps { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.stamps span { width: min(38px, 100%); height: auto; aspect-ratio: 1; }
+@media (max-width: 400px) { .stamps span { font-size: 16px; } }

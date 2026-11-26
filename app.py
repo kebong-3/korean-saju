@@ -605,7 +605,7 @@ def map_create(req: MapCreateReq):
             if rec:
                 inv_r = _reading(Birth(**rec["owner"]["birth"]))
                 view = _member(me_r, rec["owner"]["name"], inv_r, _target_year())
-                share_store.add_member(mid, view)
+                share_store.add_member(mid, view, src=req.invited_by)
                 first = rec["owner"]["name"]
         except Exception as e:  # noqa: BLE001
             print(f"[map] 초대자 자동 등록 실패: {e!r}")
@@ -631,20 +631,30 @@ def map_get(mid: str, token: str = ""):
     owner = Birth(**rec["owner"]["birth"])
     me_r = _reading(owner)
     year = _target_year()
-    members = []
+    members, waits = [], []
     for pid, e in ms.items():
         v = dict(e["view"])
         v["id"] = pid
-        members.append(v)
+        (waits if e.get("wait") else members).append(v)
     out = _map_out(me_r, rec["owner"]["name"], members, year)
-    out["주인권한"] = share_store.owner_ok(rec, token)
+    own = share_store.owner_ok(rec, token)
+    out.update({"주인권한": own, "정원": share_store.ACTIVE_MAX, "대기수": len(waits)})
+    if own:  # 대기 명단의 이름은 주인에게만
+        out["대기"] = sorted(waits, key=lambda m: -m["케미"])
     return out
+
+
+class MapRef(BaseModel):
+    id: str = Field(pattern=r"^[A-Za-z0-9]{4,16}$")
+    token: str = Field(max_length=64)
 
 
 class MapJoinReq(BaseModel):
     name: str = Field(max_length=20)
     birth: Birth
     consent: bool
+    mutual: bool = False                 # 내 지도에도 주인을 자동으로 올리기(없으면 내 지도를 새로 만든다)
+    my_map: Optional[MapRef] = None      # 이 기기에 이미 내 지도가 있으면 그 지도
 
 
 @app.post("/api/map/{mid}/join")
@@ -658,12 +668,53 @@ def map_join(mid: str, req: MapJoinReq):
     year = _target_year()
     view = _member(owner_r, name, me_r, year)          # 주인 지도에 올라갈 정보(내 생일은 저장 안 함)
     mine = relation.relate(me_r, owner_r, year)        # 내 입장에서 본 주인
+    my_ref = None
+    if req.my_map and req.my_map.id == mid:
+        raise HTTPException(400, "내 지도에는 내가 이미 달로 떠 있다냥 🌕")
+    if req.mutual:  # 서로 보이게: 내 지도(없으면 새로 만들어)에 주인을 별로 올린다
+        try:
+            if req.my_map:
+                r2, _ = share_store.load(req.my_map.id)
+                if r2 and share_store.owner_ok(r2, req.my_map.token):
+                    my_ref = {"id": req.my_map.id, "token": req.my_map.token, "new": False}
+            if not my_ref:
+                nid, ntok = share_store.create_map({"birth": req.birth.model_dump(), "name": name})
+                my_ref = {"id": nid, "token": ntok, "new": True}
+        except share_store.StoreError as e:
+            print(f"[map] 내 지도 준비 실패: {e!r}")
+            my_ref = None
     try:
-        pid, mtoken = share_store.add_member(mid, view)
+        pid, mtoken, wait = share_store.add_member(mid, view, src=my_ref["id"] if my_ref else None)
     except share_store.StoreError as e:
         raise HTTPException(409, str(e)) from e
-    return {"id": pid, "token": mtoken, "주인이름": rec["owner"]["name"], "나": relation.person_type(me_r),
-            "나의올해": relation.year_type(me_r, year), "내시선": mine, "주인시선": view}
+    if my_ref:
+        try:
+            back = _member(me_r, rec["owner"]["name"], owner_r, year)
+            bpid, _, bwait = share_store.add_member(my_ref["id"], back, src=mid)
+            my_ref.update({"주인올림": bpid is not None, "주인대기": bwait})
+        except share_store.StoreError as e:
+            print(f"[map] 내 지도에 주인 올리기 실패: {e!r}")
+    return {"id": pid, "token": mtoken, "이미": pid is None, "대기": wait, "주인이름": rec["owner"]["name"],
+            "나": relation.person_type(me_r), "나의올해": relation.year_type(me_r, year), "내시선": mine, "주인시선": view,
+            "내지도": my_ref}
+
+
+class WaitReq(BaseModel):
+    token: str = Field(max_length=64)
+    wait: bool
+
+
+@app.post("/api/map/{mid}/member/{pid}/wait")
+def map_member_wait(mid: str, pid: str, req: WaitReq):
+    """주인만: 지도(최대 10명) ↔ 대기 명단."""
+    _load_map(mid)
+    try:
+        ok = share_store.set_wait(mid, pid, req.token, req.wait)
+    except share_store.StoreError as e:
+        raise HTTPException(409 if "명까지" in str(e) else 403, str(e)) from e
+    if not ok:
+        raise HTTPException(404, "그 별을 찾을 수 없다냥")
+    return {"ok": True}
 
 
 @app.delete("/api/map/{mid}/member/{pid}")
@@ -686,9 +737,10 @@ def map_share_page(mid: str):
             rec, ms = share_store.load(mid)
             if rec:
                 name = rec["owner"].get("name") or "친구"
-                kinds = [e["view"]["나에게"]["키"] for e in ms.values()]
+                act = [e for e in ms.values() if not e.get("wait")]
+                kinds = [e["view"]["나에게"]["키"] for e in act]
                 g = kinds.count("guiin")
-                title = f"{name}님의 귀인 지도 🌌 · {len(ms)}명"
+                title = f"{name}님의 귀인 지도 🌌 · {len(act)}명"
                 desc = (f"귀인 {g}명이 받쳐 주는 지도예요. " if g else "") + f"나는 {name}님에게 어떤 사람일까? 생일만 넣으면 내 자리가 떠요."
         except Exception:  # noqa: BLE001
             pass

@@ -93,6 +93,38 @@ class ApiTest(_Blob):
         self.assertFalse(any(k.startswith("push/") for k in self.files))
 
 
+class MapWaitMutualTest(_Blob):
+    def test_waitlist_and_mutual(self):
+        c = self.c
+        a = c.post("/api/map", json={"owner": {"year": 1985, "month": 4, "day": 2, "name": "정의형"}, "consent": True}).json()
+        for i in range(10):
+            r = c.post(f"/api/map/{a['id']}/join", json={"name": f"친{i}", "birth": {"year": 1980 + i, "month": 3, "day": 5 + i}, "consent": True}).json()
+            self.assertFalse(r["대기"])
+        b = c.post(f"/api/map/{a['id']}/join", json={"name": "지영", "birth": {"year": 1993, "month": 7, "day": 21}, "consent": True, "mutual": True}).json()
+        self.assertTrue(b["대기"])                                       # 11번째는 대기 명단
+        mine = b["내지도"]
+        self.assertTrue(mine["new"] and mine["주인올림"])
+        mv = c.get(f"/api/map/{mine['id']}?token={mine['token']}").json()
+        self.assertEqual([m["이름"] for m in mv["멤버"]], ["정의형"])     # 서로 연결: 주인이 내 지도에
+        again = c.post(f"/api/map/{a['id']}/join", json={"name": "지영", "birth": {"year": 1993, "month": 7, "day": 21}, "consent": True,
+                                                         "mutual": True, "my_map": {"id": mine["id"], "token": mine["token"]}}).json()
+        self.assertTrue(again["이미"])                                   # 같은 지도 쌍은 중복 안 됨
+        self.assertFalse(again["내지도"]["주인올림"])
+        own = c.get(f"/api/map/{a['id']}?token={a['token']}").json()
+        pub = c.get(f"/api/map/{a['id']}").json()
+        self.assertEqual((len(own["멤버"]), len(own["대기"]), own["정원"]), (10, 1, 10))
+        self.assertNotIn("대기", pub)                                    # 대기 이름은 주인만
+        self.assertEqual(pub["대기수"], 1)
+        w, act = own["대기"][0]["id"], own["멤버"][0]["id"]
+        url = f"/api/map/{a['id']}/member"
+        self.assertEqual(c.post(f"{url}/{w}/wait", json={"token": a["token"], "wait": False}).status_code, 409)  # 꽉 참
+        self.assertEqual(c.post(f"{url}/{act}/wait", json={"token": "nope", "wait": True}).status_code, 403)
+        self.assertEqual(c.post(f"{url}/{act}/wait", json={"token": a["token"], "wait": True}).status_code, 200)
+        self.assertEqual(c.post(f"{url}/{w}/wait", json={"token": a["token"], "wait": False}).status_code, 200)
+        self.assertEqual(c.post(f"/api/map/{mine['id']}/join", json={"name": "x", "birth": {"year": 1990, "month": 1, "day": 1}, "consent": True,
+                                                                     "my_map": {"id": mine["id"], "token": mine["token"]}}).status_code, 400)
+
+
 class PushMsgTest(unittest.TestCase):
     def test_hosts(self):
         self.assertTrue(push.endpoint_ok("https://web.push.apple.com/abc"))
