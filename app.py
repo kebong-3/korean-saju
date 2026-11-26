@@ -122,6 +122,7 @@ class AIReq(BaseModel):
     partner: Optional[Birth] = None
     partner_role: Literal["love", "child"] = "love"
     messages: list[ChatMsg] = Field(default_factory=list, max_length=20)
+    memo: list[str] = Field(default_factory=list, max_length=6)  # 폰에만 저장된 지난 고민·약속 요약(서버 저장 안 함)
 
 
 def _nim(name: str) -> str:
@@ -291,7 +292,9 @@ def family_compat(req: FamilyReq):
 
 # ---------------------------------------------------------------- AI (Gemini 기본 / Claude 선택)
 SYSTEM = persona.SYSTEM + "\n\n해석 기준표\n" + GUIDE
-CRISIS = re.compile(r"(죽고\s*싶|자살|사라지고\s*싶|살기\s*싫|자해|목숨|끝내고\s*싶)")
+CRISIS = re.compile(r"(죽고\s*싶|죽어\s*버리고|죽고\s*말|죽는\s*게\s*나|죽을\s*래|자살(?!골)|자해|극단\s*적\s*(인\s*)?선택|스스로\s*목숨|목숨을\s*끊|"
+                    r"사라지고\s*싶|사라져\s*버리|없어지고\s*싶|없어져\s*버리|살(기|고)\s*(가\s*)?싫|살고\s*싶지\s*않|그만\s*살|더\s*(는\s*)?못\s*살|"
+                    r"살\s*이유가?\s*없|사는\s*게\s*(의미|무의미)|뛰어\s*내리|목을?\s*매|(다|삶을|인생을?)\s*끝내|세상을?\s*떠나고|suicid|kill\s*myself|want\s*to\s*die)", re.I)
 CRISIS_MSG = ("말해 줘서 정말 고마워. 지금 많이 힘들구나… 냥이는 네가 꼭 괜찮았으면 좋겠다냥.\n\n"
               "이건 사주보다 사람의 도움이 먼저 필요한 순간이다냥. 지금 바로 **자살예방상담전화 109**(24시간)나 "
               "**정신건강위기상담 1577-0199**에 전화해 줄래? 위급하면 **119**.\n\n혼자 버티지 않아도 된다냥. 🐾")
@@ -360,7 +363,10 @@ def ai(req: AIReq):
     if CRISIS.search(history[-1]["content"]):
         return _stream_text(CRISIS_MSG)
     # 계산 결과는 서버에서 다시 만들어 첫 메시지 앞에 붙인다(클라이언트가 조작할 수 없음).
-    history[0] = {"role": "user", "content": _context(req) + "\n\n" + history[0]["content"]}
+    memo = [re.sub(r"[<>]", "", m)[:120] for m in req.memo if m.strip()][:6]
+    mem = ("\n<memory note=\"사용자 폰에 저장된 지난 상담 요약. 자연스럽게 이어서 안부를 물어도 되지만 사실로 단정하지 말 것\">\n"
+           + "\n".join(f"- {m}" for m in memo) + "\n</memory>") if memo else ""
+    history[0] = {"role": "user", "content": _context(req) + mem + "\n\n" + history[0]["content"]}
     return _stream_llm(SYSTEM, history, 1500)
 
 
