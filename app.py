@@ -62,6 +62,61 @@ def _safe(fn, *args, **kw):
 
 app = FastAPI(title="사주냥이", docs_url=None, redoc_url=None, openapi_url=None)
 
+
+# ---------------------------------------------------------------- 서비스 보호(사용량 제한·보안 헤더·출처 확인)
+from fastapi.responses import JSONResponse  # noqa: E402
+
+from sajunyang import guard  # noqa: E402
+
+MAX_BODY = 1_000_000  # 1MB — 백업(최대 600KB)보다 넉넉하고, 그 이상은 받을 이유가 없다
+_CALC = {"/api/saju", "/api/day", "/api/compat", "/api/family", "/api/mapcalc", "/api/taegil"}
+
+
+def _bucket(method: str, path: str) -> str | None:
+    if not path.startswith("/api/") or path.startswith("/api/cron/"):
+        return None
+    if method == "POST":
+        if path == "/api/ai":
+            return "ai"
+        if path == "/api/reading":
+            return "reading"
+        if path in _CALC:
+            return "calc"
+        return "write"   # 지도·편지·백업·알림 등록
+    if method == "DELETE":
+        return "write"
+    if method == "GET" and (path.startswith("/api/map/") or path.startswith("/api/backup/")):
+        return "read"
+    return None
+
+
+def _no(status: int, msg: str, **headers) -> JSONResponse:
+    return JSONResponse({"detail": msg}, status_code=status, headers={**guard.HEADERS, **headers})
+
+
+@app.middleware("http")
+async def _protect(request, call_next):
+    method, path = request.method, request.url.path
+    if method in ("POST", "PUT", "PATCH", "DELETE"):
+        try:
+            if int(request.headers.get("content-length") or 0) > MAX_BODY:
+                return _no(413, "보낸 내용이 너무 크다냥")
+        except ValueError:
+            return _no(400, "요청을 읽지 못했다냥")
+        if path.startswith("/api/") and not guard.same_origin(request.headers.get("origin"), request.headers.get("host")):
+            return _no(403, "사주냥이 앱에서만 쓸 수 있다냥")
+    b = _bucket(method, path)
+    if b:
+        wait = guard.check(b, guard.client_ip(request.headers, request.client.host if request.client else ""))
+        if wait:
+            return _no(429, guard.MSG, **{"Retry-After": str(wait)})
+    res = await call_next(request)
+    for k, v in guard.HEADERS.items():
+        res.headers.setdefault(k, v)
+    if path.startswith("/api/") and "cache-control" not in res.headers:
+        res.headers["Cache-Control"] = "no-store"
+    return res
+
 GUIDE = (ROOT / "skills/saju-reading/references/interpretation-guide.md").read_text(encoding="utf-8")
 KST = timezone(timedelta(hours=9))
 
@@ -147,13 +202,25 @@ def _reading(b: Birth, who: str = ""):
 
 
 # ---------------------------------------------------------------- 계산 API
+def _is_admin(authorization: str) -> bool:
+    import secrets as _s
+    sec = os.environ.get("CRON_SECRET", "")
+    return bool(sec) and _s.compare_digest(authorization or "", f"Bearer {sec}")
+
+
 @app.get("/api/status")
-def status(check: int = 0):
-    """키 값은 절대 내보내지 않는다 — 어느 이름으로 읽혔는지만. ?check=1 이면 실제로 짧게 호출해 본다."""
+def status(response: Response, check: int = 0, authorization: str = Header(default="")):
+    """앱이 켤 기능을 고르는 데 쓰는 공개 정보만. 키 이름·실제 호출 점검(?check=1)은 운영자(CRON_SECRET)만."""
     p = llm.provider()
-    out = {"ai": p["name"] is not None, "provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"],
-           "share": bool(share_store and share_store.configured()),
+    out = {"ai": p["name"] is not None, "share": bool(share_store and share_store.configured()),
            "push_key": push.public_key() if push and share_store and share_store.configured() else None}
+    if not _is_admin(authorization):
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300"
+        if check:
+            raise HTTPException(401, "점검은 운영자만 할 수 있다냥")
+        return out
+    response.headers["Cache-Control"] = "no-store"
+    out.update({"provider": p["name"], "key_from": p["key_from"], "key_format_ok": p["looks_ok"]})
     if check and p["name"]:
         try:
             txt = "".join(llm.stream("한 단어로만 답해.", [{"role": "user", "content": "고양이 울음소리?"}], max_tokens=200))
@@ -199,7 +266,7 @@ def saju(b: Birth):
     if ilju:
         d["냥이카드"] = _safe(ilju.of_reading, r)
     if season:
-        d["절기"] = _safe(season.current, datetime.utcnow() + timedelta(hours=9))
+        d["절기"] = _safe(season.current, datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=9))
     if pae:
         t0 = d["운세"]["오늘운세"]
         d["오늘의패"] = _safe(pae.draw, t0["십성"], t0["date"], seed)
@@ -685,7 +752,8 @@ def _load_map(mid: str):
 
 
 @app.get("/api/map/{mid}")
-def map_get(mid: str, token: str = ""):
+def map_get(mid: str, token: str = "", x_token: str = Header(default="")):
+    token = x_token or token  # 주소창·기록에 남지 않게 헤더로 받는다(예전 앱은 ?token=)
     rec, ms = _load_map(mid)
     owner = Birth(**rec["owner"]["birth"])
     me_r = _reading(owner)
@@ -821,8 +889,9 @@ def map_letter(mid: str, pid: str, req: LetterReq):
 
 
 @app.get("/api/map/{mid}/letters")
-def map_letters(mid: str, token: str = ""):
+def map_letters(mid: str, token: str = "", x_token: str = Header(default="")):
     """내 지도로 온 보약 편지(최근 30일, 최대 20통) — 지도 주인만."""
+    token = x_token or token  # 주소창·기록에 남지 않게 헤더로 받는다(예전 앱은 ?token=)
     rec, _ = _load_map(mid)
     if not share_store.owner_ok(rec, token):
         raise HTTPException(403, "볼 권한이 없다냥")
@@ -837,7 +906,8 @@ def map_letters(mid: str, token: str = ""):
 
 
 @app.delete("/api/map/{mid}/member/{pid}")
-def map_member_delete(mid: str, pid: str, token: str = ""):
+def map_member_delete(mid: str, pid: str, token: str = "", x_token: str = Header(default="")):
+    token = x_token or token  # 주소창·기록에 남지 않게 헤더로 받는다(예전 앱은 ?token=)
     _load_map(mid)
     try:
         return {"ok": share_store.remove_member(mid, pid, token)}
@@ -930,11 +1000,12 @@ def map_share_page(mid: str):
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta http-equiv="refresh" content="0; url={target}"><link rel="canonical" href="https://korean-saju-six.vercel.app{target}">
-</head><body><a href="{target}">사주냥이 귀인 지도로 이동</a><script>location.replace({json.dumps(target)});</script></body></html>"""
+</head><body><a href="{target}">사주냥이 귀인 지도로 이동</a></body></html>"""
 
 
 @app.delete("/api/map/{mid}")
-def map_delete(mid: str, token: str = ""):
+def map_delete(mid: str, token: str = "", x_token: str = Header(default="")):
+    token = x_token or token  # 주소창·기록에 남지 않게 헤더로 받는다(예전 앱은 ?token=)
     _load_map(mid)
     try:
         ok = share_store.delete_map(mid, token)

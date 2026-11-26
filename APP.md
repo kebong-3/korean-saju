@@ -22,7 +22,7 @@
 ```
 app.py              FastAPI 서버 (Vercel 엔트리포인트) — /api/saju, /api/compat, /api/meta, /api/status, /api/ai, /api/readings, /api/reading
 sajunyang/          운세 점수·상담 시나리오·사주냥이 페르소나·용어사전·대풀이(readings.py)·AI 연결(llm.py)
-public/             화면 (index.html, style.css, app.js, nyang.js=캐릭터 SVG)
+public/             화면 (index.html, style.css, boot.js, js/*.js=화면별 스크립트 14개, nyang.js=캐릭터 SVG)
 src/ksaju/          사주 엔진 (외부 의존성 0개, 기존 그대로)
 pyproject.toml      엔진 패키지 정보 + 웹앱 의존성(fastapi, anthropic) + Vercel 엔트리포인트
 uv.lock             Vercel이 그대로 설치하는 고정 버전 목록
@@ -60,10 +60,10 @@ Vercel → Project → Settings → Environment Variables
 | `ANTHROPIC_API_KEY` (선택) | `sk-ant-...` | Gemini 키가 없을 때만 Claude 사용 (`SAJU_MODEL`로 모델 지정) |
 
 환경변수를 추가·수정한 뒤에는 **반드시 다시 배포(Redeploy)** 해야 적용됩니다. 환경(Production/Preview)에 체크했는지도 확인하세요.
-연결 확인: `https://<도메인>/api/status` → `{"ai": true, "provider": "gemini", "key_from": "...", "key_format_ok": true}` (키 값은 노출하지 않음)
+연결 확인: `https://<도메인>/api/status` → `{"ai": true, ...}`. 키 이름·실제 호출 점검(`?check=1`)은 운영자만: `Authorization: Bearer <CRON_SECRET>` 헤더를 붙여 부른다.
 
 키가 없으면 대풀이는 규칙 기반 서술형 풀이로, 상담은 무료 시나리오 상담으로 동작합니다.
-결제·사용량 제한은 아직 없으므로, 널리 공개하기 전에 요청 제한(Vercel Firewall Rate Limit 등)을 붙이세요.
+사용량 제한(sajunyang/guard.py): 접속 주소마다 AI 상담 1분 10회·하루 300회, 대풀이 1분 6회·하루 150회 등. Redis(KV/Upstash)를 연결하면 모든 서버가 같은 숫자를 보고, 없으면 서버마다 메모리로 센다. 보안 헤더(CSP 등)는 guard.HEADERS와 vercel.json이 같은 값이어야 한다(테스트가 확인).
 
 ## 고지
 사주는 성향과 흐름을 읽는 전통 해석 체계입니다. 냥이의 옛이야기는 개념 설명용 창작 설화입니다.

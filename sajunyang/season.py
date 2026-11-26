@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from ksaju.core import term_instants
 
@@ -61,4 +61,4 @@ def all_terms() -> list[dict]:
 
 
 def today_kst() -> date:
-    return (datetime.utcnow() + KST).date()
+    return (datetime.now(timezone.utc).replace(tzinfo=None) + KST).date()
