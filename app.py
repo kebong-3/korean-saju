@@ -49,6 +49,7 @@ push = _opt("push")
 season = _opt("season")
 ilju = _opt("ilju")
 pae = _opt("pae")
+sinsal_story = _opt("sinsal_story")
 
 
 def _safe(fn, *args, **kw):
@@ -165,7 +166,9 @@ def meta(response: Response):
     response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=86400"
     return {"profile": persona.PROFILE,
             "glossary": {k: {"뜻": v[0], "냥이": v[1]} for k, v in persona.GLOSSARY.items()},
-            "stories": persona.STORIES}
+            "stories": persona.STORIES,
+            "sinsal": ({"설명": {k: sinsal_story.detail(k) for k in sinsal_story.INFO},
+                        "자리": sinsal_story.POS_TXT, "줄": sinsal_story.ROW_TXT} if sinsal_story else {})}
 
 
 @app.get("/api/terms")
@@ -198,6 +201,12 @@ def saju(b: Birth):
     if pae:
         t0 = d["운세"]["오늘운세"]
         d["오늘의패"] = _safe(pae.draw, t0["십성"], t0["date"], seed)
+    if sinsal_story:
+        d["신살표"] = _safe(_manse_sinsal, r)
+        if d["신살표"]:
+            d["신살이야기"] = _safe(sinsal_story.build, r, d["신살표"], _nim(b.name), today_kst())
+        d["운줄"] = _safe(sinsal_story.luck_rows, r, today_kst())
+        d["관계"] = [{"종류": x.kind, "글자": x.members, "설명": x.detail} for x in r.analysis.relations]
     if relation:
         d["나의유형"] = relation.person_type(r)
         d["나의올해"] = relation.year_type(r, d["운세"]["신년운세"]["연도"])
@@ -212,6 +221,11 @@ def saju(b: Birth):
         else:
             gw["조후"] = ""
     return d
+
+
+def _manse_sinsal(r):
+    from ksaju import sinsal as _ss
+    return _ss.natal(r.chart)
 
 
 def _stories(r, fx: dict, name: str, prof: dict | None = None) -> dict:

@@ -887,3 +887,79 @@ main > * { margin-bottom: 14px; }
 .checkin .moods button { padding: 6px 4px; font-size: 20px; min-height: 0; border-radius: 14px; display: flex; gap: 4px; align-items: center; justify-content: center; }
 .checkin .moods button small { font-size: 12.5px; }
 .checkin .note-in { min-height: 40px; font-size: 14px; padding: 8px 12px; }
+
+/* ───────── 5단계: 만세력 · 신살과 길성 */
+.mx-who { display: flex; gap: 12px; align-items: center; }
+.mx-who h2 { margin: 0; font-size: 22px; }
+.mx-ilju { font: 15px var(--title); margin-top: 2px; }
+.mx-dates { margin: 6px 0 0; font-size: 13px; color: var(--sub); line-height: 1.6; }
+.mx-dates .sol { color: #f0607d; } .mx-dates .lun { color: #6c8bdc; } .mx-dates .cor { color: #c47d10; }
+.mx-guide { margin-top: 12px; background: var(--butter-l); border-radius: 16px; padding: 10px 14px; }
+.mx-guide summary { cursor: pointer; font: 15px var(--title); }
+.mx-guide ol { margin: 8px 0 2px; padding-left: 20px; font-size: 14px; line-height: 1.65; }
+.mx-grid, .ss-grid, .gung { display: grid; grid-template-columns: 42px repeat(4, minmax(0, 1fr)); gap: 4px; align-items: stretch; }
+.mx-h { text-align: center; font-size: 12.5px; color: var(--sub); padding: 2px 0 4px; }
+.mx-h.me { color: #f0607d; font-weight: 700; } .mx-h i { font-style: normal; margin-left: 3px; background: #ffe4ea; border-radius: 8px; padding: 0 5px; font-size: 11px; }
+.mx-l { display: flex; align-items: center; font-size: 12px; color: var(--sub); line-height: 1.2; word-break: keep-all; }
+.mx-l .term { font-size: 12px; }
+.mx-c { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; min-height: 34px; padding: 4px 2px; border-radius: 10px; background: #fbf8fd;
+  text-align: center; font-size: 13.5px; line-height: 1.25; word-break: keep-all; }
+.mx-c:active { transform: scale(.96); } .mx-c:focus-visible { outline: 2px solid var(--pink); }
+.mx-none { color: var(--sub); }
+.mx-tile { border: 0; padding: 0; font: inherit; -webkit-appearance: none; appearance: none; box-sizing: border-box; cursor: pointer; position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; border-radius: 16px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .06), 0 2px 6px rgba(80, 60, 110, .08); }
+.mx-tile b { font: 700 clamp(19px, 6.2vw, 30px)/1 "Gowun Dodum", serif; letter-spacing: -1px; }
+.mx-tile b span { font-size: .78em; margin-left: 1px; opacity: .85; }
+.mx-tile small { position: absolute; right: 7px; bottom: 5px; font: 11px var(--title); opacity: .9; }
+.mx-tile.me { box-shadow: 0 0 0 3px var(--pink) inset, 0 3px 8px rgba(240, 96, 125, .2); }
+.mx-tile:active { transform: scale(.95); }
+.mx-foot { margin: 10px 0 0; }
+.mx-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.mx-tabs button { all: unset; cursor: pointer; padding: 7px 12px; border-radius: 999px; background: #f4eff8; font-size: 13.5px; color: var(--sub); }
+.mx-tabs button.has { color: var(--ink); background: #ece4f6; }
+.mx-tabs button.on { background: #4a3d5c; color: #fff; }
+.mx-tabs button i { font-style: normal; margin-left: 4px; font-size: 11px; background: #f0607d; color: #fff; border-radius: 8px; padding: 0 5px; }
+.gung-c { display: grid; place-items: center; text-align: center; background: #fbf8fd; border-radius: 10px; padding: 6px 2px; font-size: 13px; line-height: 1.3; word-break: keep-all; }
+.gung-c b { font: 700 17px "Gowun Dodum", serif; } .gung-c small { color: var(--sub); font-size: 11.5px; }
+.rel-list { margin: 0 0 10px; padding-left: 18px; line-height: 1.8; }
+.e-txt-목 { color: var(--wood); } .e-txt-화 { color: var(--fire); } .e-txt-토 { color: #c47d10; } .e-txt-금 { color: #6d7690; } .e-txt-수 { color: var(--water); }
+.mx-yong { all: unset; cursor: pointer; display: block; width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 16px; font-size: 15px; }
+.mx-yong b { font: 700 24px "Gowun Dodum", serif; margin-right: 4px; }
+.lk-h { margin: 14px 0 6px; font-size: 15px; }
+.lk-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.lk { all: unset; direction: ltr; cursor: pointer; flex: 0 0 64px; scroll-snap-align: center; display: grid; gap: 3px; justify-items: center; text-align: center;
+  padding: 6px 4px; border-radius: 14px; background: #fbf8fd; position: relative; }
+.lk.now { background: #ffe9ee; box-shadow: 0 0 0 2px var(--pink) inset; }
+.lk-t { font: 13px var(--title); } .lk-g { font-size: 11.5px; color: var(--sub); } .lk-s { font-size: 11.5px; }
+.lk-tile { width: 52px; height: 48px; border-radius: 12px; display: grid; place-items: center; font: 700 20px/1 "Gowun Dodum", serif; position: relative; }
+.lk-tile i { position: absolute; right: 4px; bottom: 3px; font: 10px var(--title); font-style: normal; opacity: .8; }
+.lk-dot { position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; border-radius: 8px; background: #a98bf0; color: #fff; font-size: 10px; display: grid; place-items: center; }
+.ss-legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.ss-legend span, .ss-badge { font-size: 11.5px; padding: 2px 8px; border-radius: 8px; }
+.ss-list, .ss-inline { display: flex; flex-wrap: wrap; gap: 6px; }
+.ss-chip { all: unset; cursor: pointer; padding: 5px 10px; border-radius: 999px; font-size: 13.5px; line-height: 1.2; border: 1.5px solid transparent; }
+.ss-chip:active { transform: scale(.95); }
+.ss-gwi { background: #fff3c9; color: #9a6a00; } .ss-chip.ss-gwi { border-color: #f6d777; }
+.ss-gil { background: #dff7ef; color: #23876b; } .ss-chip.ss-gil { border-color: #a8e6d2; }
+.ss-sal { background: #ffe6ec; color: #c74563; } .ss-chip.ss-sal { border-color: #ffbccb; }
+.ss-tk { background: #ece6fb; color: #6a4fc0; } .ss-chip.ss-tk { border-color: #d3c6f5; }
+.ss-grid { margin-top: 14px; }
+.ss-g { text-align: center; font: 700 16px "Gowun Dodum", serif; padding: 6px 0; background: #fbf8fd; border-radius: 10px; }
+.ss-cell { display: flex; flex-direction: column; gap: 4px; align-items: stretch; padding: 4px 0; min-height: 34px; justify-content: center; }
+.ss-cell .ss-chip { padding: 4px 2px; font-size: 11.5px; text-align: center; border-radius: 8px; word-break: keep-all; }
+.ss-x { text-align: center; color: #c9c0d4; }
+.ss-me { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.ss-me:last-child { border: 0; } .ss-me p { margin: 6px 0 0; }
+.ss-period { padding: 10px 12px; border-radius: 14px; background: #fff; margin: 8px 0; }
+.ss-period.now { box-shadow: 0 0 0 2px var(--pink) inset; }
+.ss-period p { margin: 6px 0 0; } .ss-period .ss-inline { margin-top: 6px; }
+.ss-rx { margin-top: 14px; background: #fff; border-radius: 16px; padding: 12px 14px; }
+.ss-rx ol { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; }
+.ss-notes { margin-top: 10px; font-size: 13px; color: var(--sub); } .ss-notes summary { cursor: pointer; }
+.ss-sec { margin-top: 12px; } .ss-sec p { margin: 4px 0 0; line-height: 1.65; }
+@media (max-width: 360px) {
+  .mx-grid, .ss-grid, .gung { grid-template-columns: 34px repeat(4, minmax(0, 1fr)); gap: 3px; }
+  .mx-l, .mx-l .term { font-size: 11px; } .mx-c { font-size: 12px; } .mx-tile { border-radius: 12px; }
+  .mx-tile small { right: 4px; bottom: 3px; font-size: 9.5px; }
+  .ss-cell .ss-chip { font-size: 10.5px; }
+}
