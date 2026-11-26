@@ -1,6 +1,6 @@
 /* 사주냥이 서비스 워커 — 화면 파일은 캐시해 빠르게 열고, /api 는 항상 네트워크로. */
-const CACHE = "nyang-v21";
-const SHELL = ["/", "/index.html", "/style.css?v=21", "/app.js?v=21", "/nyang.js?v=3", "/nyang.svg", "/manifest.webmanifest"];
+const CACHE = "nyang-v22";
+const SHELL = ["/", "/index.html", "/style.css?v=22", "/app.js?v=22", "/nyang.js?v=3", "/nyang.svg", "/manifest.webmanifest"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
