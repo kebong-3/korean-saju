@@ -31,7 +31,7 @@ def _pct(a, g: str) -> float:
 def build(r, fx: dict, story: dict) -> dict:
     c, a = r.chart, r.analysis
     female = c.birth.gender == "여"
-    name = c.birth.name or "너"
+    name = f"{c.birth.name}님" if c.birth.name else "너"
     y, life, mt, ahead = fx["신년운세"], fx["평생운"], fx["맞춤"], fx["앞으로10년"]
     ms, f, Y = y["월별"], y["분야"], y["연도"]
     _BAD[id(ms)] = y["조심할달"]

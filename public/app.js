@@ -111,6 +111,13 @@ document.addEventListener("click", (e) => {
     wm.classList.toggle("done", on); wm.innerHTML = wm.innerHTML.replace(on ? "⬜" : "✅", on ? "✅" : "⬜"); return; }
   if (e.target.closest("[data-book]")) { openBook(); return; }
   if (e.target.closest("[data-dex]")) { openDex(); return; }
+  if (e.target.closest("[data-pae]")) { openPae(); return; }
+  if (e.target.closest("[data-garden]")) { openGarden(); return; }
+  if (e.target.closest("[data-season]")) { openSeason(); return; }
+  if (e.target.closest("[data-ncard]")) { openNyangCard(); return; }
+  if (e.target.closest("[data-saved]")) { openSaved(); return; }
+  if (e.target.closest("[data-gloss]")) { openGlossary(); return; }
+  if (e.target.closest("[data-allmenu]")) { openAllMenu(); return; }
   const pu = e.target.closest("[data-push]"); if (pu) { togglePush(pu); return; }
   if (e.target.closest("[data-taegil]")) { openTaegil(); return; }
   if (e.target.closest("[data-backup]")) { openBackup(); return; }
@@ -193,8 +200,15 @@ async function api(path, body) {
 }
 
 // ───────────────────────── 시작·화면 전환
+const APPV = "19";
 async function loadMe(birth) {
-  S.d = await api("/api/saju", birth);
+  const ck = `${hashStr(JSON.stringify(birth))}:${kstDate(0)}:${APPV}`;
+  let cache = null; try { cache = JSON.parse(localStorage.getItem("nyang:sajuc") || "null"); } catch { cache = null; }
+  if (cache?.k === ck) S.d = cache.d;
+  else {
+    try { S.d = await api("/api/saju", birth); try { localStorage.setItem("nyang:sajuc", JSON.stringify({ k: ck, d: S.d })); } catch { /* 저장 공간 부족 */ } }
+    catch (err) { if (cache?.k?.startsWith(hashStr(JSON.stringify(birth)) + ":")) S.d = cache.d; else throw err; }
+  }
   S.birth = birth;
   localStorage.setItem("nyang:me", JSON.stringify(birth));
   S.chat = { history: [], partner: null, topic: null };
@@ -210,6 +224,7 @@ async function loadMe(birth) {
 function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="focus" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
 
 function showTab(tab, sub) {
+  if (tab !== "talk") saveTalk();
   $$(".bottom button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
   const fab = $("#fab-talk"); if (fab) fab.hidden = tab === "talk" || $("#main").hidden;
@@ -226,7 +241,7 @@ function showTab(tab, sub) {
 
 function renderAll() {
   const d = S.d, i = d["입력"];
-  $("#me-name").textContent = d["이름"] || "나";
+  $("#me-name").textContent = d["이름"] ? `${d["이름"]}님` : "나";
   $("#me-sub").textContent = `${i["띠"]}띠 · ${d["원국"]["일주"]["한글"]}일주`;
   renderHome(); renderLuck(); renderSaju(); renderCompat(); renderPath(); $("#tab-talk").innerHTML = "";
   paintNyang($("#main"));
@@ -234,7 +249,7 @@ function renderAll() {
 
 // ───────────────────────── 첫 감명 카드(리빌) · 2027 신년 공유 카드
 function yearCardSvg(d) {
-  const y = d["운세"]["신년운세"], me = d["나의유형"] || {}, yt = d["나의올해"] || {}, nm = d["이름"] || "나";
+  const y = d["운세"]["신년운세"], me = d["나의유형"] || {}, yt = d["나의올해"] || {}, nm = nim();
   const good = (y["좋은달표시"] || []).join(" · ");
   const color = (d["운세"]["맞춤"]?.["행운의색"] || [""])[0];
   const cat = nyang("happy", 120).replace("<svg ", '<svg x="120" y="70" ');
@@ -245,7 +260,7 @@ function yearCardSvg(d) {
     <text x="24" y="38" font-size="14" fill="#c2385a">사주냥이 · ${y["연도"]} 신년운세</text>
     <text x="336" y="38" font-size="12" fill="#6b6080" text-anchor="end">${esc(y["간지"])}</text>
     ${cat}
-    <text x="180" y="218" font-size="15" fill="#6b6080" text-anchor="middle">${esc(nm)}님은 ${esc(me["이모지"] || "")} ${esc(me["이름"] || "")}</text>
+    <text x="180" y="218" font-size="15" fill="#6b6080" text-anchor="middle">${esc(nm)}${d["이름"] ? "은" : "는"} ${esc(me["이모지"] || "")} ${esc(me["이름"] || "")}</text>
     <text x="180" y="256" font-size="27" fill="#3b2f4a" text-anchor="middle">${esc(yt["이모지"] || "")} ${esc(yt["이름"] || y["테마"])}</text>
     <text x="180" y="284" font-size="15" fill="#3b2f4a" text-anchor="middle">'${esc(y["테마"])}'</text>
     <rect x="34" y="306" width="292" height="94" rx="18" fill="#ffffff" opacity=".85"/>
@@ -271,10 +286,10 @@ function openYearCard() {
 
 function showReveal() {
   const d = S.d, me = d["나의유형"] || {}, yt = d["나의올해"] || {}, y = d["운세"]["신년운세"], yong = d["용신"]["용신"];
-  const mt = d["운세"]["맞춤"] || {}, nm = d["이름"] || "너";
+  const mt = d["운세"]["맞춤"] || {}, nm = nim();
   const ilgan = (d["해석"]["일간"] || "").split(" — ")[1] || "";
   const cards = [
-    { mood: "wow", k: "1 / 3 · 타고난 나", big: `${me["이모지"] || ""} ${me["이름"] || ""}`, sub: `${nm}님의 본체는 ${d["원국"]["일주"]["천간"]["글자"]}(${d["원국"]["일주"]["한글"][0]}) 일간이다냥.`, body: ilgan },
+    { mood: "wow", k: "1 / 3 · 타고난 나", big: `${me["이모지"] || ""} ${me["이름"] || ""}`, sub: `${nm}의 본체는 ${d["원국"]["일주"]["천간"]["글자"]}(${d["원국"]["일주"]["한글"][0]}) 일간이다냥.`, body: ilgan },
     { mood: "cheer", k: "2 / 3 · 나의 보약 기운", big: `${yong}(${{ 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" }[yong] || ""}) 기운`, sub: `너에게 제일 필요한 '용신'이다냥.`,
       body: `행운의 색은 ${(mt["행운의색"] || [""])[0]}, 힘이 나는 방향은 ${mt["행운의방위"] || ""}. ${mt["힐링"] ? `지칠 땐 ${mt["힐링"].split("·")[0]}!` : ""}` },
     { mood: "proud", k: `3 / 3 · 나의 ${y["연도"]}`, big: `${yt["이모지"] || "🧧"} ${yt["이름"] || y["테마"]}`, sub: `'${y["테마"]}'`, body: `${y["총평"]} 힘 실을 달은 ${(y["좋은달표시"] || []).join("·")}.` },
@@ -319,45 +334,57 @@ function todayStory(st, label = "냥이 도사의 오늘 한마디") {
 }
 function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
-  markVisit(t);
-  const nm = d["이름"] || "너";
+  markVisit(t); seasonMark();
   const key = "mission:" + t.date;
   const done = store.get(key, 0) === 1;
   const kh = new Date(Date.now() + 9 * 3600e3).getUTCHours();
   const moods = kh >= 23 || kh < 5 ? "sleepy" : t["점수"] >= 80 ? "cheer" : t["점수"] >= 68 ? "happy" : t["점수"] >= 56 ? "wink" : t["점수"] >= 45 ? "normal" : "focus";
+  const hello = kh < 5 ? "늦은 밤이다냥" : kh < 11 ? "좋은 아침이다냥" : kh < 17 ? "오후도 힘내라냥" : kh < 23 ? "오늘 하루 수고했다냥" : "이제 잘 시간이다냥";
+  const dt = new Date(t.date + "T00:00:00"), s = d["절기"];
   $("#tab-home").innerHTML = `
-    <div class="greet"><span class="float" data-nyang="${moods}" data-size="92" title="톡 건드려 봐"></span>
-      <div class="bubble">${esc(nm)}, 오늘의 ${chip("일진")}은 <b>${esc(t["일진"])}</b>이다냥.<br>${T(t["한마디"])}
-        <button type="button" class="wardrobe" data-dex>👘 냥이 옷장 · 도감 ${dexCount().got}/${dexCount().all}</button></div></div>
-    <div class="card tint-pink" style="margin-top:14px">
-      <div class="card-head"><h2>오늘의 운세</h2><span class="badge pink">${+t.date.slice(5, 7)}월 ${+t.date.slice(8, 10)}일 ${esc(t["신호"] || "")}</span></div>
+    <section class="hello">
+      <span class="float" data-nyang="${moods}" data-size="76" title="톡 건드려 봐"></span>
+      <div class="hello-t"><small>${dt.getMonth() + 1}월 ${dt.getDate()}일 ${"일월화수목금토"[dt.getDay()]}요일${s ? ` · ${esc(s["이모지"])} ${esc(s["이름"])}` : ""}</small>
+        <h1>${esc(nim())}, ${hello}</h1>
+        <button type="button" class="wardrobe" data-dex>👘 냥이 옷장 ${dexCount().got}/${dexCount().all}</button></div>
+    </section>
+
+    <div class="card today-card">
       <div class="today">${ring(t["점수"], t["등급"])}
-        <div><div class="sub">${chip("일진")} 십성 · ${T(t["십성"], true)}</div>
-        <div style="margin-top:6px">${T(t["한마디"])}</div>
-        ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-        ${t["작용"].length ? `<details class="raw-rel"><summary class="sub">명리 원문 보기</summary><p class="sub">${T(t["작용"].join(" · "), true)}</p></details>` : ""}</div></div>
-      <div class="lucky"><div><small>행운 색</small>${esc(t["행운"]["색"])}</div><div><small>숫자</small>${esc(t["행운"]["숫자"])}</div>
-        <div><small>방위</small>${esc(t["행운"]["방위"])}</div><div><small>음식</small>${esc(t["행운"]["음식"])}</div></div>
-      <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span><span>오늘의 개운 미션: ${esc(t["미션"])}</span></button>
-      <details class="hours-more"><summary class="sub">⏰ 시간대별 기운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b></summary>
-        ${hoursStrip(f["시간대"])}<p class="sub" style="margin:6px 0 0">살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p></details>
-      <div class="rd-cta"><button class="btn primary" type="button" data-read="day">☀️ 오늘 운세 자세히</button>
-        <button class="btn lav" type="button" data-read="tomorrow">🌙 내일 운세 (${f["내일운세"]["점수"]}점)</button></div>
+        <div><div class="tc-k">오늘의 운세 · <b>${esc(t["일진"])}</b>일 · <span data-t="${esc(t["십성"].split("/")[0])}" class="tc-god">${esc(t["십성"].split("/")[0])}의 날</span></div>
+        <p class="tc-main">${T(t["한마디"])}</p>
+        ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div></div>
+      <div class="lucky-line"><span>🎨 ${esc(t["행운"]["색"])}</span><span>🔢 ${esc(t["행운"]["숫자"])}</span><span>🧭 ${esc(t["행운"]["방위"])}</span><span>🍽️ ${esc(t["행운"]["음식"])}</span></div>
+      <details class="hours-more"><summary>⏰ 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b> · 시간대별 기운</summary>
+        ${hoursStrip(f["시간대"])}<p class="sub" style="margin:6px 0 0">살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p>
+        ${t["작용"].length ? `<p class="sub" style="margin:6px 0 0">명리 원문: ${T(t["작용"].join(" · "), true)}</p>` : ""}</details>
+      <div class="rd-cta"><button class="btn primary" type="button" data-read="day">오늘 자세히</button>
+        <button class="btn soft" type="button" data-read="tomorrow">내일 ${f["내일운세"]["점수"]}점 →</button></div>
     </div>
-    <div id="checkin-slot">${checkinCard()}</div>
+
+    <h2 class="sec-t">오늘의 의식 <small>하루 1분, 운을 키우는 시간</small></h2>
+    <div class="card ritual">
+      <div class="ritual-top">${paeTile()}<div id="garden-slot">${gardenMini()}</div></div>
+      <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span>
+        <span><small>개운 미션 · 하면 보약 화분이 자라요</small>${esc(t["미션"])}</span></button>
+      <div id="checkin-slot">${checkinCard()}</div>
+    </div>
+
+    ${seasonBanner()}
     ${monthCard(f["이번달"])}
-    <button class="banner" type="button" id="btn-yearcard"><div><small>${y["연도"]}년 ${esc(y["간지"])} · 신년운세 도착!</small>
-      <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>'${esc(y["테마"])}' · 좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>
+
+    <h2 class="sec-t">나를 알기</h2>
+    ${myCardTile()}
+    <button class="banner" type="button" id="btn-yearcard"><div><small>${y["연도"]}년 ${esc(y["간지"])} 신년운세</small>
+      <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>
     ${readMenu()}
+
+    <h2 class="sec-t">바로가기 <button type="button" class="sec-more" data-allmenu>전체 메뉴 ›</button></h2>
+    <div class="quick">${[["luck:month", "📅", "월별 운세"], ["compat", "💞", "궁합·지도"], ["talk", "💬", "고민 상담"], ["@taegil", "📆", "택일"],
+      ["saju:rx", "🍀", "개운 처방"], ["@saved", "🗂️", "내가 본 풀이"], ["@season", "🎐", "절기 일기"], ["@allmenu", "☰", "전체"]].map(menuBtn).join("")}</div>
     <div id="install-slot"></div>
-    <div class="menu" style="margin-bottom:16px">
-      ${[["luck:new", "🧧", `${y["연도"]} 신년운세`, "var(--pink-l)"], ["luck:month", "📅", "월별 운세", "var(--butter-l)"], ["luck:life", "📈", "평생 총운", "var(--lav-l)"],
-        ["saju:fit", "🎯", "나에게 맞는", "var(--mint-l)"], ["saju:rx", "🍀", "개운 처방전", "var(--mint-l)"], ["compat", "💞", "궁합", "var(--pink-l)"],
-        ["talk", "💬", "고민 상담", "var(--lav-l)"], ["saju:ogo", "🏛️", "오고 정밀감명", "var(--peach-l)"], ["glossary", "📚", "명리 교실", "var(--butter-l)"],
-        ["@taegil", "📆", "택일 도우미", "var(--peach-l)"], ["@book", "📖", "냥이 일기장", "var(--lav-l)"], ["@backup", "🔐", "기록 백업", "var(--mint-l)"]]
-        .map(([g, ic, l, bg]) => `<button type="button" ${g === "glossary" ? 'id="btn-gloss"' : g[0] === "@" ? `data-${g.slice(1)}` : `data-go="${g}"`}><i style="background:${bg}">${ic}</i>${l}</button>`).join("")}
-    </div>
-    <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b> <span class="sub">냥이 도사 한마디 · 명리 한 구절 · 옛이야기 · 나의 길</span></summary>
+
+    <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b><span class="sub">냥이 도사 한마디 · 고전 한 줄 · 옛이야기</span></summary>
       ${todayStory(d["이야기"]?.["오늘"])}
       ${wisdomCard(d["나의길"]?.["한구절"])}
       <div class="card story">
@@ -368,16 +395,16 @@ function renderHome() {
       ${pathTeaser()}
     </details>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
-      <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a><br>
-      계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a> · 천문 계산 만세력 · 옛이야기는 창작 설화예요</p>`;
+      <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
     store.set(key, on ? 1 : 0);
     e.currentTarget.classList.toggle("done", on);
     e.currentTarget.setAttribute("aria-pressed", on);
     e.currentTarget.firstElementChild.textContent = on ? "✅" : "⬜";
+    const g = gardenState();
+    if (on && g.bonus !== t.date) { g.bonus = t.date; store.set("garden", g); gardenAdd(d["용신"]["용신"], 1, "개운 미션 완료"); }
   });
-  $("#btn-gloss").addEventListener("click", openGlossary);
   $("#btn-yearcard")?.addEventListener("click", openYearCard);
 }
 
@@ -650,7 +677,7 @@ function manseSvg(d) {
       <text x="${x + dwW / 2}" y="${y + 120}" text-anchor="middle" font-size="11" fill="#8a7f99">${esc(p["십성"])}</text>`;
   });
   const H = y + 150;
-  const title = `${d["이름"] ? esc(d["이름"]) + " 님의 " : ""}만세력`;
+  const title = `${d["이름"] ? esc(d["이름"]) + "님의 " : ""}만세력`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif" role="img" aria-label="만세력">
     <rect width="${W}" height="${H}" rx="24" fill="#fff"/>
     <text x="24" y="40" font-size="24" font-weight="700" fill="#3b2f4a">${title}</text>
@@ -786,7 +813,7 @@ function mapBody(M, owner = true) {
       <span class="ms">${m["케미"]}</span></button>`).join("") : `<p class="sub">아직 아무도 없다냥. 아래에서 친구를 초대해 봐!</p>`}</div></div>`;
 }
 
-function openMember(m, owner, onDelete, onWait) {
+function openMember(m, owner, onDelete, onWait, onLetter) {
   const a = m["나에게"], b = m["상대에게"];
   openSheet(`<div class="term-head"><span data-nyang="think" data-size="60"></span><div><h2>${esc(m["이름"])} · 케미 ${m["케미"]}</h2>
       <div class="term-mean">${esc(m["유형"]["이모지"])} ${esc(m["유형"]["이름"])} · ${esc(m["올해"]["이모지"])} ${esc(m["올해"]["이름"])}</div></div></div>
@@ -794,24 +821,28 @@ function openMember(m, owner, onDelete, onWait) {
       <div class="sub">용신 채움 ${a["보완"]} · 영향력 ${a["영향력"]}</div></div>
       <div class="fit"><small>${owner ? "내가 이 사람에게" : "주인이 이 사람에게"}</small><b>${esc(b["이모지"])} ${esc(b["세부"])}</b>
       <div class="sub">용신 채움 ${b["보완"]} · 영향력 ${b["영향력"]}</div></div></div>
+    ${m["냥이"] ? `<p class="m-card" style="--c:${m["냥이"]["색"]}">🃏 ${esc(m["냥이"]["일주"])} · <b>${esc(m["냥이"]["이름"])}</b></p>` : ""}
     <div class="bubble lav" style="margin-bottom:10px">🔄 ${esc(m["흐름"])}</div>
     ${m["좋은점"].length ? `<h3>👍 좋은 기운</h3><ul class="tips">${m["좋은점"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>` : ""}
     ${m["아쉬운점"].length ? `<h3 style="margin-top:10px">🤏 조율할 점</h3><ul class="tips">${m["아쉬운점"].map((x) => `<li>${T(x, true)}</li>`).join("")}</ul>` : ""}
     <p class="fine">궁합 점수는 서로를 이해하는 참고용이다냥. 사람은 점수보다 행동으로 알아 가는 거야!</p>
+    ${onLetter ? `<button class="btn primary wide" type="button" id="m-letter" style="margin-bottom:8px">📮 보약 편지 보내기</button>` : ""}
     ${onWait ? `<button class="ghost wide" type="button" id="m-wait" style="margin-bottom:8px">⏳ 대기 명단으로 내리기 (자리 비우기)</button>` : ""}
     ${onDelete ? `<button class="ghost wide" type="button" id="m-del" style="margin-bottom:8px">지도에서 지우기</button>` : ""}`);
   $("#m-wait")?.addEventListener("click", () => { closeSheet(); onWait(); });
+  $("#m-letter")?.addEventListener("click", () => onLetter());
   $("#m-del")?.addEventListener("click", () => { closeSheet(); onDelete(); });
 }
 
-function bindMap(root, M, owner, onDelete, onWait) {
+function bindMap(root, M, owner, onDelete, onWait, onLetter) {
   $$("[data-mid]", root).forEach((el) => el.addEventListener("click", () => {
     const m = M["멤버"].find((x) => x.id === el.dataset.mid);
-    if (m) openMember(m, owner, onDelete ? () => onDelete(m) : null, onWait ? () => onWait(m, true) : null);
+    if (m) openMember(m, owner, onDelete ? () => onDelete(m) : null, onWait ? () => onWait(m, true) : null, onLetter ? () => onLetter(m) : null);
   }));
 }
 function waitCard(M) {
   const ws = M["대기"] || [], full = M["멤버"].length >= (M["정원"] || 10);
+  if (!ws.length && !full) return "";
   return `<div class="card" id="wait-card"><div class="card-head"><h2>⏳ 대기 명단</h2><span class="badge">${ws.length}명</span></div>
     <p class="sub" style="margin:0 0 10px">지도에는 <b>최대 ${M["정원"] || 10}명</b>까지 별로 떠요. 넘치면 여기서 기다리고, 언제든 넣고 뺄 수 있다냥.
       ${full ? "지금 지도가 꽉 찼어 — 별을 눌러 '대기 명단으로 내리기'로 자리를 비우면 올릴 수 있어." : ""}</p>
@@ -854,8 +885,9 @@ async function renderMapPane() {
     if (S.share && ref && /찾을 수 없/.test(err.message)) { store.set("mapref", null); return renderMapPane(); }
     pane.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`; return;
   }
+  collectFriendCards(mapData);
   const link = S.share && ref ? `${location.origin}/m/${ref.id}` : "";
-  pane.innerHTML = mapBody(mapData, true) + (S.share && ref ? waitCard(mapData) : "") + (S.share ? `
+  pane.innerHTML = mapBody(mapData, true) + (S.share && ref ? questCard() + waitCard(mapData) : "") + (S.share ? `
     <div class="card tint-pink"><h2>🙋 친구에게 공유하기</h2><p>친구가 생일만 넣으면 나와 어떤 인연인지, 그 친구의 ${mapData["연도"]}년 한 줄까지 지도에 자동으로 떠요.</p>
       <div class="rd-cta"><button class="btn primary" type="button" id="map-share">📤 지도 링크 보내기</button><button class="ghost" type="button" id="map-copy">🔗 링크 복사</button></div>
       <button class="ghost wide" type="button" id="map-png" style="margin-top:8px">🖼️ 지도 이미지로 저장(단톡방용)</button>
@@ -874,14 +906,15 @@ async function renderMapPane() {
     else { const fr = localFriends(); fr.splice(+m.id.replace("local", ""), 1); setLocalFriends(fr); }
     renderMapPane();
   };
-  bindMap(pane, mapData, true, delMember, S.share && ref ? setWait : null);
+  bindMap(pane, mapData, true, delMember, S.share && ref ? setWait : null, S.share && ref ? (m) => openLetter(m, ref) : null);
+  if (S.share && ref) loadLetters(ref);
   $$("[data-wup]", pane).forEach((b) => b.addEventListener("click", () => setWait({ id: b.dataset.wup }, false)));
   $$("[data-wdel]", pane).forEach((b) => b.addEventListener("click", () => {
     const m = (mapData["대기"] || []).find((x) => x.id === b.dataset.wdel);
     if (m && confirm(`${m["이름"]}님을 대기 명단에서 지울까?`)) delMember(m);
   }));
   $("#map-share")?.addEventListener("click", async () => {
-    const text = `${S.d["이름"] || "나"}의 귀인 지도에 내 자리를 찾아 줘! 생일만 넣으면 우리 사이가 나온다냥 🐾`;
+    const text = `${S.d["이름"] ? S.d["이름"] + "님" : "나"}의 귀인 지도에 내 자리를 찾아 줘! 생일만 넣으면 우리 사이가 나온다냥 🐾`;
     if (navigator.share) { try { await navigator.share({ title: "사주냥이 귀인 지도", text, url: link }); } catch { /* 취소 */ } }
     else { await navigator.clipboard?.writeText(`${text} ${link}`); alert("링크를 복사했다냥!"); }
   });
@@ -1020,7 +1053,10 @@ async function runCompat() {
   localStorage.setItem("nyang:partner", JSON.stringify(b));
   btn.disabled = true; loading(out);
   try {
-    const r = await api("/api/compat", { a: S.birth, b });
+    const ck = `nyang:cp:${hashStr(JSON.stringify([CORE.map((x) => S.birth?.[x]), b]))}`;
+    let r = null; try { r = JSON.parse(localStorage.getItem(ck) || "null"); } catch { r = null; }
+    if (!r) { r = await api("/api/compat", { a: S.birth, b }); try { localStorage.setItem(ck, JSON.stringify(r)); } catch { /* 저장 공간 부족 */ } }
+    saveViewed({ key: ck, type: "compat", o: { partner: b }, title: `궁합 · ${r.names[0]} 💞 ${r.names[1]}`, icon: "💞", sub: `${r.score}점 ${r.grade}` });
     const mood = r.score >= 85 ? "love" : r.score >= 72 ? "happy" : r.score >= 58 ? "wink" : "think";
     const say = r.score >= 85 ? "와, 이건 2천 년 동안 몇 번 못 본 궁합이다냥!" : r.score >= 72 ? "서로에게 힘이 되는 좋은 궁합이다냥."
       : r.score >= 58 ? "다른 점이 있어서 오히려 배울 게 많은 궁합이다냥." : "부딪히는 곳이 있지만, 알고 맞춰 가면 충분하다냥. 궁합은 '사용 설명서'다냥!";
@@ -1119,6 +1155,8 @@ function startTalk() {
     <form class="composer" id="composer"><input name="q" maxlength="300" placeholder="${S.ai ? "냥이에게 무엇이든 털어놔 봐" : "고민을 적으면 냥이가 알맞은 답을 찾아줘"}" autocomplete="off">
       <button class="btn primary" type="submit">보내기</button></form>
     <p class="fine">${S.ai ? "✨ 자유 상담은 AI 사주냥이가 네 계산 결과만 근거로 답해요 (베타)" : "지금은 고민 주제별 상담이 무료로 열려 있어요. 냥이와의 1:1 자유 대화 상담은 곧 프리미엄으로 열려요 ✨"}</p>`;
+  const past = store.get("talklog", null);
+  if (past?.html) $("#chat").insertAdjacentHTML("beforebegin", `<details class="past-chat"><summary>💬 지난 상담 다시 보기 <small>${esc(past.at)}</small></summary><div class="chat">${past.html}</div></details>`);
   paintNyang(tab);
   $("#composer").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1244,7 +1282,7 @@ function kindInfo(id) {
 function readMenu() {
   if (!S.kinds.length) return "";
   return `<div class="card tint-lav"><div class="card-head"><h2>🐾 냥이 도사 대풀이</h2><span class="badge">${S.ai ? "AI 서술형" : "서술형"}</span></div>
-    <div class="say" style="margin-bottom:12px"><span class="who" data-nyang="wink" data-size="48"></span><div class="bubble">궁금한 걸 콕 누르면 핵심만 쏙쏙! 더 듣고 싶으면 '길게 듣기'도 있다냥.</div></div>
+    <p class="sub" style="margin:-4px 0 12px">궁금한 걸 콕 누르면 핵심만 쏙쏙. 한 번 본 풀이는 '내가 본 풀이'에 남아요.</p>
     <div class="rd-menu">${READ_MENU.filter(([id]) => id !== "child" || (S.birth?.kids || 0) > 0).map(([id, hot]) => { const k = kindInfo(id); return `<button type="button" class="${hot}" data-read="${id}"><i>${k.icon}</i>${esc(k.title)}<small>${esc(k.desc)}</small></button>`; }).join("")}</div></div>`;
 }
 const kstDate = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 864e5).toISOString().slice(0, 10);
@@ -1287,7 +1325,7 @@ async function openReading(kind, o = {}) {
   if (R.hidden) history.pushState({ reader: 1 }, "");
   R.hidden = false; document.body.style.overflow = "hidden";
   $("#rd-title").textContent = `${k.icon} ${title}`;
-  const nm = S.d["이름"] || "너";
+  const nm = nim();
   body.innerHTML = `<div class="rd-hero"><span class="float" data-nyang="think" data-size="104"></span>
       <div class="bubble big" id="rd-intro">흠흠… ${esc(nm)}의 <b>${esc(title)}</b>이라.<br>냥이 도사가 ${o.long ? "2천 년 묵은 두루마리를 통째로 펼치는" : "핵심만 쏙쏙 골라내는"} 중이다냥…</div></div>
     <article class="scroll-paper" id="rd-text"><p><span class="typing"></span></p></article>
@@ -1297,9 +1335,10 @@ async function openReading(kind, o = {}) {
     <p class="rd-note" id="rd-note">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!</p>`;
   paintNyang(body);
   $(".rd-scroll", R).scrollTop = 0;
-  const box = $("#rd-text"), key = kind === "dream" ? null : rdCacheKey(kind, o);
+  const box = $("#rd-text"), key = kind === "dream" ? `${rdCacheKey(kind, o)}:${hashStr(o.text || "")}` : rdCacheKey(kind, o);
   const render = (txt) => { box.innerHTML = md(txt, new Set()); };
   const finish = (txt, note) => {
+    if (key) saveViewed({ key, kind, o: { ...o }, title, icon: k.icon, sub: kind === "dream" ? (o.text || "").slice(0, 30) : o.day ? o.day : "" });
     $("#rd-actions").hidden = false;
     const lb = $("#rd-long");
     if (lb) { lb.hidden = false; lb.onclick = () => openReading(kind, { ...o, long: true }); }
@@ -1313,7 +1352,7 @@ async function openReading(kind, o = {}) {
     };
   };
   const cached = key && localStorage.getItem(key);
-  if (cached) { render(cached); finish(cached, "이전에 받은 풀이를 다시 보여주는 중이다냥. 새로 듣고 싶으면 '다시 풀이'를 눌러 줘."); return; }
+  if (cached) { render(cached); finish(cached, "📂 이 기기에 저장해 둔 풀이를 불러왔다냥. 새로 듣고 싶으면 '다시 풀이'를 눌러 줘."); return; }
 
   rdCtl?.abort(); rdCtl = new AbortController();
   const ctl = rdCtl;
@@ -1344,7 +1383,7 @@ async function openReading(kind, o = {}) {
   render(text);
   if (err) box.insertAdjacentHTML("beforeend", `<p class="error">${esc(err)}</p><button class="btn lav wide" type="button" id="rd-retry">다시 불러 보기</button>`);
   $("#rd-retry")?.addEventListener("click", () => openReading(kind, o));
-  if (text && !err && !fallback && key) { try { localStorage.setItem(key, text); } catch { /* 저장 공간 부족 */ } }
+  if (text && !err && key) { try { localStorage.setItem(key, text); } catch { /* 저장 공간 부족 */ } }
   if (text) finish(text, fallback ? "지금은 AI 냥이 도사가 잠들어 있어 기본 풀이로 들려줬다냥." : "");
 }
 
@@ -1377,7 +1416,7 @@ function checkinCard() {
   const done = diary[target];
   const label = target === today ? "오늘 하루 어땠냥?" : "어제는 어땠냥?";
   const hit = diaryStats().hit;
-  return `<div class="card checkin"><div class="card-head"><h2>🐾 냥이 출석부</h2><span class="badge pink">${n}일 연속</span></div>
+  return `<div class="checkin"><div class="ck-head"><b>🐾 출석 도장</b><span class="badge pink">${n}일 연속</span></div>
     <div class="stamps">${week.map((dd) => `<div class="${days[dd] ? "on" : ""} ${dd === today ? "is-today" : ""}"><span>${days[dd] ? (diary[dd] ? MOODS[diary[dd].mood][0] : "🐾") : ""}</span><small>${"일월화수목금토"[new Date(dd + "T00:00:00").getDay()]}</small></div>`).join("")}</div>
     <p class="sub" style="margin:10px 0 6px">${n >= 7 ? `일주일 개근! 냥이가 꾹꾹이 해 준다냥 🐾` : n >= 3 ? `${n}일째 출석 중, 이 기세로 가자냥!` : "매일 들르면 도장이 쌓인다냥. 7일 개근에 도전!"}</p>
     ${bookLine()}${pushLine()}
@@ -1470,12 +1509,15 @@ const TAEGIL = [["move", "🏠", "이사·입주"], ["contract", "✍️", "계�
 let tgSeq = 0;
 async function openTaegil(p = "move") {
   const my = ++tgSeq;
-  openSheet(`<h2 style="margin:0 0 4px">📆 냥이 택일 도우미</h2><p class="sub" style="margin:0 0 10px">앞으로 60일 중에서 ${esc(S.d["이름"] || "너")}에게 맞는 날을 골라 준다냥</p>
+  openSheet(`<h2 style="margin:0 0 4px">📆 냥이 택일 도우미</h2><p class="sub" style="margin:0 0 10px">앞으로 60일 중에서 ${esc(nim())}에게 맞는 날을 골라 준다냥</p>
     <div class="tg-chips">${TAEGIL.map(([k, e, l]) => `<button type="button" class="${k === p ? "on" : ""}" data-tgl="${k}">${e} ${l}</button>`).join("")}</div>
     <div id="tg-box"><p class="sub" style="text-align:center;padding:24px 0">냥이가 달력을 넘기는 중… 📅</p></div>`);
   $$("[data-tgl]").forEach((b) => b.addEventListener("click", () => openTaegil(b.dataset.tgl)));
   try {
-    const r = await api("/api/taegil", { birth: S.birth, purpose: p });
+    const tk = `nyang:tg:${meKey()}:${p}:${kstDate(0)}`;
+    let r = null; try { r = JSON.parse(localStorage.getItem(tk) || "null"); } catch { r = null; }
+    if (!r) { r = await api("/api/taegil", { birth: S.birth, purpose: p }); try { localStorage.setItem(tk, JSON.stringify(r)); } catch { /* */ } }
+    saveViewed({ key: tk, type: "taegil", o: { purpose: p }, title: `택일 · ${r["이름"]}`, icon: r["이모지"], sub: r["기간"] });
     if (my !== tgSeq || !$("#tg-box")) return;
     $("#tg-box").innerHTML = taegilBody(r);
   } catch (e) { if (my === tgSeq && $("#tg-box")) $("#tg-box").innerHTML = `<p class="error">${esc(e.message)}</p>`; }
@@ -1667,6 +1709,232 @@ function verseHtml(v, compact = false) {
   return `<div class="verse ${compact ? "compact" : ""}"><span class="v-season">${esc(v["계절"])}</span>
     <span class="v-line">${esc(v["구절"][0])}</span><span class="v-line">${esc(v["구절"][1])}</span>
     ${compact ? "" : `<span class="v-why">🐾 ${esc(v["풀이"])}</span>`}</div>`;
+}
+
+// ═════════════════════════ 4단계: 기록 보관 · 오늘의 패 · 오행 정원 · 절기 시즌 · 냥이 카드 · 귀인 퀘스트
+const nim = () => (S.d?.["이름"] ? `${S.d["이름"]}님` : "너");
+const EL5 = ["목", "화", "토", "금", "수"];
+const EL_HANJA = { 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" };
+const EL_FLOWER = { 목: "🌳", 화: "🌺", 토: "🌻", 금: "🌼", 수: "🪷" };
+const toast = (msg) => {
+  let t = $("#toast");
+  if (!t) { document.body.insertAdjacentHTML("beforeend", '<div id="toast" class="toast" role="status"></div>'); t = $("#toast"); }
+  t.textContent = msg; t.classList.remove("on"); void t.offsetWidth; t.classList.add("on");
+};
+
+// ───────── 내가 본 풀이 보관함: 한 번 본 대풀이·궁합·택일은 이 기기에 남겨 두고 다시 열 때 그대로 불러온다
+function saveViewed(entry) {
+  const list = store.get("saved", []).filter((x) => x.key !== entry.key);
+  list.unshift({ ...entry, at: new Date().toISOString() });
+  store.set("saved", list.slice(0, 80));
+}
+function openSaved() {
+  const list = store.get("saved", []);
+  const fmt = (iso) => { const d = new Date(iso); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+  openSheet(`<div class="sheet-title"><span data-nyang="focus" data-size="56"></span><div><h2>내가 본 풀이</h2>
+      <p class="sub">한 번 본 풀이는 이 기기에 남아 있어서, 다시 눌러도 기다리지 않고 바로 열린다냥.</p></div></div>
+    ${list.length ? `<div class="saved-list">${list.map((x, i) => `<button type="button" class="saved-row" data-srow="${i}">
+        <span class="ic">${esc(x.icon || "📜")}</span><span class="tx"><b>${esc(x.title)}</b><small>${esc(x.sub || "")}</small></span><span class="dt">${fmt(x.at)}</span></button>`).join("")}</div>
+      <button class="ghost wide" type="button" id="saved-clear" style="margin-top:12px">보관함 비우기</button>`
+    : `<p class="empty">아직 본 풀이가 없다냥. 홈의 '냥이 도사 대풀이'부터 열어 봐!</p>`}`);
+  $$("#sheet-content [data-srow]").forEach((b) => b.addEventListener("click", () => {
+    const x = list[+b.dataset.srow]; closeSheet();
+    if (x.type === "compat") { showTab("compat"); fillForm($("#form-b"), x.o.partner); runCompat(); return; }
+    if (x.type === "taegil") { openTaegil(x.o.purpose); return; }
+    openReading(x.kind, x.o || {});
+  }));
+  $("#saved-clear")?.addEventListener("click", () => {
+    if (!confirm("보관함 목록과 저장된 풀이를 지울까? (사주 기록·일기는 그대로)")) return;
+    list.forEach((x) => { if (x.key) try { localStorage.removeItem(x.key); } catch { /* */ } });
+    store.set("saved", []); openSaved();
+  });
+}
+// 상담 대화도 남겨 두기(최근 대화 한 묶음)
+function saveTalk() {
+  const c = $("#chat");
+  if (!c || !c.querySelector(".msg.me")) return;
+  store.set("talklog", { at: kstDate(0), html: c.innerHTML.slice(-60000) });
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveTalk(); });
+
+// ───────── 오늘의 패 한 장(다시 뽑기 없음)
+function paeTile() {
+  const p = S.d["오늘의패"]; if (!p) return "";
+  const open = store.get("pae", "") === p["날짜"];
+  return `<button type="button" class="pae ${open ? "open" : ""}" data-pae aria-label="오늘의 패">
+    <span class="pae-in"><span class="pae-back"><i>🐾</i><b>오늘의 패</b><small>톡 눌러 뒤집기</small></span>
+      <span class="pae-front"><i>${esc(p["이모지"])}</i><b>${esc(p["이름"])}</b><small>${esc(p["십성"])}의 날</small></span></span></button>`;
+}
+function openPae() {
+  const p = S.d["오늘의패"], first = store.get("pae", "") !== p["날짜"];
+  store.set("pae", p["날짜"]);
+  $("[data-pae]")?.classList.add("open");
+  setTimeout(() => {
+    openSheet(`<div class="pae-sheet"><div class="pae-big"><i>${esc(p["이모지"])}</i><b>${esc(p["이름"])}</b><small>${esc(p["십성"])}의 날 · ${+p["날짜"].slice(5, 7)}월 ${+p["날짜"].slice(8)}일</small></div>
+      <p class="pae-msg">${esc(p["말"])}</p><div class="pae-act"><small>오늘 한 가지</small><b>${esc(p["행동"])}</b></div>
+      <p class="sub" style="text-align:center;margin:12px 0 0">패는 하루에 한 장이다냥. 같은 패를 다시 뽑지 않는 게 냥이의 약속이야 🐾</p></div>`);
+    if (first) gardenAdd(S.d["용신"]["용신"], 0, "패를 뒤집었다냥");
+  }, first ? 420 : 0);
+}
+
+// ───────── 오행 정원: 용신 화분에 물을 주며 운을 키운다
+const gardenState = () => ({ 목: 0, 화: 0, 토: 0, 금: 0, 수: 0, water: "", bonus: "", ...store.get("garden", {}) });
+const stageOf = (n, el) => (n < 1 ? "🌰" : n < 4 ? "🌱" : n < 9 ? "🌿" : n < 16 ? EL_FLOWER[el] : EL_FLOWER[el] + "✨");
+const stageName = (n) => (n < 1 ? "씨앗" : n < 4 ? "새싹" : n < 9 ? "잎" : n < 16 ? "꽃" : "만개");
+function roleOf(el) {
+  const y = S.d["용신"];
+  return el === y["용신"] ? "용신" : el === y["희신"] ? "희신" : el === y["기신"] ? "기신" : el === y["구신"] ? "구신" : "한신";
+}
+function gardenAdd(el, n, why) {
+  const g = gardenState(); g[el] = (g[el] || 0) + n; store.set("garden", g);
+  const slot = $("#garden-slot"); if (slot) slot.innerHTML = gardenMini();
+  if (n && why) toast(`${why} · ${el}(${EL_HANJA[el]}) 화분 +${n} ${stageOf(g[el], el)}`);
+}
+function gardenMini() {
+  const g = gardenState(), watered = g.water === kstDate(0);
+  return `<button type="button" class="garden-mini" data-garden aria-label="오행 정원 열기">
+    <span class="gm-pots">${EL5.map((el) => `<span class="gm-pot r-${roleOf(el)}"><i>${stageOf(g[el], el)}</i><small>${el}</small></span>`).join("")}</span>
+    <span class="gm-t"><b>🌱 오행 정원</b><small>${watered ? "오늘 물 주기 완료 ✓" : `오늘의 물 한 번 · 보약 ${S.d["용신"]["용신"]} 화분부터!`}</small></span></button>`;
+}
+function openGarden() {
+  const g = gardenState(), y = S.d["용신"], watered = g.water === kstDate(0);
+  const say = { 용신: "제일 필요한 보약 기운이다냥. 물 +2", 희신: "보약을 돕는 기운이다냥. 물 +1", 한신: "있어도 없어도 괜찮은 기운. 물 +1",
+    구신: "부담 기운을 돕는 쪽이라 물이 잘 안 먹힌다냥. 물 +0", 기신: "이미 넘치는 기운이라 물을 주면 넘친다냥. 물 +0" };
+  const gain = { 용신: 2, 희신: 1, 한신: 1, 구신: 0, 기신: 0 };
+  openSheet(`<div class="sheet-title"><span data-nyang="happy" data-size="56"></span><div><h2>오행 정원</h2>
+      <p class="sub">모자란 기운을 채우면 운이 산다냥. 하루 한 번 물을 주고, 개운 미션을 하면 보약 화분이 한 번 더 자란다냥.</p></div></div>
+    <div class="garden">${EL5.map((el) => { const r = roleOf(el); return `<button type="button" class="pot r-${r}" data-water="${el}" ${watered ? "disabled" : ""}>
+        <span class="plant">${stageOf(g[el], el)}</span><span class="clay"></span>
+        <b>${el}(${EL_HANJA[el]})</b><small>${r === "용신" ? "⭐ 보약" : r}</small><em>${stageName(g[el])} · ${g[el]}</em></button>`; }).join("")}</div>
+    <p class="garden-note">${watered ? "오늘은 물을 다 줬다냥. 내일 또 와 줘 🐾" : "어느 화분에 물을 줄까? 화분을 톡 눌러 줘."}</p>
+    <ul class="tips">${EL5.map((el) => `<li><b>${el}</b> · ${roleOf(el)} — ${say[roleOf(el)]}</li>`).join("")}</ul>
+    <p class="sub">이 정원은 ${nim()}의 용신(${y["용신"]})·희신(${y["희신"] || "-"})에 맞춰 자란다냥. 보약 화분이 가장 크면 균형이 잘 잡힌 거야.</p>`);
+  $$("#sheet-content [data-water]").forEach((b) => b.addEventListener("click", () => {
+    const el = b.dataset.water, n = gain[roleOf(el)];
+    const gg = gardenState(); gg.water = kstDate(0); store.set("garden", gg);
+    gardenAdd(el, n, n ? "물을 줬다냥" : null);
+    if (!n) toast(`${el} 화분은 이미 넘친다냥… 보약 화분에 주는 게 좋아!`);
+    openGarden();
+  }));
+}
+
+// ───────── 절기 시즌
+function seasonMark() {
+  const s = S.d["절기"]; if (!s) return;
+  const got = store.get("seasons", {}); if (!got[s["키"]]) { got[s["키"]] = s["이름"]; store.set("seasons", got); }
+}
+function seasonBanner() {
+  const s = S.d["절기"]; if (!s) return "";
+  const n = new Set(Object.values(store.get("seasons", {}))).size;
+  return `<button type="button" class="season" data-season><span class="se-ic">${esc(s["이모지"])}</span>
+    <span class="se-t"><small>지금은 ${esc(s["이름"])} 시즌 · 절기 도장 ${n}/24</small><b>냥이의 ${esc(s["이름"])} 일기 열기</b></span>
+    <span class="se-d">${esc(s["다음이모지"])} ${esc(s["다음"])}<br><small>D-${s["남은날"]}</small></span></button>`;
+}
+async function openSeason() {
+  const s = S.d["절기"], got = new Set(Object.values(store.get("seasons", {})));
+  let all = S.terms;
+  if (!all) { try { all = S.terms = (await api("/api/terms"))["절기"]; } catch { all = []; } }
+  openSheet(`<div class="season-sheet"><div class="se-head"><span data-nyang="${s["이름"] === "동지" || s["이름"].includes("설") || s["이름"].includes("한") ? "sleepy" : "happy"}" data-size="70"></span>
+      <div><small>${s["번호"]}번째 절기 · ${+s["시작"].slice(5, 7)}월 ${+s["시작"].slice(8)}일부터</small><h2>${esc(s["이모지"])} ${esc(s["이름"])}</h2></div></div>
+    <div class="diary-paper"><p>${esc(s["일기"])}</p><span class="sign">— 2천 살 냥이</span></div>
+    <div class="pae-act"><small>${esc(s["이름"])}의 개운 한 가지</small><b>${esc(s["개운"])}</b></div>
+    <h3 style="margin:16px 0 8px">절기 도장 <span class="sub">${got.size}/24 · 절기마다 한 번 들르면 찍혀요</span></h3>
+    <div class="term-grid">${all.map((t) => `<span class="jg ${got.has(t["이름"]) ? "on" : ""} ${t["이름"] === s["이름"] ? "now" : ""}"><i>${got.has(t["이름"]) ? esc(t["이모지"]) : "·"}</i>${esc(t["이름"])}</span>`).join("")}</div>
+    <p class="sub" style="text-align:center;margin:12px 0 0">다음 절기 ${esc(s["다음이모지"])} ${esc(s["다음"])}까지 ${s["남은날"]}일 — 새 일기가 열린다냥</p></div>`);
+}
+
+// ───────── 60일주 냥이 카드
+function nyangCardSvg(c, who) {
+  const cat = nyang("happy", 170, c["옷"]).replace("<svg ", '<svg x="95" y="78" ');
+  const kw = c["키워드"].map((k, i) => `<g transform="translate(${[30, 130, 230][i]} 336)"><rect width="100" height="30" rx="15" fill="#fff" opacity=".9"/><text x="50" y="20" font-size="13" fill="#3b2f4a" text-anchor="middle">#${esc(k)}</text></g>`).join("");
+  const line = c["한줄"].replace("사람이다냥.", "").trim();
+  const half = Math.ceil(line.length / 2), cut = line.lastIndexOf(" ", half) > 6 ? line.lastIndexOf(" ", half) : half;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 470" width="100%" role="img" aria-label="${esc(c["이름"])} 카드" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">
+    <defs><linearGradient id="nc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="${c["색"]}"/></linearGradient></defs>
+    <rect width="360" height="470" rx="30" fill="url(#nc)"/><rect x="10" y="10" width="340" height="450" rx="24" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/>
+    <text x="28" y="44" font-size="14" fill="#7c5cf0">사주냥이 · 60일주 냥이 카드</text><text x="332" y="44" font-size="20" fill="#3b2f4a" text-anchor="end">${esc(c["일주"])}</text>
+    <circle cx="180" cy="168" r="84" fill="#fff" opacity=".55"/>${cat}
+    <text x="180" y="276" font-size="13" fill="#6b6080" text-anchor="middle">${esc(who)}${who.endsWith("님") ? "은 " : "는 "}${esc(c["한글"])}일주 · ${esc(c["동물"])}의 기운</text>
+    <text x="180" y="310" font-size="27" fill="#3b2f4a" text-anchor="middle">${esc(c["이름"])}</text>${kw}
+    <text x="180" y="396" font-size="13.5" fill="#3b2f4a" text-anchor="middle">${esc(line.slice(0, cut))}</text>
+    <text x="180" y="416" font-size="13.5" fill="#3b2f4a" text-anchor="middle">${esc(line.slice(cut).trim())} 사람이다냥.</text>
+    <text x="180" y="450" font-size="11" fill="#6b6080" text-anchor="middle">너는 무슨 냥이야? · korean-saju-six.vercel.app</text></svg>`;
+}
+function myCardTile() {
+  const c = S.d["냥이카드"]; if (!c) return "";
+  return `<button type="button" class="ncard-tile" data-ncard style="--c:${c["색"]}"><span data-nyang="wink" data-size="58" data-outfit="${c["옷"]}"></span>
+    <span><small>${esc(nim())}의 60일주 냥이 · ${esc(c["일주"])}</small><b>${esc(c["이름"])}</b><em>${c["키워드"].map((k) => "#" + esc(k)).join(" ")}</em></span></button>`;
+}
+function openNyangCard() {
+  const c = S.d["냥이카드"];
+  const friends = store.get("friendCards", {});
+  openSheet(`<div id="nc-box">${nyangCardSvg(c, nim())}</div>
+    <div class="rd-cta" style="margin-top:12px"><button class="btn primary" type="button" id="nc-share">📤 너는 무슨 냥이야?</button><button class="btn lav" type="button" id="nc-save">🖼️ 카드 저장</button></div>
+    <h3 style="margin:16px 0 6px">친구 냥이 카드 <span class="sub">${Object.keys(friends).length}/60</span></h3>
+    ${Object.keys(friends).length ? `<div class="fcards">${Object.entries(friends).map(([k, f]) => `<span class="fcard" style="--c:${f["색"]}"><b>${esc(k)}</b>${esc(f["이름"])}<small>${esc(f.who)}</small></span>`).join("")}</div>`
+      : `<p class="sub">귀인 지도에 친구가 올라오면 친구의 냥이 카드가 여기 모인다냥.</p>`}`);
+  $("#nc-save").addEventListener("click", () => saveSvgPng($("#nc-box svg"), `사주냥이_${c["이름"].replace(/ /g, "_")}.png`));
+  $("#nc-share").addEventListener("click", async () => {
+    const text = `나는 ${c["일주"]}일주, '${c["이름"]}'이래 🐾 #${c["키워드"].join(" #")} — 너는 무슨 냥이야?`;
+    if (navigator.share) { try { await navigator.share({ title: "사주냥이 60일주 냥이 카드", text, url: location.origin + "/" }); return; } catch { /* 취소 */ } }
+    try { await navigator.clipboard.writeText(`${text} ${location.origin}/`); toast("공유 문구를 복사했다냥!"); } catch { alert(text); }
+  });
+}
+function collectFriendCards(M) {
+  const got = store.get("friendCards", {});
+  (M["멤버"] || []).concat(M["대기"] || []).forEach((m) => { const c = m["냥이"]; if (c && !got[c["일주"]]) got[c["일주"]] = { 이름: c["이름"], 색: c["색"], who: m["이름"] }; });
+  store.set("friendCards", got);
+}
+
+// ───────── 귀인 퀘스트: 친구에게 보약 편지
+const weekKey = () => { const d = new Date(Date.now() + 9 * 3600e3); const j = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return `${d.getUTCFullYear()}-w${Math.ceil(((d - j) / 864e5 + j.getUTCDay() + 1) / 7)}`; };
+function questCard() {
+  const q = store.get("quest", {}), w = weekKey(), sent = q.week === w ? q.sent || 0 : 0;
+  return `<div class="card quest"><div class="card-head"><h2>🤝 이번 주 귀인 퀘스트</h2><span class="badge ${sent ? "mint" : ""}">${sent ? "완료 ✓" : "0 / 1"}</span></div>
+    <p class="sub" style="margin:0 0 8px">지도 속 친구에게 그 친구의 보약 기운을 담은 <b>보약 편지</b>를 한 통 보내 봐. 서로에게 귀인이 되는 연습이다냥.</p>
+    <p class="sub" style="margin:0">별을 누르면 '📮 보약 편지 보내기'가 있어요 · 받은 도장 ${q.total || 0}개</p>
+    <div id="letters-slot"></div></div>`;
+}
+function openLetter(m, ref) {
+  const el = m["용신"] || "";
+  openSheet(`<div class="sheet-title"><span data-nyang="love" data-size="56"></span><div><h2>📮 ${esc(m["이름"])}님에게 보약 편지</h2>
+      <p class="sub">${el ? `${esc(m["이름"])}님의 보약은 ${el}(${EL_HANJA[el]}) 기운이다냥. 그 기운을 담아 보낼게.` : "따뜻한 응원을 담아 보낼게."}</p></div></div>
+    <label class="field"><span>한 줄 덧붙이기 (선택 · 60자)</span><input id="lt-msg" maxlength="60" placeholder="예) 시험 잘 봐! 끝나고 맛있는 거 먹자"></label>
+    <button class="btn primary wide" type="button" id="lt-send" style="margin-top:12px">보약 편지 보내기 🐾</button>
+    <p class="sub" style="margin:10px 0 0">친구가 '서로 연결하기'로 자기 지도를 만든 경우에만 배달돼요 · 같은 친구에겐 하루 한 통</p>`);
+  $("#lt-send").addEventListener("click", async (e) => {
+    e.currentTarget.disabled = true;
+    try {
+      await api(`/api/map/${ref.id}/member/${m.id}/letter`, { token: ref.token, msg: $("#lt-msg").value.trim() });
+      const q = store.get("quest", {}), w = weekKey();
+      store.set("quest", { week: w, sent: (q.week === w ? q.sent || 0 : 0) + 1, total: (q.total || 0) + 1 });
+      closeSheet(); toast(`${m["이름"]}님에게 보약 편지를 보냈다냥! 귀인 도장 +1`); renderMapPane();
+    } catch (err) { alert(err.message); e.currentTarget.disabled = false; }
+  });
+}
+async function loadLetters(ref) {
+  const slot = $("#letters-slot"); if (!slot) return;
+  try {
+    const r = await api(`/api/map/${ref.id}/letters?token=${encodeURIComponent(ref.token)}`);
+    const seen = new Set(store.get("lettersSeen", [])), list = r["편지"] || [];
+    if (!list.length) { slot.innerHTML = `<p class="sub" style="margin:10px 0 0">📬 아직 받은 편지는 없다냥.</p>`; return; }
+    slot.innerHTML = `<h3 style="margin:14px 0 6px">📬 받은 보약 편지 ${list.length}통</h3>${list.map((x) => `<div class="letter ${seen.has(x.id) ? "" : "new"}">
+      <b>${esc(x.from)}님</b> <small>${esc(x.at.slice(5).replace("-", "/"))}</small><p>${esc(x.line)}</p>${x.msg ? `<p class="lm">“${esc(x.msg)}”</p>` : ""}</div>`).join("")}`;
+    store.set("lettersSeen", [...new Set([...seen, ...list.map((x) => x.id)])].slice(-100));
+  } catch { slot.innerHTML = ""; }
+}
+
+// ───────── 전체 메뉴(한곳에 모아 홈을 가볍게)
+const ALL_MENU = [
+  ["운세", [["luck:new", "🧧", "신년운세"], ["luck:month", "📅", "월별 운세"], ["luck:cal", "🗓️", "운세 달력"], ["luck:life", "📈", "평생 총운"], ["@taegil", "📆", "택일 도우미"]]],
+  ["나를 알기", [["@ncard", "🃏", "나의 냥이 카드"], ["saju:fit", "🎯", "나에게 맞는"], ["saju:rx", "🍀", "개운 처방전"], ["saju:ogo", "🏛️", "오고 정밀감명"], ["@gloss", "📚", "명리 교실"]]],
+  ["함께", [["compat", "💞", "궁합·귀인 지도"], ["talk", "💬", "고민 상담"]]],
+  ["기록·수집", [["@saved", "🗂️", "내가 본 풀이"], ["@garden", "🌱", "오행 정원"], ["@season", "🎐", "절기 일기"], ["@book", "📖", "냥이 일기장"], ["@dex", "👘", "냥이 도감"], ["path", "🧭", "나의 길"], ["@backup", "🔐", "기록 백업"]]],
+];
+const menuBtn = ([g, ic, l]) => `<button type="button" ${g[0] === "@" ? `data-${g.slice(1)}` : `data-go="${g}"`}><i>${ic}</i><span>${l}</span></button>`;
+function openAllMenu() {
+  openSheet(`<h2 style="margin:0 0 12px">전체 메뉴</h2>${ALL_MENU.map(([t, items]) => `<h3 class="menu-h">${t}</h3><div class="menu-list">${items.map(menuBtn).join("")}</div>`).join("")}`);
+  $$("#sheet-content [data-go]").forEach((b) => b.addEventListener("click", closeSheet));
 }
 
 // ───────────────────────── 나의 길 탭

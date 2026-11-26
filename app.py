@@ -46,6 +46,9 @@ share_store = _opt("share_store")
 family = _opt("family")
 taegil = _opt("taegil")
 push = _opt("push")
+season = _opt("season")
+ilju = _opt("ilju")
+pae = _opt("pae")
 
 
 def _safe(fn, *args, **kw):
@@ -120,6 +123,12 @@ class AIReq(BaseModel):
     messages: list[ChatMsg] = Field(default_factory=list, max_length=20)
 
 
+def _nim(name: str) -> str:
+    """사용자를 부를 땐 이름 뒤에 '님'(이미 붙어 있으면 그대로). 이름이 없으면 빈 문자열."""
+    s = (name or "").strip()
+    return s if not s or s.endswith("님") else f"{s}님"
+
+
 def _reading(b: Birth, who: str = ""):
     import calendar as _cal
     if b.calendar == "solar":
@@ -159,6 +168,12 @@ def meta(response: Response):
             "stories": persona.STORIES}
 
 
+@app.get("/api/terms")
+def terms(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return {"절기": season.all_terms() if season else []}
+
+
 @app.post("/api/saju")
 def saju(b: Birth):
     r = _reading(b)
@@ -170,12 +185,19 @@ def saju(b: Birth):
     d["상담"] = counsel.build(r, d["운세"], d["옛이야기"])
     d["오고"] = ogo.build(r, d["운세"])
     d["납음"] = {p.label: ogo.NAEUM[p.index // 2] for p in r.chart.pillars}
-    d["이야기"] = _stories(r, d["운세"], b.name.strip(), _prof(b))
+    d["이야기"] = _stories(r, d["운세"], _nim(b.name), _prof(b))
     seed = f"{b.year}{b.month}{b.day}{b.hour}{b.gender}"
     if journey:
         d["나의길"] = _safe(journey.build, r, d["운세"], today_kst(), seed)
     if ipmyeong:
         d["입명"] = _safe(ipmyeong.build, r, d["운세"], today_kst(), seed)
+    if ilju:
+        d["냥이카드"] = _safe(ilju.of_reading, r)
+    if season:
+        d["절기"] = _safe(season.current, datetime.utcnow() + timedelta(hours=9))
+    if pae:
+        t0 = d["운세"]["오늘운세"]
+        d["오늘의패"] = _safe(pae.draw, t0["십성"], t0["date"], seed)
     if relation:
         d["나의유형"] = relation.person_type(r)
         d["나의올해"] = relation.year_type(r, d["운세"]["신년운세"]["연도"])
@@ -214,7 +236,7 @@ def day(req: DayReq):
         raise HTTPException(400, "냥이 달력은 앞뒤 1년까지만 본다냥")
     r = _reading(req.birth)
     df, hr = day_fortune(r, req.day), hourly(r, req.day)
-    st = _safe(_call, story_luck.today, r, df, hr, req.birth.name.strip(), prof=_prof(req.birth)) if story_luck else None
+    st = _safe(_call, story_luck.today, r, df, hr, _nim(req.birth.name), prof=_prof(req.birth)) if story_luck else None
     return {"운세": df, "시간대": hr, "이야기": st}
 
 
@@ -225,7 +247,7 @@ def compat(req: CompatReq):
     res["names"] = [req.a.name.strip() or "나", req.b.name.strip() or "상대"]
     res["띠"] = [r1.to_dict()["입력"]["띠"], r2.to_dict()["입력"]["띠"]]
     if story_compat:
-        res["이야기"] = _safe(story_compat.build, r1, r2, res, [req.a.name.strip(), req.b.name.strip()])
+        res["이야기"] = _safe(story_compat.build, r1, r2, res, [_nim(req.a.name), req.b.name.strip()])
     return res
 
 
@@ -268,7 +290,7 @@ def _ai_ready() -> bool:
 def _context(req: AIReq) -> str:
     r = _reading(req.birth)
     fx = bundle(r, today_kst())
-    who = req.birth.name.strip() or "사용자"
+    who = _nim(req.birth.name) or "사용자"
     ctx = (readings.profile_line(_prof(req.birth)) + f"<saju who=\"{who}\">\n{r.to_compact()}\n</saju>\n"
            f"<fortune who=\"{who}\">\n{readings.compact_fortune(fx)}\n</fortune>")
     if req.partner:
@@ -276,7 +298,7 @@ def _context(req: AIReq) -> str:
         if req.partner_role == "child":
             who2 = req.partner.name.strip() or "아이"
             ctx += f"\n<saju who=\"{who2}(자녀, {today_kst().year - r2.chart.birth.year}세)\">\n{r2.to_compact()}\n</saju>"
-            fam = _safe(family.build, r, r2, [req.birth.name.strip(), req.partner.name.strip()], today_kst()) if family else None
+            fam = _safe(family.build, r, r2, [_nim(req.birth.name), req.partner.name.strip()], today_kst()) if family else None
             ctx += "\n<child_compat>\n" + json.dumps(readings.family_digest(fam), ensure_ascii=False) + "\n</child_compat>"
         else:
             who2 = req.partner.name.strip() or "상대"
@@ -360,13 +382,13 @@ def reading(req: ReadingReq):
         raise HTTPException(400, "냥이 달력은 앞뒤 1년까지만 본다냥")
     r = _reading(req.birth)
     fx = bundle(r, today)
-    who = req.birth.name.strip() or "사용자"
+    who = _nim(req.birth.name) or "사용자"
     r2, who2 = (None, "")
     if req.partner:
         r2, who2 = _reading(req.partner), (req.partner.name.strip() or "상대")
     extra = readings.extra_for(req.kind, r, fx, today, req.day, req.text.strip())
     if req.kind == "child":
-        res = _safe(family.build, r, r2, [req.birth.name.strip(), req.partner.name.strip()], today) if family else None
+        res = _safe(family.build, r, r2, [_nim(req.birth.name), req.partner.name.strip()], today) if family else None
         extra = {"자녀궁합": readings.family_digest(res), "자녀나이": today.year - r2.chart.birth.year}
     if not _ai_ready():
         return _stream_text(readings.fallback(req.kind, who, r, fx, extra, r2, who2), fallback=True)
@@ -551,7 +573,12 @@ class MapCalcReq(BaseModel):
 
 def _member(me_r, name: str, other_r, year: int) -> dict:
     rel = relation.relate(me_r, other_r, year)
-    return relation.member_view(name, rel, other_r.analysis.element_weight[me_r.analysis.yongshin])
+    v = relation.member_view(name, rel, other_r.analysis.element_weight[me_r.analysis.yongshin])
+    if ilju:
+        c = ilju.of_reading(other_r)
+        v["냥이"] = {"일주": c["일주"], "이름": c["이름"], "색": c["색"], "옷": c["옷"]}
+    v["용신"] = other_r.analysis.yongshin
+    return v
 
 
 def _map_out(me_r, me_name: str, members: list[dict], year: int) -> dict:
@@ -715,6 +742,66 @@ def map_member_wait(mid: str, pid: str, req: WaitReq):
     if not ok:
         raise HTTPException(404, "그 별을 찾을 수 없다냥")
     return {"ok": True}
+
+
+LETTER_LINES = {
+    "목": "초록 잎사귀 같은 응원을 보낸다냥 🌿 오늘은 산책 어때?",
+    "화": "따끈한 햇살 같은 응원을 보낸다냥 ☀️ 웃을 일 하나 생기길!",
+    "토": "든든한 밥 한 끼 같은 응원을 보낸다냥 🍚 오늘도 잘 버텼어!",
+    "금": "반짝이는 별 같은 응원을 보낸다냥 ✨ 너의 결단을 믿어!",
+    "수": "시원한 물 한 잔 같은 응원을 보낸다냥 💧 푹 쉬어 가!",
+}
+
+
+class LetterReq(BaseModel):
+    token: str = Field(max_length=64)
+    msg: str = Field(default="", max_length=60)
+
+    @field_validator("msg")
+    @classmethod
+    def _clean_msg(cls, v: str) -> str:
+        return re.sub(r"[<>\r\n]", " ", v).strip()
+
+
+@app.post("/api/map/{mid}/member/{pid}/letter")
+def map_letter(mid: str, pid: str, req: LetterReq):
+    """주인이 지도 속 친구에게 '보약 편지'를 보낸다. 친구가 서로 연결된(자기 지도가 있는) 경우에만 그 지도로 배달."""
+    rec, ms = _load_map(mid)
+    if not share_store.owner_ok(rec, req.token):
+        raise HTTPException(403, "보낼 권한이 없다냥")
+    e = ms.get(pid)
+    if not e:
+        raise HTTPException(404, "그 별을 찾을 수 없다냥")
+    dest = e.get("src")
+    if not dest:
+        raise HTTPException(409, "이 친구는 아직 자기 지도가 없어서 편지를 받을 수 없다냥. 링크를 보내 '서로 연결하기'를 해 봐!")
+    today = today_kst().isoformat()
+    key = f"letters/{dest}/{today}-{mid}"
+    try:
+        if share_store.get_doc(key):
+            raise HTTPException(409, "오늘은 이미 이 친구에게 편지를 보냈다냥. 내일 또 보내 줘!")
+        el = e["view"].get("용신", "")
+        share_store.put_doc(key, {"from": rec["owner"]["name"], "el": el, "line": LETTER_LINES.get(el, "따뜻한 응원을 보낸다냥 🐾"),
+                                  "msg": req.msg, "at": today}, ttl=60 * 24 * 3600, index=f"letters/{dest}")
+    except share_store.StoreError as err:
+        raise HTTPException(503, str(err)) from err
+    return {"ok": True, "받는이": e["view"]["이름"]}
+
+
+@app.get("/api/map/{mid}/letters")
+def map_letters(mid: str, token: str = ""):
+    """내 지도로 온 보약 편지(최근 30일, 최대 20통) — 지도 주인만."""
+    rec, _ = _load_map(mid)
+    if not share_store.owner_ok(rec, token):
+        raise HTTPException(403, "볼 권한이 없다냥")
+    try:
+        docs = share_store.list_docs(f"letters/{mid}")
+    except share_store.StoreError as err:
+        raise HTTPException(503, str(err)) from err
+    cut = (today_kst() - timedelta(days=30)).isoformat()
+    out = sorted(({"id": k.rsplit("/", 1)[-1], **{x: d.get(x) for x in ("from", "el", "line", "msg", "at")}} for k, d in docs
+                  if d.get("at", "") >= cut), key=lambda x: x["at"], reverse=True)[:20]
+    return {"편지": out}
 
 
 @app.delete("/api/map/{mid}/member/{pid}")

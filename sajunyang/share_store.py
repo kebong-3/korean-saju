@@ -264,7 +264,7 @@ def list_docs(index: str) -> list[tuple[str, dict]]:
     """index 접두어(예: push) 아래 문서를 모두 읽는다(알림 보내기용)."""
     if backend() == "redis":
         keys = _pipe([["SMEMBERS", f"idx:{index}"]])[0] or []
-        if not keys:
+        if not isinstance(keys, list) or not keys:
             return []
         vals = _pipe([["GET", f"doc:{k}"] for k in keys])
         out, gone = [], []

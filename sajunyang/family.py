@@ -546,7 +546,7 @@ def _ch_conflict(f: _Fam) -> dict:
         "서운": (f"안방 글자 {BRANCHES[p.db]}{jo(BRANCHES[c.db], '이가')} {jo(_branch_kind(p.db, c.db)[0], '이라')} {SEO_UN_LONG[_branch_kind(p.db, c.db)[0]]} '그랬구나' 한마디가 최고의 반창고다냥."
                  if _branch_kind(p.db, c.db)[0] in ("원진", "해", "귀문", "형") else
                  f"{p.animal}띠·{c.animal}띠가 {jo(_branch_kind(p.yb, c.yb)[0], '이라')} 말 한마디에 삐지기 쉽다냥. '그랬구나' 한마디가 최고의 반창고다냥."),
-        "지침": f"{p.name}와 {c.name}, 서로의 기운이 살짝 과식이라 붙어 있으면 둘 다 방전된다냥. 각자 충전 시간은 사랑의 증거다냥.",
+        "지침": f"{jo(p.name, '와과')} {c.name}, 서로의 기운이 살짝 과식이라 붙어 있으면 둘 다 방전된다냥. 각자 충전 시간은 사랑의 증거다냥.",
         "없음": f"크게 부딪히는 글자가 없다냥. 대신 대화가 '밥 먹었어?'로만 끝나는 게 이 집 유일한 함정이니, 엉뚱한 질문 하나씩 던지라냥.",
     }[top]
     wit = wit.replace(f"{p.name}와", jo(p.name, "와과"))
