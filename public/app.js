@@ -110,6 +110,7 @@ document.addEventListener("click", (e) => {
   if (wm) { const on = localStorage.getItem(wm.dataset.wm) !== "1"; localStorage.setItem(wm.dataset.wm, on ? "1" : "0");
     wm.classList.toggle("done", on); wm.innerHTML = wm.innerHTML.replace(on ? "⬜" : "✅", on ? "✅" : "⬜"); return; }
   if (e.target.closest("[data-book]")) { openBook(); return; }
+  if (e.target.closest("[data-dex]")) { openDex(); return; }
   const pu = e.target.closest("[data-push]"); if (pu) { togglePush(pu); return; }
   if (e.target.closest("[data-taegil]")) { openTaegil(); return; }
   if (e.target.closest("[data-backup]")) { openBackup(); return; }
@@ -197,6 +198,7 @@ async function loadMe(birth) {
   S.birth = birth;
   localStorage.setItem("nyang:me", JSON.stringify(birth));
   S.chat = { history: [], partner: null, topic: null };
+  applyOutfit(); paintNyang(document.querySelector(".top") || document);
   renderAll();
   $("#onboard").hidden = true; $("#main").hidden = false;
   showTab("home");
@@ -205,7 +207,7 @@ async function loadMe(birth) {
   else if (!store.get("revealed", 0)) showReveal();
   autoBackup();
 }
-function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="think" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
+function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="focus" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
 
 function showTab(tab, sub) {
   $$(".bottom button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
@@ -273,9 +275,9 @@ function showReveal() {
   const ilgan = (d["해석"]["일간"] || "").split(" — ")[1] || "";
   const cards = [
     { mood: "wow", k: "1 / 3 · 타고난 나", big: `${me["이모지"] || ""} ${me["이름"] || ""}`, sub: `${nm}님의 본체는 ${d["원국"]["일주"]["천간"]["글자"]}(${d["원국"]["일주"]["한글"][0]}) 일간이다냥.`, body: ilgan },
-    { mood: "happy", k: "2 / 3 · 나의 보약 기운", big: `${yong}(${{ 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" }[yong] || ""}) 기운`, sub: `너에게 제일 필요한 '용신'이다냥.`,
+    { mood: "cheer", k: "2 / 3 · 나의 보약 기운", big: `${yong}(${{ 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" }[yong] || ""}) 기운`, sub: `너에게 제일 필요한 '용신'이다냥.`,
       body: `행운의 색은 ${(mt["행운의색"] || [""])[0]}, 힘이 나는 방향은 ${mt["행운의방위"] || ""}. ${mt["힐링"] ? `지칠 땐 ${mt["힐링"].split("·")[0]}!` : ""}` },
-    { mood: "wink", k: `3 / 3 · 나의 ${y["연도"]}`, big: `${yt["이모지"] || "🧧"} ${yt["이름"] || y["테마"]}`, sub: `'${y["테마"]}'`, body: `${y["총평"]} 힘 실을 달은 ${(y["좋은달표시"] || []).join("·")}.` },
+    { mood: "proud", k: `3 / 3 · 나의 ${y["연도"]}`, big: `${yt["이모지"] || "🧧"} ${yt["이름"] || y["테마"]}`, sub: `'${y["테마"]}'`, body: `${y["총평"]} 힘 실을 달은 ${(y["좋은달표시"] || []).join("·")}.` },
   ];
   let i = 0;
   const box = $("#reveal");
@@ -321,10 +323,12 @@ function renderHome() {
   const nm = d["이름"] || "너";
   const key = "mission:" + t.date;
   const done = store.get(key, 0) === 1;
-  const moods = t["점수"] >= 72 ? "happy" : t["점수"] >= 50 ? "normal" : "think";
+  const kh = new Date(Date.now() + 9 * 3600e3).getUTCHours();
+  const moods = kh >= 23 || kh < 5 ? "sleepy" : t["점수"] >= 80 ? "cheer" : t["점수"] >= 68 ? "happy" : t["점수"] >= 56 ? "wink" : t["점수"] >= 45 ? "normal" : "focus";
   $("#tab-home").innerHTML = `
-    <div class="greet"><span class="float" data-nyang="${moods}" data-size="92"></span>
-      <div class="bubble">${esc(nm)}, 오늘의 ${chip("일진")}은 <b>${esc(t["일진"])}</b>이다냥.<br>${T(t["한마디"])}</div></div>
+    <div class="greet"><span class="float" data-nyang="${moods}" data-size="92" title="톡 건드려 봐"></span>
+      <div class="bubble">${esc(nm)}, 오늘의 ${chip("일진")}은 <b>${esc(t["일진"])}</b>이다냥.<br>${T(t["한마디"])}
+        <button type="button" class="wardrobe" data-dex>👘 냥이 옷장 · 도감 ${dexCount().got}/${dexCount().all}</button></div></div>
     <div class="card tint-pink" style="margin-top:14px">
       <div class="card-head"><h2>오늘의 운세</h2><span class="badge pink">${+t.date.slice(5, 7)}월 ${+t.date.slice(8, 10)}일 ${esc(t["신호"] || "")}</span></div>
       <div class="today">${ring(t["점수"], t["등급"])}
@@ -381,6 +385,7 @@ function monthCard(m) {
   if (!m) return "";
   return `<div class="card tint-butter month-now"><div class="card-head"><h2>🗓️ 이번 달 냥이 플랜</h2><span class="badge">${esc(m["신호"])}</span></div>
     <p class="sub" style="margin:0 0 8px">${esc(m["절기"])} ${esc(m["시작"])} ~ ${esc(m["끝"] || "")} · ${esc(m["간지"])} · ${T(m["십성"], true)}</p>
+    ${verseHtml(m["월령"])}
     <p style="margin:0 0 10px">${esc(m["한마디"])}</p>
     <div class="grid2"><div class="fit"><small>✅ 할 일</small>${m["할일"].map((x) => `<div>· ${esc(x)}</div>`).join("")}</div>
       <div class="fit"><small>🙅 피할 일</small>${m["피할일"].map((x) => `<div>· ${esc(x)}</div>`).join("")}</div></div></div>`;
@@ -394,6 +399,7 @@ function renderLuck() {
     const cls = y["좋은달"].includes(m["월"]) ? "good" : y["조심할달"].includes(m["월"]) ? "bad" : "";
     return `<div class="mon ${cls}"><div class="m">${m["월"]}월</div><div class="gz">${esc(m["절기"])} ${esc(m["시작"])}~ · ${esc(m["간지"])}</div>
       <span class="s">${m["점수"]}</span><div class="track"><div class="fill" style="width:${m["점수"]}%"></div></div>
+      ${verseHtml(m["월령"], true)}
       <p>${esc(SY["월핵심"]?.[m["월"]] || m["한마디"])}</p>${SY["월"]?.[m["월"]] ? moreSet([["더 보기", `<p>${esc(SY["월"][m["월"]])}</p>`]]) : ""}<p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
   }).join("");
   $("#tab-luck").innerHTML = `
@@ -422,7 +428,7 @@ function renderLuck() {
       ${S.ai ? `<button class="btn lav wide" type="button" data-ask="${y["연도"]}년 내 운세를 연애·일·돈으로 나눠서 자세히 풀어줘">💬 냥이에게 ${y["연도"]}년 더 물어보기</button>` : ""}
     </div>
     <div data-pane="month" hidden>
-      <div class="say"><span class="who" data-nyang="normal" data-size="54"></span><div class="bubble">사주 달력은 양력 1일이 아니라 ${chip("절입")}일에 달이 바뀐다냥. 초록 카드가 냥이 추천 달!</div></div>
+      <div class="say"><span class="who" data-nyang="normal" data-size="54"></span><div class="bubble">사주 달력은 양력 1일이 아니라 ${chip("절입")}일에 달이 바뀐다냥. 초록 카드가 냥이 추천 달!<br>달마다 냥이가 지은 <b>월령 노래</b> 두 줄도 읽어 봐 — 토정비결처럼 읽는 그달의 바람이다냥.</div></div>
       <button class="btn primary wide" type="button" data-read="month" style="margin-bottom:14px">🌙 이번 달 운세 대풀이 듣기</button>
       <div class="months">${months}</div>
     </div>
@@ -1015,7 +1021,7 @@ async function runCompat() {
   btn.disabled = true; loading(out);
   try {
     const r = await api("/api/compat", { a: S.birth, b });
-    const mood = r.score >= 72 ? "happy" : r.score >= 58 ? "wink" : "think";
+    const mood = r.score >= 85 ? "love" : r.score >= 72 ? "happy" : r.score >= 58 ? "wink" : "think";
     const say = r.score >= 85 ? "와, 이건 2천 년 동안 몇 번 못 본 궁합이다냥!" : r.score >= 72 ? "서로에게 힘이 되는 좋은 궁합이다냥."
       : r.score >= 58 ? "다른 점이 있어서 오히려 배울 게 많은 궁합이다냥." : "부딪히는 곳이 있지만, 알고 맞춰 가면 충분하다냥. 궁합은 '사용 설명서'다냥!";
     const who = (t) => String(t).replace(/([12])번/g, (_, n) => r.names[n - 1]), SC = r["이야기"] || {};
@@ -1386,7 +1392,7 @@ function saveMood(i, day) {
   store.set("diary", diary);
   $("#checkin-slot").innerHTML = checkinCard();
   const say = +i === 2 ? "좋은 날이었구나! 냥이도 꼬리가 살랑살랑 🐾" : +i === 1 ? "무난한 하루도 소중하다냥. 푹 쉬어!" : "고생 많았다냥… 오늘은 따뜻한 거 먹고 일찍 자라냥.";
-  $("#checkin-slot .card").insertAdjacentHTML("beforeend", `<div class="say" style="margin-top:10px"><span class="who" data-nyang="${+i === 0 ? "think" : "happy"}" data-size="44"></span><div class="bubble">${say}</div></div>`);
+  $("#checkin-slot .card").insertAdjacentHTML("beforeend", `<div class="say" style="margin-top:10px"><span class="who" data-nyang="${+i === 0 ? "sad" : +i === 2 ? "laugh" : "happy"}" data-size="44"></span><div class="bubble">${say}</div></div>`);
   paintNyang($("#checkin-slot"));
 }
 function diaryStats() {
@@ -1446,13 +1452,14 @@ function bookLine() {
 function openBook() {
   const b = bookState(), t = myTitle(b.n), all = S.stories.slice(0, b.total);
   store.set("bookSeen", b.open);
-  openSheet(`<div class="term-head"><span data-nyang="happy" data-size="64"></span><div><h2>냥이의 2천 년 일기장</h2>
+  openSheet(`<div class="term-head"><span data-nyang="love" data-size="64"></span><div><h2>냥이의 2천 년 일기장</h2>
     <div class="term-mean">들를 때마다 냥이가 옛 손님 이야기를 하나씩 꺼내 준다냥</div></div></div>
     <div class="book-title">${t.e} 지금 칭호 <b>${esc(t.name)}</b> · 누적 출석 ${b.n}일${t.next ? `<br><small>${t.next[0] - b.n}일 더 오면 ${t.next[1]} ${esc(t.next[2])}</small>` : ""}</div>
     <div class="book-list">${all.map((s, i) => (b.n >= BOOK_AT[i]
     ? `<details class="book-item"${i === b.open - 1 ? " open" : ""}><summary><b>${i + 1}. 『${esc(s["제목"])}』</b> <span class="sub">${esc(s["시대"])}</span></summary>
         <p>${esc(s["이야기"])}</p><div class="lesson">🐾 ${esc(s["교훈"])} <span class="sub">— ${T(s["개념"], true)}</span></div></details>`
     : `<div class="book-item locked"><b>${i + 1}. 🔒 아직 잠긴 이야기</b> <span class="sub">출석 ${BOOK_AT[i]}일째에 열린다냥 (${BOOK_AT[i] - b.n}일 남음)</span></div>`)).join("")}</div>
+    <button type="button" class="btn lav wide" data-dex style="margin-top:12px">👘 표정·옷 도감 보기 (${dexCount().got}/${dexCount().all})</button>
     <p class="sub" style="margin-top:10px;text-align:center">출석은 하루 한 번, 이 기기에 기록돼요. 기기를 바꿀 땐 🔐 기록 백업으로 옮겨 오세요.</p>`);
   const slot = $("#checkin-slot"); if (slot) slot.innerHTML = checkinCard();
 }
@@ -1597,6 +1604,69 @@ async function togglePush(btn) {
     }
   } catch (e) { alert(e.message || "알림 설정에 실패했다냥. 잠시 후 다시 해 줘"); }
   finally { const slot = $("#checkin-slot"); if (slot) slot.innerHTML = checkinCard(); }
+}
+
+// ───────────────────────── 냥이 도감: 표정·옷 수집(누적 출석으로 열림), 옷 갈아입히기, 쓰다듬기
+const MOOD_AT = { normal: 0, happy: 0, think: 0, wow: 0, wink: 0, sad: 0, love: 2, sleepy: 3, focus: 4, proud: 5, shy: 7, cheer: 10, laugh: 14 };
+const OUTFIT_AT = { gat: 0, flower: 3, moon: 7, winter: 14, newyear: 21, king: 30 };
+const OUTFIT_SAY = {
+  gat: "2천 년째 쓰는 내 갓이다냥. 낡았어도 이게 제일 편해.", flower: "봄 들판에서 직접 엮은 화관이다냥. 3일 출석 기념!",
+  moon: "보름달 뜨는 밤에만 꺼내 입는 도사복이다냥.", winter: "한양 겨울은 매서웠다냥… 그래서 남바위는 필수!",
+  newyear: "설날 아침엔 색동이지! 세배는 받는 쪽이 좋다냥.", king: "30일이나 와 줬다냥? 오늘만은 냥이가 임금님이다냥 👑",
+};
+const unlockedMoods = (n = visits()) => Object.keys(MOOD_AT).filter((k) => n >= MOOD_AT[k]);
+const outfitOk = (o, n = visits()) => n >= (OUTFIT_AT[o] ?? 99);
+function applyOutfit() {
+  const o = store.get("outfit", "gat");
+  window.nyangOutfit = outfitOk(o) ? o : "gat";
+}
+function dexCount() {
+  const n = visits();
+  return { got: unlockedMoods(n).length + Object.keys(OUTFIT_AT).filter((o) => outfitOk(o, n)).length,
+    all: Object.keys(MOOD_AT).length + Object.keys(OUTFIT_AT).length };
+}
+function openDex() {
+  const n = visits(), cur = window.nyangOutfit || "gat", c = dexCount();
+  openSheet(`<div class="term-head"><span data-nyang="proud" data-size="64"></span><div><h2>냥이 도감 <small class="sub">${c.got}/${c.all}</small></h2>
+      <div class="term-mean">들를수록 냥이의 표정과 옷이 하나씩 늘어난다냥 · 누적 출석 ${n}일</div></div></div>
+    <h3 class="dex-h">👘 옷장 <span class="sub">— 눌러서 갈아입히기</span></h3>
+    <div class="dex-grid outfits">${Object.entries(window.NYANG_OUTFITS).map(([k, v]) => outfitOk(k, n)
+      ? `<button type="button" class="dex-tile ${k === cur ? "on" : ""}" data-wear="${k}"><span data-nyang="happy" data-size="74" data-outfit="${k}"></span><b>${esc(v.name)}</b>${k === cur ? "<small>입는 중</small>" : ""}</button>`
+      : `<div class="dex-tile locked"><span class="lock-sil">${nyang("normal", 74, k)}</span><b>🔒 ${esc(v.name)}</b><small>출석 ${OUTFIT_AT[k]}일째</small></div>`).join("")}</div>
+    <h3 class="dex-h">😺 표정 모음</h3>
+    <div class="dex-grid moods">${Object.entries(window.NYANG_MOODS).map(([k, v]) => n >= MOOD_AT[k]
+      ? `<div class="dex-tile mini"><span data-nyang="${k}" data-size="56"></span><b>${esc(v)}</b></div>`
+      : `<div class="dex-tile mini locked"><span class="q">?</span><b>${MOOD_AT[k]}일째</b></div>`).join("")}</div>
+    <p class="sub" style="text-align:center;margin:12px 0 0">홈의 냥이를 톡 건드리면 모은 표정 중 하나로 반응한다냥 🐾</p>`);
+  $$("#sheet-content [data-wear]").forEach((b) => b.addEventListener("click", () => {
+    store.set("outfit", b.dataset.wear); applyOutfit();
+    paintNyang(document); openDex();
+    const say = OUTFIT_SAY[b.dataset.wear];
+    if (say) $("#sheet-content .term-mean").textContent = say;
+  }));
+}
+// 쓰다듬기: 홈·상담·리빌의 냥이를 톡 → 모은 표정 중 하나 + 한마디
+const PATS = ["냥?", "꾹꾹…", "간지럽다냥!", "2천 년 살아도 이건 좋다냥", "오늘도 와 줘서 고맙다냥", "갓은 만지지 마라냥!", "골골골…", "츄르는 없냥?"];
+document.addEventListener("click", (e) => {
+  const el = e.target.closest(".greet [data-nyang], .hero-cat[data-nyang], .rv-card [data-nyang], .float[data-nyang]");
+  if (!el || el.closest("button")) return;
+  const pool = unlockedMoods().filter((m) => m !== el.dataset.nyang);
+  const orig = el.dataset.nyangOrig || el.dataset.nyang;
+  el.dataset.nyangOrig = orig;
+  el.dataset.nyang = pool[Math.floor(Math.random() * pool.length)] || "happy";
+  paintNyang(el.parentElement);
+  el.classList.remove("boing"); void el.offsetWidth; el.classList.add("boing");
+  el.querySelector(".ny-pop")?.remove();
+  el.insertAdjacentHTML("beforeend", `<span class="ny-pop">${PATS[Math.floor(Math.random() * PATS.length)]}</span>`);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.dataset.nyang = orig; paintNyang(el.parentElement); }, 1800);
+});
+// 냥이 월령 한 수(토정비결처럼 두 줄로 읽는 그달의 노래)
+function verseHtml(v, compact = false) {
+  if (!v) return "";
+  return `<div class="verse ${compact ? "compact" : ""}"><span class="v-season">${esc(v["계절"])}</span>
+    <span class="v-line">${esc(v["구절"][0])}</span><span class="v-line">${esc(v["구절"][1])}</span>
+    ${compact ? "" : `<span class="v-why">🐾 ${esc(v["풀이"])}</span>`}</div>`;
 }
 
 // ───────────────────────── 나의 길 탭

@@ -17,6 +17,8 @@ from ksaju.core import day_index, hour_index
 from ksaju.luck import day_luck, wolun
 from ksaju.texts import ELEMENT_ADVICE
 
+from . import wolryeong
+
 GOOD_REL = {"천간합", "육합", "삼합", "반합", "방합"}
 BAD_REL = {"충", "천간충", "형", "파", "해", "원진"}
 RISE = {"장생", "관대", "건록", "제왕"}
@@ -298,6 +300,7 @@ def year_fortune(r, year: int) -> dict:
                        "연": m.start_kst.year, "절기": m.label.rstrip("~"), "시작": m.start_kst.strftime("%m/%d"),
                        "간지": m.pillar.hanja, "십성": f"{m.stem_god}/{m.branch_god}", "점수": sc, "신호": _signal(sc),
                        "한마디": MONTH_TIP[m.stem_god], "작용": rels_s,
+                       "월령": wolryeong.verse(mo, GROUP[m.stem_god], sc, m.stem_god),
                        "할일": _todo([GROUP[m.stem_god], GROUP[m.branch_god]], f"{m.stem_god}/{m.branch_god}"),
                        "주의": _caution(rels_s)})
     ranked = sorted(months, key=lambda x: -x["점수"])
@@ -443,6 +446,7 @@ def this_month(r, today: date) -> dict | None:
     return {"절기": cur.label.rstrip("~"), "시작": cur.start_kst.strftime("%m/%d"),
             "끝": end.strftime("%m/%d") if end else "", "간지": cur.pillar.hanja, "십성": f"{cur.stem_god}/{cur.branch_god}",
             "점수": sc, "신호": _signal(sc), "한마디": MONTH_TIP[cur.stem_god],
+            "월령": wolryeong.verse(cur.start_kst.month, GROUP[cur.stem_god], sc, cur.stem_god),
             "할일": _todo(groups, f"{cur.stem_god}/{cur.branch_god}"), "피할일": avoid[:2], "작용": rels_s}
 
 
