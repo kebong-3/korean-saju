@@ -65,6 +65,9 @@ class ApiTest(_Blob):
         self.assertEqual(box[0]["from"], "지영")
         self.assertNotIn("<", box[0]["msg"])
         self.assertEqual(c.get(f"/api/map/{mine['id']}/letters?token=no").status_code, 403)
+        # 지도를 지우면 받은 편지도 함께 지워진다
+        self.assertTrue(c.delete(f"/api/map/{mine['id']}?token={mine['token']}").json()["ok"])
+        self.assertFalse(any(k.startswith(f"letters/{mine['id']}/") for k in self.files))
 
 
 if __name__ == "__main__":

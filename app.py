@@ -848,9 +848,16 @@ def map_share_page(mid: str):
 def map_delete(mid: str, token: str = ""):
     _load_map(mid)
     try:
-        return {"ok": share_store.delete_map(mid, token)}
+        ok = share_store.delete_map(mid, token)
     except share_store.StoreError as e:
         raise HTTPException(403, str(e)) from e
+    if ok:  # 받은 보약 편지도 함께 지운다
+        try:
+            for k, _ in share_store.list_docs(f"letters/{mid}"):
+                share_store.del_doc(k, index=f"letters/{mid}")
+        except share_store.StoreError as e:
+            print(f"[map] 편지 정리 실패: {e!r}")
+    return {"ok": ok}
 
 
 # ---------------------------------------------------------------- 로컬 개발용 정적 파일
