@@ -78,7 +78,7 @@ const oneLiners = (obj, icons = {}) => (obj ? `<div class="one-grid">${Object.en
 // ───────────────────────── 바텀시트// ───────────────────────── 바텀시트
 function openSheet(html) {
   $("#sheet-content").innerHTML = html;
-  paintNyang($("#sheet-content"));
+  paintNyang($("#sheet-content")); dedupeTerms($("#sheet-content"));
   $("#sheet").hidden = false;
 }
 function closeSheet() { $("#sheet").hidden = true; }
@@ -145,7 +145,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet
 function buildForm(form, key, title) {
   form.append($("#tpl-birth").content.cloneNode(true));
   $('[data-slot="title"]', form).textContent = title;
-  for (let y = 2100; y >= 1900; y--) form.year.add(new Option(`${y}년`, y));
+  for (let y = new Date().getFullYear(); y >= 1900; y--) form.year.add(new Option(`${y}년`, y));
   for (let m = 1; m <= 12; m++) form.month.add(new Option(`${m}월`, m));
   for (let d = 1; d <= 31; d++) form.day.add(new Option(`${d}일`, d));
   form.year.value = 2000; form.month.value = 1; form.day.value = 1;
@@ -200,7 +200,7 @@ async function api(path, body) {
 }
 
 // ───────────────────────── 시작·화면 전환
-const APPV = "20";
+const APPV = "21";
 async function loadMe(birth) {
   const ck = `${hashStr(JSON.stringify(birth))}:${kstDate(0)}:${APPV}`;
   let cache = null; try { cache = JSON.parse(localStorage.getItem("nyang:sajuc") || "null"); } catch { cache = null; }
@@ -227,7 +227,6 @@ function showTab(tab, sub) {
   if (tab !== "talk") saveTalk();
   $$(".bottom button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
-  const fab = $("#fab-talk"); if (fab) fab.hidden = tab === "talk" || $("#main").hidden;
   if (tab === "luck" && sub) setLuck(sub);
   if (tab === "talk") startTalk();
   if (tab === "path") renderPath(sub);
@@ -245,7 +244,8 @@ function renderAll() {
   $("#me-name").textContent = d["이름"] ? `${d["이름"]}님` : "나";
   $("#me-sub").textContent = `${i["띠"]}띠 · ${d["원국"]["일주"]["한글"]}일주`;
   renderHome(); renderLuck(); renderSaju(); renderCompat(); renderPath(); $("#tab-talk").innerHTML = "";
-  paintNyang($("#main"));
+  paintNyang($("#main")); paintNyang($(".bottom"));
+  ["home", "luck", "saju", "compat", "path"].forEach((t) => dedupeTerms($(`#tab-${t}`)));
 }
 
 // ───────────────────────── 첫 감명 카드(리빌) · 2027 신년 공유 카드
@@ -371,18 +371,10 @@ function renderHome() {
       <div id="checkin-slot">${checkinCard()}</div>
     </div>
 
-    ${seasonBanner()}
-    ${monthCard(f["이번달"])}
-
-    <h2 class="sec-t">나를 알기</h2>
-    ${myCardTile()}
-    <button class="banner" type="button" id="btn-yearcard"><div><small>${y["연도"]}년 ${esc(y["간지"])} 신년운세</small>
-      <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>
-    ${readMenu()}
+    ${nowCard()}
 
     <h2 class="sec-t">바로가기 <button type="button" class="sec-more" data-allmenu>전체 메뉴 ›</button></h2>
-    <div class="quick">${[["luck:month", "📅", "월별 운세"], ["compat", "💞", "궁합·지도"], ["talk", "💬", "고민 상담"], ["@taegil", "📆", "택일"],
-      ["saju:rx", "🍀", "개운 처방"], ["@saved", "🗂️", "내가 본 풀이"], ["@season", "🎐", "절기 일기"], ["@allmenu", "☰", "전체"]].map(menuBtn).join("")}</div>
+    <div class="quick">${[["luck:month", "📅", "월별 운세"], ["luck:read", "🐾", "대풀이"], ["saju:manse", "📜", "만세력"], ["compat", "💞", "궁합·지도"]].map(menuBtn).join("")}</div>
     <div id="install-slot"></div>
 
     <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b><span class="sub">냥이 도사 한마디 · 고전 한 줄 · 옛이야기</span></summary>
@@ -406,7 +398,6 @@ function renderHome() {
     const g = gardenState();
     if (on && g.bonus !== t.date) { g.bonus = t.date; store.set("garden", g); gardenAdd(d["용신"]["용신"], 1, "개운 미션 완료"); }
   });
-  $("#btn-yearcard")?.addEventListener("click", openYearCard);
 }
 
 function monthCard(m) {
@@ -431,8 +422,9 @@ function renderLuck() {
       <p>${esc(SY["월핵심"]?.[m["월"]] || m["한마디"])}</p>${SY["월"]?.[m["월"]] ? moreSet([["더 보기", `<p>${esc(SY["월"][m["월"]])}</p>`]]) : ""}<p class="sub" style="margin-top:2px">${T(m["십성"], true)}</p></div>`;
   }).join("");
   $("#tab-luck").innerHTML = `
-    <div class="segtabs" role="tablist"><button data-sub="cal" type="button">운세 달력</button><button data-sub="new" type="button">${y["연도"]} 신년</button><button data-sub="month" type="button">월별 운세</button><button data-sub="life" type="button">평생 총운</button></div>
+    <div class="segtabs" role="tablist"><button data-sub="cal" type="button">달력</button><button data-sub="new" type="button">${y["연도"]} 신년</button><button data-sub="month" type="button">월별</button><button data-sub="life" type="button">평생</button><button data-sub="read" type="button">대풀이</button></div>
     <div data-pane="cal" hidden>${renderCal(f["달력"])}</div>
+    <div data-pane="read" hidden>${readMenu()}</div>
     <div data-pane="new">
       <button class="btn primary wide" type="button" data-read="year" style="margin-bottom:14px">🧧 냥이 도사의 ${y["연도"]}년 신년운세 대풀이 듣기</button>
       <div class="card tint-lav">
@@ -902,7 +894,7 @@ document.addEventListener("click", (e) => {
   const l = e.target.closest("[data-luck]"); if (l) { const [k, i] = l.dataset.luck.split(":"); luckSheet(k, i); return; }
   const s = e.target.closest("[data-ss]"); if (s) { ssSheet(s.dataset.ss, s.dataset.where); return; }
   const t = e.target.closest("[data-mxtab]");
-  if (t) { $$(".mx-tabs button").forEach((b) => b.classList.toggle("on", b === t)); $("#mx-relpane").innerHTML = relPane(S.d, +t.dataset.mxtab); paintNyang($("#mx-relpane")); }
+  if (t) { $$(".mx-tabs button").forEach((b) => b.classList.toggle("on", b === t)); $("#mx-relpane").innerHTML = relPane(S.d, +t.dataset.mxtab); paintNyang($("#mx-relpane")); dedupeTerms($("#mx-relpane")); }
 });
 document.addEventListener("toggle", (e) => { if (e.target.classList?.contains("mx-guide") && !e.target.open) localStorage.setItem("nyang:mxguide", "1"); }, true);
 function mxScrollNow() {
@@ -1633,9 +1625,8 @@ function checkinCard() {
   const done = diary[target];
   const label = target === today ? "오늘 하루 어땠냥?" : "어제는 어땠냥?";
   const hit = diaryStats().hit;
-  return `<div class="checkin"><div class="ck-head"><b>🐾 출석 도장</b><span class="badge pink">${n}일 연속</span></div>
+  return `<div class="checkin"><div class="ck-head"><b>🐾 출석 도장</b><span class="badge pink">${n >= 7 ? "일주일 개근!" : `${n}일 연속`}</span></div>
     <div class="stamps">${week.map((dd) => `<div class="${days[dd] ? "on" : ""} ${dd === today ? "is-today" : ""}"><span>${days[dd] ? (diary[dd] ? MOODS[diary[dd].mood][0] : "🐾") : ""}</span><small>${"일월화수목금토"[new Date(dd + "T00:00:00").getDay()]}</small></div>`).join("")}</div>
-    <p class="sub" style="margin:10px 0 6px">${n >= 7 ? `일주일 개근! 냥이가 꾹꾹이 해 준다냥 🐾` : n >= 3 ? `${n}일째 출석 중, 이 기세로 가자냥!` : "매일 들르면 도장이 쌓인다냥. 7일 개근에 도전!"}</p>
     ${bookLine()}${pushLine()}
     <div class="mood-q"><b>${label}</b>${done ? `<span class="sub"> — ${MOODS[done.mood][0]} 기록 완료!${hit != null ? ` · 냥이 적중률 ${hit}%` : ""}</span>` : ""}</div>
     ${done ? "" : `<div class="moods">${MOODS.map(([e, l], i) => `<button type="button" data-mood="${i}" data-day="${target}">${e}<small>${l}</small></button>`).join("")}</div>
@@ -2143,10 +2134,10 @@ async function loadLetters(ref) {
 
 // ───────── 전체 메뉴(한곳에 모아 홈을 가볍게)
 const ALL_MENU = [
-  ["운세", [["luck:new", "🧧", "신년운세"], ["luck:month", "📅", "월별 운세"], ["luck:cal", "🗓️", "운세 달력"], ["luck:life", "📈", "평생 총운"], ["@taegil", "📆", "택일 도우미"]]],
+  ["운세", [["luck:new", "🧧", "신년운세"], ["luck:month", "📅", "월별 운세"], ["luck:cal", "🗓️", "운세 달력"], ["luck:life", "📈", "평생 총운"], ["luck:read", "🐾", "냥이 도사 대풀이"], ["@taegil", "📆", "택일 도우미"]]],
   ["나를 알기", [["@ncard", "🃏", "나의 냥이 카드"], ["saju:fit", "🎯", "나에게 맞는"], ["saju:rx", "🍀", "개운 처방전"], ["saju:manse", "📜", "만세력"], ["saju:sinsal", "🔮", "신살과 길성"], ["saju:ogo", "🏛️", "오고 정밀감명"], ["@gloss", "📚", "명리 교실"]]],
-  ["함께", [["compat", "💞", "궁합·귀인 지도"], ["talk", "💬", "고민 상담"]]],
-  ["기록·수집", [["@saved", "🗂️", "내가 본 풀이"], ["@garden", "🌱", "오행 정원"], ["@season", "🎐", "절기 일기"], ["@book", "📖", "냥이 일기장"], ["@dex", "👘", "냥이 도감"], ["path", "🧭", "나의 길"], ["@backup", "🔐", "기록 백업"]]],
+  ["함께", [["compat", "💞", "궁합·귀인 지도"], ["talk", "💬", "고민 상담"], ["path", "🧭", "나의 길"]]],
+  ["기록·수집", [["@saved", "🗂️", "내가 본 풀이"], ["@garden", "🌱", "오행 정원"], ["@season", "🎐", "절기 일기"], ["@book", "📖", "냥이 일기장"], ["@dex", "👘", "냥이 도감"], ["@backup", "🔐", "기록 백업"]]],
 ];
 const menuBtn = ([g, ic, l]) => `<button type="button" ${g[0] === "@" ? `data-${g.slice(1)}` : `data-go="${g}"`}><i>${ic}</i><span>${l}</span></button>`;
 function openAllMenu() {
@@ -2315,6 +2306,74 @@ window.addEventListener("beforeinstallprompt", (e) => {
 });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
 
+
+// ───────── 홈 '지금 나에게': 그날 가장 관련 있는 카드 한 장만
+function yearBanner() {
+  const d = S.d, y = d["운세"]["신년운세"];
+  return `<button class="banner" type="button" data-yearcard><div><small>${y["연도"]}년 ${esc(y["간지"])} 신년운세</small>
+      <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>`;
+}
+const NOW_LABEL = { season: "🎐 절기 일기", month: "🗓️ 이번 달 플랜", year: "🧧 신년 카드", ncard: "🃏 나의 냥이 카드" };
+function nowPick() {
+  const d = S.d, s = d["절기"], today = kstDate(0), day = +today.slice(8), mon = +today.slice(5, 7);
+  const fresh = s && (Date.parse(today) - Date.parse(s["시작"])) / 864e5 <= 3;
+  if (fresh) return "season";
+  if (day <= 7) return "month";
+  if (mon === 12 || mon === 1) return "year";
+  return ["month", "ncard", "season", "year"][Math.floor(Date.parse(today) / 864e5) % 4];
+}
+function nowCard() {
+  const d = S.d;
+  const opts = { season: seasonBanner(), month: monthCard(d["운세"]["이번달"]), year: yearBanner(), ncard: myCardTile() };
+  let pick = S.nowPick || nowPick();
+  if (!opts[pick]) pick = Object.keys(opts).find((k) => opts[k]);
+  const chips = Object.keys(opts).filter((k) => k !== pick && opts[k]).map((k) => `<button type="button" class="now-chip" data-now="${k}">${NOW_LABEL[k]}</button>`).join("");
+  return `<div id="now-wrap"><h2 class="sec-t">지금 나에게</h2>${opts[pick] || ""}<div class="now-chips">${chips}</div></div>`;
+}
+document.addEventListener("click", (e) => {
+  const n = e.target.closest("[data-now]");
+  if (n) { S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); return; }
+  if (e.target.closest("[data-yearcard]")) openYearCard();
+});
+
+// ───────── 용어 밑줄 다이어트: 카드 하나에서 처음 나온 용어만 누를 수 있게
+function dedupeTerms(root) {
+  if (!root) return;
+  const boxes = [...root.querySelectorAll(".card, .chap, .more-box, .mx-grid, .ss-grid")].filter((b) => !b.parentElement.closest(".card, .chap"));
+  if (root.matches?.(".card, #sheet-content, #now-wrap")) boxes.push(root);
+  for (const box of boxes) {
+    const seen = new Set();
+    for (const t of box.querySelectorAll(".term")) {
+      if (t.closest(".mx-l")) continue; // 만세력 줄 이름은 늘 누를 수 있게
+      const k = t.dataset.t;
+      if (seen.has(k)) t.replaceWith(document.createTextNode(t.textContent)); else seen.add(k);
+    }
+  }
+}
+
+// ───────── 화면 자동 점검(배포 전 헤드리스 브라우저로 실행: /#smoke=<생일 JSON>)
+async function runSmoke(birth) {
+  const out = { ok: false, errors: [], tabs: {} };
+  window.addEventListener("error", (e) => out.errors.push(String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => out.errors.push(String(e.reason)));
+  try {
+    store.set("revealed", 1);
+    await loadMe(birth);
+    for (const t of ["home", "luck", "saju", "compat", "path", "talk"]) {
+      try {
+        showTab(t);
+        const el = $(`#tab-${t}`);
+        out.tabs[t] = { len: el.innerHTML.length, h: Math.round(el.scrollHeight / Math.max(innerHeight, 1) * 10) / 10, terms: el.querySelectorAll(".term").length };
+      } catch (err) { out.errors.push(`${t}: ${err.message}`); }
+    }
+    for (const p of ["basic", "ogo", "manse"]) { try { setSajuPane(p); } catch (err) { out.errors.push(`saju/${p}: ${err.message}`); } }
+    out.manse = !!$(".mx-grid") || !S.d["신살표"];
+    out.overflowX = document.documentElement.scrollWidth > document.documentElement.clientWidth + 1;
+    out.ok = !out.errors.length && out.manse && !out.overflowX && Object.values(out.tabs).every((x) => x.len > 100);
+  } catch (err) { out.errors.push(String(err.message || err)); }
+  const pre = document.createElement("pre"); pre.id = "smoke-out"; pre.textContent = JSON.stringify(out); document.body.append(pre);
+}
+
 // ───────────────────────── 초기화
 async function init() {
   paintNyang();
@@ -2330,13 +2389,13 @@ async function init() {
     finally { btn.disabled = false; }
   });
   $$(".bottom button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
-  $("#fab-talk").addEventListener("click", () => showTab("talk"));
   $("#btn-profile").addEventListener("click", () => { fillForm(form, S.birth); $("#main").hidden = true; $("#onboard").hidden = false; window.scrollTo({ top: 0 }); });
 
   const [meta, st, kinds] = await Promise.all([api("/api/meta").catch(() => ({ glossary: {} })), api("/api/status").catch(() => ({ ai: false })),
     api("/api/readings").catch(() => [])]);
   S.gloss = meta.glossary || {}; S.sinsal = meta.sinsal || {}; S.ai = !!st.ai; S.share = !!st.share; S.kinds = kinds; S.stories = meta.stories || []; S.pushKey = st.push_key || null; buildTermRe();
   $("#btn-restore")?.addEventListener("click", () => openBackup());
+  if (location.hash.startsWith("#smoke=")) { await runSmoke(JSON.parse(decodeURIComponent(location.hash.slice(7)))); return; }
   const guest = new URLSearchParams(location.search).get("map");
   if (guest) { guestMap(guest); return; }
   $("#rd-back").addEventListener("click", () => (history.state?.reader ? history.back() : closeReader()));
