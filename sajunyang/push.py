@@ -13,7 +13,7 @@ import hashlib
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, timedelta
 from urllib.parse import urlparse
 
 from ksaju.core import BRANCH_ELEMENT, ELEMENTS, STEM_ELEMENT, STEMS, Pillar, day_index, ten_god
@@ -41,7 +41,40 @@ def key_of(endpoint: str) -> str:
     return f"{INDEX}/" + hashlib.sha256(endpoint.encode()).hexdigest()[:32]
 
 
-def message(ilgan: int, yong: list[str], d: date) -> dict:
+WEEKDAY = "월화수목금토일"
+
+
+def _day_els(d: date) -> set[str]:
+    p = Pillar(day_index(d), "일진")
+    return {ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]}
+
+
+def best_day(yong: list[str], start: date) -> date:
+    """앞으로 7일 중 보약 기운(용신 2점·희신 1점)이 가장 많이 드는 날."""
+    def score(d):
+        els = _day_els(d)
+        return sum((2 if i == 0 else 1) for i, e in enumerate(yong[:2]) if e in els)
+    days = [start + timedelta(days=i) for i in range(7)]
+    return max(days, key=lambda d: (score(d), -days.index(d)))
+
+
+def message(ilgan: int, yong: list[str], d: date, kind: str = "morning") -> dict:
+    tag = f"nyang-{kind}-{d.isoformat()}"
+    if kind == "sunday":
+        return {"title": "🪞 이번 주도 수고했다냥", "body": "이번 주 기분을 기록하고, 다음 주 힘 실을 날을 미리 보러 오라냥 →",
+                "url": "/?from=push&now=week", "tag": tag}
+    try:
+        from . import season as _season
+        s = _season.current(datetime(d.year, d.month, d.day, 12))
+        if s["시작"] == d.isoformat():
+            return {"title": f"{s['이모지']} 오늘부터 {s['이름']}이다냥", "body": f"{s['일기']} 이번 절기 개운: {s['개운']} →",
+                    "url": "/?from=push&now=season", "tag": tag}
+    except Exception:  # noqa: BLE001
+        pass
+    if d.weekday() == 0 and yong:
+        b = best_day(yong, d)
+        return {"title": "📅 이번 주 냥이 미리보기", "body": f"이번 주 힘 실을 날은 {WEEKDAY[b.weekday()]}요일({b.month}/{b.day})! 보약 기운이 드는 날이니 중요한 약속은 그날로 잡으라냥 →",
+                "url": "/?from=push", "tag": tag}
     p = Pillar(day_index(d), "일진")
     sg = ten_god(ilgan, p.stem)
     els = {ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]}
@@ -50,10 +83,10 @@ def message(ilgan: int, yong: list[str], d: date) -> dict:
     body = DAY_TIP.get(sg, "오늘도 냥이가 기다린다냥.")
     if good:
         body = f"보약 기운({'·'.join(good)})이 드는 날! " + body
-    return {"title": title, "body": body + " 오늘 운세 보러 오라냥 →", "url": "/?from=push", "tag": f"nyang-{d.isoformat()}"}
+    return {"title": title, "body": body + " 오늘 운세 보러 오라냥 →", "url": "/?from=push", "tag": tag}
 
 
-def send_all(store, today: date) -> dict:
+def send_all(store, today: date, kind: str = "morning") -> dict:
     """크론이 부른다. 만료된 구독(404·410)은 지운다."""
     from pywebpush import WebPushException, webpush
 
@@ -63,12 +96,13 @@ def send_all(store, today: date) -> dict:
 
     def one(item):
         key, rec = item
-        if rec.get("last") == today.isoformat():
+        last = "last" if kind == "morning" else f"last_{kind}"
+        if rec.get(last) == today.isoformat():
             return "skip"
         try:
-            webpush(subscription_info=rec["sub"], data=json.dumps(message(rec["ilgan"], rec.get("yong", []), today), ensure_ascii=False),
+            webpush(subscription_info=rec["sub"], data=json.dumps(message(rec["ilgan"], rec.get("yong", []), today, kind), ensure_ascii=False),
                     vapid_private_key=priv, vapid_claims=dict(claims), ttl=6 * 3600, timeout=8)
-            rec["last"] = today.isoformat()
+            rec[last] = today.isoformat()
             store.put_doc(key, rec, index=INDEX)
             return "sent"
         except WebPushException as e:

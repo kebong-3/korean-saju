@@ -50,6 +50,7 @@ season = _opt("season")
 ilju = _opt("ilju")
 pae = _opt("pae")
 sinsal_story = _opt("sinsal_story")
+seo = _opt("seo")
 
 
 def _safe(fn, *args, **kw):
@@ -581,6 +582,17 @@ def push_cron(authorization: str = Header(default="")):
     return push.send_all(share_store, today_kst())
 
 
+@app.get("/api/cron/sunday")
+def push_cron_sunday(authorization: str = Header(default="")):
+    """Vercel Cron(일요일 20시 KST): 이번 주 돌아보기 알림."""
+    import secrets as _s
+    sec = os.environ.get("CRON_SECRET", "")
+    if not sec or not _s.compare_digest(authorization, f"Bearer {sec}"):
+        raise HTTPException(401, "권한이 없다냥")
+    _need_push()
+    return push.send_all(share_store, today_kst(), kind="sunday")
+
+
 class MapOther(BaseModel):
     name: str = Field(max_length=20)
     birth: Birth
@@ -831,6 +843,63 @@ def map_member_delete(mid: str, pid: str, token: str = ""):
         return {"ok": share_store.remove_member(mid, pid, token)}
     except share_store.StoreError as e:
         raise HTTPException(403, str(e)) from e
+
+
+# ---------------------------------------------------------------- 검색 유입 안내 페이지
+def _seo_html(body: str | None) -> Response:
+    if body is None:
+        raise HTTPException(404, "그런 페이지는 냥이도 모른다냥")
+    return HTMLResponse(body, headers={"Cache-Control": "public, max-age=3600, s-maxage=86400"})
+
+
+@app.get("/guide", response_class=HTMLResponse)
+def seo_guide():
+    return _seo_html(seo.guide() if seo else None)
+
+
+@app.get("/manse", response_class=HTMLResponse)
+def seo_manse():
+    return _seo_html(seo.manse() if seo else None)
+
+
+@app.get("/sinsal", response_class=HTMLResponse)
+def seo_sinsal():
+    return _seo_html(seo.sinsal_index() if seo else None)
+
+
+@app.get("/sinsal/{name}", response_class=HTMLResponse)
+def seo_sinsal_one(name: str):
+    return _seo_html(seo.sinsal_page(name) if seo else None)
+
+
+@app.get("/ilju", response_class=HTMLResponse)
+def seo_ilju():
+    return _seo_html(seo.ilju_index() if seo else None)
+
+
+@app.get("/ilju/{ko}", response_class=HTMLResponse)
+def seo_ilju_one(ko: str):
+    return _seo_html(seo.ilju_page(ko) if seo else None)
+
+
+@app.get("/2027", response_class=HTMLResponse)
+def seo_2027():
+    return _seo_html(seo.year2027() if seo else None)
+
+
+@app.get("/jeolgi", response_class=HTMLResponse)
+def seo_jeolgi():
+    return _seo_html(seo.jeolgi() if seo else None)
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    return Response(seo.sitemap() if seo else "", media_type="application/xml", headers={"Cache-Control": "public, s-maxage=86400"})
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    return Response(seo.ROBOTS if seo else "User-agent: *\nAllow: /\n", media_type="text/plain")
 
 
 @app.get("/m/{mid}", response_class=HTMLResponse)

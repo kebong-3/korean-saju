@@ -199,8 +199,12 @@ async function api(path, body) {
   return j;
 }
 
+
+// ───────── 기능 사용 통계: 어떤 기능을 눌렀는지만 센다(생년월일·이름·입력 내용은 보내지 않음)
+function track(name, data) { try { window.va?.("event", data ? { name, data } : { name }); } catch { /* 통계 실패는 무시 */ } }
+
 // ───────────────────────── 시작·화면 전환
-const APPV = "23";
+const APPV = "24";
 async function loadMe(birth) {
   const ck = `${hashStr(JSON.stringify(birth))}:${kstDate(0)}:${APPV}`;
   let cache = null; try { cache = JSON.parse(localStorage.getItem("nyang:sajuc") || "null"); } catch { cache = null; }
@@ -224,6 +228,7 @@ async function loadMe(birth) {
 function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="focus" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
 
 function showTab(tab, sub) {
+  if ($(`#tab-${tab}`)?.hidden) track("tab", { t: tab });
   if (tab !== "talk") saveTalk();
   $$(".bottom button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
   $$(".tab").forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
@@ -279,6 +284,7 @@ async function shareYearCard() {
   try { await navigator.clipboard.writeText(`${text} ${url}`); alert("공유 문구를 복사했다냥!"); } catch { alert(text); }
 }
 function openYearCard() {
+  track("yearcard");
   openSheet(`<h2 style="margin:0 0 10px">🧧 나의 ${S.d["운세"]["신년운세"]["연도"]} 카드</h2>
     <div id="yc-box">${yearCardSvg(S.d)}</div>
     <div class="rd-cta" style="margin-top:12px"><button class="btn primary" type="button" id="yc-save">🖼️ 이미지 저장</button><button class="btn lav" type="button" id="yc-share">📤 친구에게 보내기</button></div>`);
@@ -391,7 +397,7 @@ function renderHome() {
       ${pathTeaser()}
     </details>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
-      <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
+      <a href="/guide">명리 안내</a> · <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
     store.set(key, on ? 1 : 0);
@@ -456,7 +462,7 @@ function renderLuck() {
       <div class="months">${months}</div>
     </div>
     <div data-pane="life" hidden>${timelinePane(S.d)}</div>`;
-  $$("#tab-luck .segtabs button").forEach((b) => b.addEventListener("click", () => setLuck(b.dataset.sub)));
+  $$("#tab-luck .segtabs button").forEach((b) => b.addEventListener("click", () => { setLuck(b.dataset.sub); track("luck_pane", { p: b.dataset.sub }); }));
   iconize($("#tab-luck"));
   $$("#tab-luck [data-cal]").forEach((b) => b.addEventListener("click", () => openDay(b.dataset.cal)));
   setLuck("cal");
@@ -549,7 +555,7 @@ function renderSaju() {
     </div>
     <div data-spane="ogo" hidden>${renderOgo(d)}</div>
     <div data-spane="manse" hidden>${renderManse(d)}</div>`;
-  $$("#tab-saju .segtabs button").forEach((b) => b.addEventListener("click", () => setSajuPane(b.dataset.pane)));
+  $$("#tab-saju .segtabs button").forEach((b) => b.addEventListener("click", () => { setSajuPane(b.dataset.pane); track("saju_pane", { p: b.dataset.pane }); }));
   $$("#tab-saju [data-lens-go]").forEach((b) => b.addEventListener("click", () => $(`#lens-${b.dataset.lensGo}`)?.scrollIntoView({ behavior: "smooth", block: "start" })));
   $("#btn-manse-png")?.addEventListener("click", saveMansePng);
   setSajuPane("glance");
@@ -805,6 +811,7 @@ function sinsalStory(st) {
     <details class="ss-notes"><summary>냥이 메모 · 판정 기준</summary><ul>${st["메모"].map((m) => `<li>${esc(m)}</li>`).join("")}</ul></details></div>`;
 }
 function mxSheet(kind, pos) {
+  track("manse_cell", { k: kind });
   const d = S.d, key = { 시: "시주", 일: "일주", 월: "월주", 연: "연주" }[pos], p = d["원국"][key];
   if (!p) return;
   const lbl = { 시: "생시", 일: "생일", 월: "생월", 연: "생년" }[pos], g = GUNG[pos], G = (t) => esc(S.gloss[t]?.["냥이"] || "");
@@ -836,6 +843,7 @@ function mxSheet(kind, pos) {
     ${here.length ? `<h3 style="margin:14px 0 6px">이 기둥의 신살</h3><div class="ss-inline">${[...new Set(here)].map((n) => ssChip(n, pos)).join("")}</div>` : ""}`);
 }
 function luckSheet(kind, idx) {
+  track("luck_cell", { k: kind });
   const x = S.d["운줄"][kind][+idx]; if (!x) return;
   const G = (t) => esc(S.gloss[t]?.["냥이"] || "");
   const when = kind === "대운" ? `${x["나이"]}~${x["나이"] + 9}세 (${x["시작"]}~${x["시작"] + 9}년)` : kind === "세운" ? `${x["연도"]}년 (${x["나이"]}세)` : `${x["절기"]}부터 (${x["시작"]}~)`;
@@ -846,6 +854,7 @@ function luckSheet(kind, idx) {
     ${S.ai ? `<button class="ghost wide" type="button" data-ask="${esc(`${kind} ${x["간지"]}(${when})이 내 사주에서 어떤 의미야?`)}" style="margin-top:10px">💬 냥이에게 더 묻기</button>` : ""}`);
 }
 function ssSheet(n, where) {
+  track("sinsal", { n });
   const x = S.sinsal?.["설명"]?.[n]; if (!x) return;
   const P = S.sinsal["자리"] || {}, R = S.sinsal["줄"] || {};
   const spots = (where || "").split(",").filter((w) => P[w[0]]).map((w) => `${P[w[0]][0]}${w[1] && R[w[1]] ? "의 " + R[w[1]] : ""} — ${P[w[0]][1]}`);
@@ -1345,6 +1354,7 @@ function startTalk() {
 }
 let talkBusy = false;
 async function handleFree(q) {
+  track("talk", { ai: S.ai ? 1 : 0 });
   if (!S.d || talkBusy) return;
   talkBusy = true;
   try { await handleFreeInner(q); } finally { talkBusy = false; }
@@ -1489,6 +1499,7 @@ function readFrom(id, day) {
   return openReading(id);
 }
 function openDream() {
+  track("reading", { k: "dream" });
   openSheet(`<div class="term-head"><span data-nyang="think" data-size="64"></span><div><h2>💭 꿈해몽</h2><div class="term-mean">간밤의 꿈을 냥이 도사가 풀어 준다냥</div></div></div>
     <textarea class="dream-box" id="dream-text" maxlength="500" placeholder="예) 맑은 물에서 커다란 잉어를 두 손으로 잡았는데 금빛으로 빛났어요"></textarea>
     <button class="btn primary wide" type="button" id="dream-go" style="margin-bottom:8px">냥이 도사에게 꿈 풀이 듣기</button>`);
@@ -1505,6 +1516,7 @@ function rdCacheKey(kind, o) {
 let rdCtl = null;
 function closeReader() { rdCtl?.abort(); rdCtl = null; $("#reader").hidden = true; document.body.style.overflow = ""; }
 async function openReading(kind, o = {}) {
+  track("reading", { k: kind });
   const k = kindInfo(kind), title = (o.title || k.title) + (o.long ? " · 길게" : "");
   const R = $("#reader"), body = $("#rd-body");
   if (R.hidden) history.pushState({ reader: 1 }, "");
@@ -1692,6 +1704,7 @@ const TAEGIL = [["move", "🏠", "이사·입주"], ["contract", "✍️", "계�
   ["date", "💗", "데이트·고백"], ["start", "🚀", "새 일 시작"]];
 let tgSeq = 0;
 async function openTaegil(p = "move") {
+  track("taegil");
   const my = ++tgSeq;
   openSheet(`<h2 style="margin:0 0 4px">📆 냥이 택일 도우미</h2><p class="sub" style="margin:0 0 10px">앞으로 60일 중에서 ${esc(nim())}에게 맞는 날을 골라 준다냥</p>
     <div class="tg-chips">${TAEGIL.map(([k, e, l]) => `<button type="button" class="${k === p ? "on" : ""}" data-tgl="${k}">${e} ${l}</button>`).join("")}</div>
@@ -1950,6 +1963,7 @@ function paeTile() {
       <span class="pae-front"><i>${esc(p["이모지"])}</i><b>${esc(p["이름"])}</b><small>${esc(p["십성"])}의 날</small></span></span></button>`;
 }
 function openPae() {
+  track("pae");
   const p = S.d["오늘의패"], first = store.get("pae", "") !== p["날짜"];
   store.set("pae", p["날짜"]);
   $("[data-pae]")?.classList.add("open");
@@ -1982,6 +1996,7 @@ function gardenMini() {
     <span class="gm-t"><b>🌱 오행 정원</b><small>${watered ? "오늘 물 주기 완료 ✓" : `오늘의 물 한 번 · 보약 ${S.d["용신"]["용신"]} 화분부터!`}</small></span></button>`;
 }
 function openGarden() {
+  track("garden");
   const g = gardenState(), y = S.d["용신"], watered = g.water === kstDate(0);
   const say = { 용신: "제일 필요한 보약 기운이다냥. 물 +2", 희신: "보약을 돕는 기운이다냥. 물 +1", 한신: "있어도 없어도 괜찮은 기운. 물 +1",
     구신: "부담 기운을 돕는 쪽이라 물이 잘 안 먹힌다냥. 물 +0", 기신: "이미 넘치는 기운이라 물을 주면 넘친다냥. 물 +0" };
@@ -2016,6 +2031,7 @@ function seasonBanner() {
     <span class="se-d">${esc(s["다음이모지"])} ${esc(s["다음"])}<br><small>D-${s["남은날"]}</small></span></button>`;
 }
 async function openSeason() {
+  track("season");
   const s = S.d["절기"], got = new Set(Object.values(store.get("seasons", {})));
   let all = S.terms;
   if (!all) { try { all = S.terms = (await api("/api/terms"))["절기"]; } catch { all = []; } }
@@ -2051,6 +2067,7 @@ function myCardTile() {
     <span><small>${esc(nim())}의 60일주 냥이 · ${esc(c["일주"])}</small><b>${esc(c["이름"])}</b><em>${c["키워드"].map((k) => "#" + esc(k)).join(" ")}</em></span></button>`;
 }
 function openNyangCard() {
+  track("ncard");
   const c = S.d["냥이카드"];
   const friends = store.get("friendCards", {});
   openSheet(`<div id="nc-box">${nyangCardSvg(c, nim())}</div>
@@ -2313,7 +2330,7 @@ function nowCard() {
 }
 document.addEventListener("click", (e) => {
   const n = e.target.closest("[data-now]");
-  if (n) { S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); return; }
+  if (n) { track("now_card", { k: n.dataset.now }); S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); return; }
   if (e.target.closest("[data-yearcard]")) openYearCard();
 });
 
@@ -2448,6 +2465,7 @@ function timelinePane(d) {
       <button class="btn lav" type="button" data-go="path:past">🧭 해마다 돌아보기</button></div>`;
 }
 function openTimeline(i) {
+  track("timeline");
   const d = S.d, r = tlRows(d)[+i]; if (!r) return;
   const st = d["신살이야기"] || {}, G = (t) => esc(S.gloss[t]?.["냥이"] || "");
   const past = (st["지나온길"] || []).find((x) => x["간지"].startsWith(r.p["간지"]));
@@ -2661,6 +2679,7 @@ function storySvg(kind) {
     <text x="180" y="${H - 22}" font-size="12" fill="${kind === "sinsal" ? "#b3a8c9" : "#6b6080"}" text-anchor="middle">사주냥이 · korean-saju-six.vercel.app</text></svg>`;
 }
 function openStory(kind) {
+  track("story", { k: kind });
   const label = { pae: "오늘의 패", ncard: "냥이 카드", sinsal: "나의 별 세 개" }[kind];
   const text = { pae: `오늘 내 패는 '${S.d["오늘의패"]?.["이름"]}' 🐾 너의 오늘 패는?`, ncard: `나는 '${S.d["냥이카드"]?.["이름"]}'래 🐾 너는 무슨 냥이야?`,
     sinsal: "내 사주에 뜬 별 세 개 ✨ 너의 별도 궁금하다냥" }[kind];
@@ -2669,8 +2688,8 @@ function openStory(kind) {
       <button class="btn lav" type="button" id="story-save">🖼️ 이미지 저장</button></div>
     <p class="sub" style="text-align:center;margin:8px 0 0">폰에서 '공유하기'를 누르면 카카오톡·인스타로 바로 보낼 수 있다냥.</p>`);
   const svg = () => $("#story-box svg"), fn = `사주냥이_${label.replace(/ /g, "_")}.png`;
-  $("#story-share").addEventListener("click", () => shareImage(svg(), fn, text));
-  $("#story-save").addEventListener("click", () => saveSvgPng(svg(), fn));
+  $("#story-share").addEventListener("click", () => { track("story_share", { k: kind }); shareImage(svg(), fn, text); });
+  $("#story-save").addEventListener("click", () => { track("story_save", { k: kind }); saveSvgPng(svg(), fn); });
 }
 
 // ───────── 주간 돌아보기(일·월요일): 지난 7일 운세 점수와 내 기분, 다음 주 미리보기
@@ -2714,19 +2733,19 @@ function promiseCheck() {
 }
 document.addEventListener("click", (e) => {
   const th = e.target.closest("[data-theme]");
-  if (th) { localStorage.setItem("nyang:theme", th.dataset.theme); applyTheme(); openTheme(); return; }
+  if (th) { track("theme", { m: th.dataset.theme }); localStorage.setItem("nyang:theme", th.dataset.theme); applyTheme(); openTheme(); return; }
   if (e.target.closest("[data-themesheet]")) { openTheme(); return; }
   const sk = e.target.closest("[data-story]"); if (sk) { openStory(sk.dataset.story); return; }
   if (e.target.closest("[data-promise]")) {
     const t = $("#promise-t")?.value.trim(); if (!t) { $("#promise-t")?.focus(); return; }
-    store.set("promise", { d: kstDate(0), t, done: null });
+    store.set("promise", { d: kstDate(0), t, done: null }); track("promise");
     e.target.closest(".promise-box").outerHTML = `<p class="promise-ok">🤙 약속했다냥! 내일 홈에서 물어볼게: <b>${esc(t)}</b></p>`;
     return;
   }
   const kp = e.target.closest("[data-kept]");
   if (kp) {
     const p = store.get("promise", null); if (!p) return;
-    p.done = kp.dataset.kept === "1"; store.set("promise", p);
+    p.done = kp.dataset.kept === "1"; store.set("promise", p); track("promise_kept", { ok: p.done ? 1 : 0 });
     if (p.done) gardenAdd(S.d["용신"]["용신"], 1, "약속을 지켰다냥");
     kp.closest(".promise-check").outerHTML = `<div class="card promise-check done"><span data-nyang="${p.done ? "love" : "shy"}" data-size="54"></span><div><b>${p.done ? "역시! 약속 지킨 사람이 운도 지킨다냥. 보약 화분에 물 한 번 더 줬다냥 🌱" : "괜찮아, 오늘 다시 하면 된다냥. 냥이는 늘 여기 있다냥 🐾"}</b></div></div>`;
     paintNyang($("#tab-home"));
@@ -2760,7 +2779,7 @@ async function init() {
     e.preventDefault();
     const btn = $("button[type=submit]", form);
     btn.disabled = true; $(".error", form)?.remove();
-    try { await withLoading(loadMe(birthOf(form))); }
+    try { const first = !S.d; await withLoading(loadMe(birthOf(form))); track(first ? "signup" : "profile_edit"); }
     catch (err) { form.insertAdjacentHTML("beforeend", `<p class="error">${esc(err.message)}</p>`); }
     finally { btn.disabled = false; }
   });
@@ -2772,7 +2791,10 @@ async function init() {
   S.gloss = meta.glossary || {}; S.sinsal = meta.sinsal || {}; S.ai = !!st.ai; S.share = !!st.share; S.kinds = kinds; S.stories = meta.stories || []; S.pushKey = st.push_key || null; buildTermRe();
   $("#btn-restore")?.addEventListener("click", () => openBackup());
   if (location.hash.startsWith("#smoke=")) { await runSmoke(JSON.parse(decodeURIComponent(location.hash.slice(7)))); return; }
-  const guest = new URLSearchParams(location.search).get("map");
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("now")) S.nowPick = qs.get("now");
+  if (qs.get("from")) track("entry", { from: qs.get("from") });
+  const guest = qs.get("map");
   if (guest) { guestMap(guest); return; }
   $("#rd-back").addEventListener("click", () => (history.state?.reader ? history.back() : closeReader()));
   window.addEventListener("popstate", () => { if (!$("#reader").hidden) closeReader(); });
