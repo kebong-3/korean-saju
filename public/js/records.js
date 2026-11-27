@@ -240,8 +240,11 @@ const standalone = () => matchMedia("(display-mode: standalone)").matches || nav
 function pushLine() {
   if (!S.pushKey) return "";
   const on = localStorage.getItem("nyang:push") === "1";
-  if (!pushOk()) return isIOS() && !standalone() ? `<p class="sub push-hint">🔔 아이폰은 '홈 화면에 추가'한 뒤 열면 아침 7시 운세 알림을 받을 수 있다냥</p>` : "";
-  return `<button type="button" class="push-line ${on ? "on" : ""}" data-push>${on ? "🔔 아침 7시 운세 알림 받는 중 · 끄기" : "🔔 매일 아침 7시, 오늘 운세 알림 받기"}</button>`;
+  if (!pushOk()) return isIOS() && !standalone() ? `<p class="sub push-hint">🔔 아이폰은 '홈 화면에 추가'한 뒤 열면 아침·저녁 운세 알림을 받을 수 있다냥</p>` : "";
+  const w = localStorage.getItem("nyang:pushWhen") || "morning";
+  if (on) return `<div class="push-row"><span>${w === "evening" ? "🌙 저녁 9시 '내일 미리보기'" : "🔔 아침 7시 '오늘 운세'"} 알림 받는 중</span>
+    <button type="button" class="ghost" data-push data-when="${w === "evening" ? "morning" : "evening"}">${w === "evening" ? "아침으로" : "저녁으로"}</button><button type="button" class="ghost" data-push data-off>끄기</button></div>`;
+  return `<div class="push-row"><span>🔔 매일 운세 알림 받기</span><button type="button" class="ghost" data-push data-when="morning">아침 7시</button><button type="button" class="ghost" data-push data-when="evening">저녁 9시</button></div>`;
 }
 const u8key = (b) => { const p = "=".repeat((4 - (b.length % 4)) % 4); return Uint8Array.from(atob((b + p).replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)); };
 async function togglePush(btn) {
@@ -249,15 +252,16 @@ async function togglePush(btn) {
   try {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
-    if (localStorage.getItem("nyang:push") === "1") {
+    if (btn.dataset.off != null) {
       if (sub) { await api("/api/push/off", { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe().catch(() => {}); }
       localStorage.removeItem("nyang:push");
     } else {
+      const when = btn.dataset.when || "morning";
       if (await Notification.requestPermission() !== "granted") { alert("알림이 꺼져 있다냥. 브라우저 설정에서 사주냥이 알림을 허용해 줘!"); return; }
       sub ||= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8key(S.pushKey) });
       const y = S.d["용신"], STEMS = "甲乙丙丁戊己庚辛壬癸";
-      await api("/api/push", { sub: sub.toJSON(), ilgan: STEMS.indexOf(S.d["원국"]["일주"]["천간"]["글자"]), yong: [y["용신"], y["희신"]].filter(Boolean).slice(0, 2) });
-      localStorage.setItem("nyang:push", "1");
+      await api("/api/push", { sub: sub.toJSON(), ilgan: STEMS.indexOf(S.d["원국"]["일주"]["천간"]["글자"]), yong: [y["용신"], y["희신"]].filter(Boolean).slice(0, 2), when });
+      localStorage.setItem("nyang:push", "1"); localStorage.setItem("nyang:pushWhen", when); track("push_on", { w: when });
     }
   } catch (e) { alert(e.message || "알림 설정에 실패했다냥. 잠시 후 다시 해 줘"); }
   finally { const slot = $("#checkin-slot"); if (slot) slot.innerHTML = checkinCard(); }

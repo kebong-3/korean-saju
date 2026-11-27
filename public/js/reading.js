@@ -19,7 +19,7 @@ function renderCal(days) {
   }).join("");
   const top = [...days].sort((a, b) => b["점수"] - a["점수"]).slice(0, 5);
   return `<div class="card"><div class="card-head"><h2>📅 앞으로 5주 운세 달력</h2><span class="badge">일진 기준</span></div>
-    <div class="cal">${"월화수목금토일".split("").map((w) => `<div class="wd">${w}</div>`).join("")}${'<button class="blank" tabindex="-1"></button>'.repeat(pad)}${cells}</div>
+    <div class="cal">${"월화수목금토일".split("").map((w) => `<div class="wd">${w}</div>`).join("")}${'<span class="blank" aria-hidden="true"></span>'.repeat(pad)}${cells}</div>
     <div class="legend"><span><i style="background:#bfeedd"></i>대길</span><span><i style="background:var(--mint-l)"></i>좋음</span><span><i style="background:var(--pink-l)"></i>살살</span><span><i style="background:var(--pink-d);border-radius:50%"></i>원국과 충</span></div>
     <p class="sub" style="margin:10px 0 0">날짜를 누르면 그날의 운세를 보고, 냥이 도사에게 자세히 들을 수 있다냥.</p></div>
     <div class="card tint-mint"><h2>🍀 냥이 추천 좋은 날 TOP 5</h2><div class="top-days">${top.map((x) => `<button type="button" data-cal="${x.date}">

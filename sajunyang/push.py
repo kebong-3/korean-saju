@@ -60,6 +60,14 @@ def best_day(yong: list[str], start: date) -> date:
 
 def message(ilgan: int, yong: list[str], d: date, kind: str = "morning") -> dict:
     tag = f"nyang-{kind}-{d.isoformat()}"
+    if kind == "evening":  # 저녁 9시: 내일 미리보기
+        t = d + timedelta(days=1)
+        p = Pillar(day_index(t), "일진")
+        sg = ten_god(ilgan, p.stem)
+        els = {ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]}
+        good = [e for e in yong if e in els]
+        body = (f"보약 기운({'·'.join(good)})이 드는 날! " if good else "") + DAY_TIP.get(sg, "")
+        return {"title": f"🌙 내일은 {sg}의 날 · {p.hanja}일", "body": body + " 오늘 하루도 수고했다냥, 푹 자 →", "url": "/?from=push", "tag": tag}
     if kind == "sunday":
         return {"title": "🪞 이번 주도 수고했다냥", "body": "이번 주 기분을 기록하고, 다음 주 힘 실을 날을 미리 보러 오라냥 →",
                 "url": "/?from=push&now=week", "tag": tag}
@@ -86,7 +94,7 @@ def message(ilgan: int, yong: list[str], d: date, kind: str = "morning") -> dict
     return {"title": title, "body": body + " 오늘 운세 보러 오라냥 →", "url": "/?from=push", "tag": tag}
 
 
-def send_all(store, today: date, kind: str = "morning") -> dict:
+def send_all(store, today: date, kind: str = "morning", when: set[str] | None = None) -> dict:
     """크론이 부른다. 만료된 구독(404·410)은 지운다."""
     from pywebpush import WebPushException, webpush
 
@@ -96,6 +104,8 @@ def send_all(store, today: date, kind: str = "morning") -> dict:
 
     def one(item):
         key, rec = item
+        if when is not None and rec.get("when", "morning") not in when:
+            return "skip"
         last = "last" if kind == "morning" else f"last_{kind}"
         if rec.get(last) == today.isoformat():
             return "skip"

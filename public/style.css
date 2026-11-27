@@ -1124,6 +1124,18 @@ html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #f
 .wardrobe { display: inline-flex; align-items: center; gap: 4px; } .wardrobe .i3d { filter: none; }
 .saved-ppl { margin-top: 12px; font-size: 14px; } .saved-ppl summary { cursor: pointer; color: var(--lav-d); font: 14px var(--title); min-height: 36px; display: flex; align-items: center; }
 .sp-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line); } .sp-row small { color: var(--sub); }
+/* ───────── 내 정보 관리 · 의견 보내기 · 알림 시간 */
+.md-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.md-list li { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; font-size: 14.5px; }
+.md-list b { font: 14px var(--title); color: var(--lav-d); }
+.md-danger { margin-top: 18px; border-top: 1px dashed var(--line); padding-top: 10px; } .md-danger summary { cursor: pointer; color: var(--sub); font: 14px var(--title); min-height: 40px; display: flex; align-items: center; }
+.md-quiz { display: flex; align-items: center; gap: 10px; background: #fff7e3; border-radius: 16px; padding: 12px 14px; margin-top: 10px; }
+.md-quiz b { font: 24px var(--title); white-space: nowrap; } .md-quiz input { flex: 1; min-width: 0; font-size: 22px; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--line); }
+.btn.md-del { background: #c2385a; color: #fff; } .btn.md-del:disabled { background: #d8cfdc; color: #fff; opacity: 1; cursor: not-allowed; }
+.fb-text { width: 100%; font: 16px/1.6 var(--body); padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); margin-top: 6px; resize: vertical; background: var(--card); color: var(--ink); }
+.linkish { border: 0; background: none; padding: 4px 2px; color: var(--lav-d); font: inherit; text-decoration: underline; cursor: pointer; min-height: 32px; }
+.push-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; font-size: 14px; } .push-row span { flex: 1 1 100%; }
+html.night .md-quiz { background: #3e3520; }
 /* ───────── 그림 타일: 지금 나에게 · 오늘의 의식 · 바로가기 · 대풀이 메뉴 */
 .i3d { display: block; filter: drop-shadow(0 3px 4px rgba(120, 80, 140, .14)); }
 .gtiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }

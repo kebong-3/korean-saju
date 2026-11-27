@@ -26,18 +26,22 @@ function famSvg(F) {
   const ppl = F["사람"], n = ppl.length, W = 360, H = 330, C = [180, 165], R = n <= 3 ? 95 : 120;
   const pos = ppl.map((_, i) => { const a = (-90 + (360 / n) * i) * Math.PI / 180; return [C[0] + Math.cos(a) * R, C[1] + Math.sin(a) * R]; });
   const col = (c) => (c >= 78 ? "#3fbf8f" : c >= 64 ? "#f0b93a" : "#ff8a8a");
+  const dash = (c) => (c >= 78 ? "" : c >= 64 ? 'stroke-dasharray="9 5"' : 'stroke-dasharray="2.5 5"');  // 색을 구분하기 어려워도 모양으로
   const lines = F["짝"].map((p) => { const [x1, y1] = pos[p.ai], [x2, y2] = pos[p.bi];
     const adj = Math.abs(p.ai - p.bi) === 1 || Math.abs(p.ai - p.bi) === n - 1, k = adj ? 0.5 : 0.3;  // 가운데서 겹치는 대각선 숫자는 앞쪽으로
     const mx = x1 + (x2 - x1) * k, my = y1 + (y2 - y1) * k;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col(p["케미"])}" stroke-width="${1.5 + Math.max(0, p["케미"] - 50) / 12}" stroke-linecap="round" opacity=".85"/>
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col(p["케미"])}" ${dash(p["케미"])} stroke-width="${1.5 + Math.max(0, p["케미"] - 50) / 12}" stroke-linecap="round" opacity=".85"/>
       ${n <= 5 ? `<rect x="${mx - 13}" y="${my - 9}" width="26" height="17" rx="8" fill="#fff" opacity=".95"/><text x="${mx}" y="${my + 4}" font-size="11" text-anchor="middle" fill="#3b2f4a">${p["케미"]}</text>` : ""}`; }).join("");
   const nodes = ppl.map((p, i) => { const [x, y] = pos[i], me = p["관계"] === "me", r = me ? 30 : 26, el = ELC[p["오행"]] || "#eee";
     return `<g class="fam-node" ${p.id ? `data-mid="${esc(p.id)}"` : ""} style="cursor:${p.id ? "pointer" : "default"}">
       <circle cx="${x}" cy="${y}" r="${r + 5}" fill="${el}" opacity=".25"/><circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${me ? "#ff8fa3" : el}" stroke-width="${me ? 4 : 3}"/>
       <text x="${x}" y="${y - 2}" font-size="16" text-anchor="middle">${me ? "⭐" : famRel(p["관계"])[1]}</text>
       <text x="${x}" y="${y + 14}" font-size="11.5" text-anchor="middle" fill="#3b2f4a">${esc([...p["이름"]].slice(0, 4).join(""))}</text></g>`; }).join("");
-  return `<svg class="fam-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="가족 별자리" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">${lines}${nodes}</svg>
-    <div class="fam-leg"><span><i style="background:#3fbf8f"></i>찰떡</span><span><i style="background:#f0b93a"></i>무난</span><span><i style="background:#ff8a8a"></i>조율 필요</span><span>선이 굵을수록 케미↑</span></div>`;
+  const alt = `가족 별자리: ${F["짝"].map((p) => `${p.a}와 ${p.b} 케미 ${p["케미"]}`).join(", ")}`;
+  return `<svg class="fam-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(alt)}" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">${lines}${nodes}</svg>
+    <div class="fam-leg"><span><svg width="26" height="6" aria-hidden="true"><line x1="1" y1="3" x2="25" y2="3" stroke="#3fbf8f" stroke-width="3"/></svg>찰떡(실선)</span>
+      <span><svg width="26" height="6" aria-hidden="true"><line x1="1" y1="3" x2="25" y2="3" stroke="#f0b93a" stroke-width="3" stroke-dasharray="9 5"/></svg>무난(긴 점선)</span>
+      <span><svg width="26" height="6" aria-hidden="true"><line x1="1" y1="3" x2="25" y2="3" stroke="#ff8a8a" stroke-width="3" stroke-dasharray="2.5 5" stroke-linecap="round"/></svg>조율(짧은 점선)</span></div>`;
 }
 
 function famBody(F) {

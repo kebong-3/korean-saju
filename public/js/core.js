@@ -15,7 +15,7 @@ function buildTermRe() {
   const keys = Object.keys(S.gloss).filter((k) => k.length >= 2).sort((a, b) => b.length - a.length);
   TERM_RE = keys.length ? new RegExp(keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g") : null;
 }
-const chip = (t, label) => `<button type="button" class="term" data-t="${esc(t)}">${esc(label ?? t)}</button>`;
+const chip = (t, label) => `<button type="button" class="term" data-t="${esc(t)}"${label === "" ? ` aria-label="${esc(t)} 뜻 보기"` : ""}>${esc(label ?? t)}</button>`;
 /** 이스케이프된 텍스트에서 [[용어]]는 칩으로, auto=true면 아는 용어도 자동으로 칩으로 */
 /** auto: false(자동 링크 안 함) | true(모두) | Set(카드 안에서 처음 나온 용어만 링크) */
 function linkify(html, auto = false) {

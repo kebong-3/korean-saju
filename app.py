@@ -371,6 +371,12 @@ CRISIS_MSG = ("말해 줘서 정말 고마워. 지금 많이 힘들구나… 냥
               "**정신건강위기상담 1577-0199**에 전화해 줄래? 위급하면 **119**.\n\n혼자 버티지 않아도 된다냥. 🐾")
 
 
+BIRTH_PICK = re.compile(r"(출산|분만|제왕\s*절개|아기\s*낳|애\s*낳).{0,14}(날짜|택일|날\s*잡|날을|날로|일정|언제)|(택일|날짜).{0,10}(출산|분만|제왕\s*절개)")
+BIRTH_PICK_MSG = ("출산 날짜는 산모와 아기의 건강을 보고 **의료진이 정하는 일**이라, 냥이는 사주로 날짜를 골라 드리지 않는다냥. 🍼\n\n"
+                  "대신 아기가 태어나면 **인연 탭 › 🏠 가족**에 올려서 우리 가족 별자리를 함께 보자! "
+                  "지금은 엄마 몸과 마음을 돌보는 게 최고의 보약이야. 궁금한 다른 고민이 있으면 편하게 말해 줘.")
+
+
 def _ai_ready() -> bool:
     return llm.ready()
 
@@ -433,6 +439,8 @@ def ai(req: AIReq):
         raise HTTPException(400, "마지막 메시지는 사용자 질문이어야 한다냥")
     if CRISIS.search(history[-1]["content"]):
         return _stream_text(CRISIS_MSG)
+    if BIRTH_PICK.search(history[-1]["content"]):
+        return _stream_text(BIRTH_PICK_MSG)
     # 계산 결과는 서버에서 다시 만들어 첫 메시지 앞에 붙인다(클라이언트가 조작할 수 없음).
     memo = [re.sub(r"[<>]", "", m)[:120] for m in req.memo if m.strip()][:6]
     mem = ("\n<memory note=\"사용자 폰에 저장된 지난 상담 요약. 자연스럽게 이어서 안부를 물어도 되지만 사실로 단정하지 말 것\">\n"
@@ -604,6 +612,7 @@ class PushSub(BaseModel):
 
 class PushReq(BaseModel):
     sub: PushSub
+    when: Literal["morning", "evening"] = "morning"   # 아침 7시 / 저녁 9시
     ilgan: int = Field(ge=0, le=9)
     yong: list[Literal["목", "화", "토", "금", "수"]] = Field(default_factory=list, max_length=2)
 
@@ -623,7 +632,7 @@ def push_subscribe(req: PushReq):
     _need_push()
     if not push.endpoint_ok(req.sub.endpoint):
         raise HTTPException(400, "지원하지 않는 알림 주소다냥")
-    rec = {"sub": req.sub.model_dump(), "ilgan": req.ilgan, "yong": req.yong, "at": today_kst().isoformat()}
+    rec = {"sub": req.sub.model_dump(), "ilgan": req.ilgan, "yong": req.yong, "at": today_kst().isoformat(), "when": req.when}
     try:
         share_store.put_doc(push.key_of(req.sub.endpoint), rec, index=push.INDEX)
     except share_store.StoreError as e:
@@ -649,7 +658,19 @@ def push_cron(authorization: str = Header(default="")):
     if not sec or not _s.compare_digest(authorization, f"Bearer {sec}"):
         raise HTTPException(401, "권한이 없다냥")
     _need_push()
-    return push.send_all(share_store, today_kst())
+    return push.send_all(share_store, today_kst(), when={"morning"})
+
+
+@app.get("/api/cron/evening")
+def push_cron_evening(authorization: str = Header(default="")):
+    """Vercel Cron(매일 21시 KST): 저녁 알림을 고른 사람에게 '내일 미리보기', 일요일엔 모두에게 '이번 주 돌아보기'."""
+    if not _is_admin(authorization):
+        raise HTTPException(401, "권한이 없다냥")
+    _need_push()
+    today = today_kst()
+    if today.weekday() == 6:
+        return push.send_all(share_store, today, kind="sunday")
+    return push.send_all(share_store, today, kind="evening", when={"evening"})
 
 
 @app.get("/api/cron/sunday")
@@ -852,6 +873,46 @@ def birthdays_api(req: BdayReq):
         if info:
             out.append(info)
     return {"생일": sorted(out, key=lambda x: x["디데이"])}
+
+
+class FeedbackReq(BaseModel):
+    kind: Literal["like", "bad", "idea", "bug"] = "idea"
+    text: str = Field(min_length=2, max_length=500)
+    appv: str = Field(default="", max_length=10)
+    where: str = Field(default="", max_length=20)
+
+    @field_validator("text")
+    @classmethod
+    def _clean_text(cls, v: str) -> str:
+        return re.sub(r"<[^>]*>", "", v).strip()
+
+
+@app.post("/api/feedback")
+def feedback_put(req: FeedbackReq):
+    """앱 안 의견 보내기 — 이름·생일 없이 적은 내용만 1년 보관, 운영자만 읽는다."""
+    if not (share_store and share_store.configured()):
+        raise HTTPException(503, "의견함을 준비 중이다냥")
+    import secrets as _s
+    now = datetime.now(KST)
+    key = f"feedback/{now.strftime('%Y%m%d%H%M%S')}-{_s.token_hex(3)}"
+    try:
+        share_store.put_doc(key, {"kind": req.kind, "text": req.text, "appv": req.appv, "where": req.where, "at": now.isoformat(timespec="minutes")},
+                            ttl=366 * 24 * 3600, index="feedback")
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"ok": True}
+
+
+@app.get("/api/feedback")
+def feedback_list(authorization: str = Header(default="")):
+    """운영자(CRON_SECRET)만: 최근 의견 200개."""
+    if not _is_admin(authorization):
+        raise HTTPException(401, "권한이 없다냥")
+    try:
+        docs = share_store.list_docs("feedback")
+    except share_store.StoreError as e:
+        raise HTTPException(503, str(e)) from e
+    return {"의견": sorted((d for _, d in docs), key=lambda d: d.get("at", ""), reverse=True)[:200]}
 
 
 class MapCreateReq(BaseModel):

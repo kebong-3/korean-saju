@@ -62,7 +62,7 @@ function starMap(M, opts = {}) {
     });
   });
   const sky = Array.from({ length: 40 }, (_, i) => `<circle cx="${(i * 97) % W}" cy="${(i * 53 + 17) % W}" r="${i % 5 ? 0.8 : 1.4}" fill="#fff" opacity="${0.2 + (i % 4) * 0.12}"/>`).join("");
-  return `<svg class="starmap" viewBox="0 0 ${W} ${W}" role="img" aria-label="관계 지도" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">
+  return `<svg class="starmap" viewBox="0 0 ${W} ${W}" role="img" aria-label="${esc(`관계 지도: ${members.slice(0, 12).map((m) => `${m["이름"]} ${m["나에게"]["유형"]} 케미 ${m["케미"]}`).join(", ") || "아직 아무도 없음"}`)}" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">
     <defs><radialGradient id="moon" cx="40%" cy="35%"><stop offset="0" stop-color="#fff8e8"/><stop offset="1" stop-color="#f3c98b"/></radialGradient>
       <radialGradient id="nightsky" cx="50%" cy="50%"><stop offset="0" stop-color="#4a2d4f"/><stop offset="1" stop-color="#1d1733"/></radialGradient></defs>
     <rect width="${W}" height="${W}" rx="28" fill="url(#nightsky)"/>${sky}
