@@ -1121,6 +1121,27 @@ html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !im
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
 
+/* ───────── 후기 반영 3차: 점수 근거 · 용신 두 관점 · 보기 설정 · 힘든 날 */
+.low-day { background: #eef8f1; border-radius: 12px; padding: 8px 10px; font-size: 13.5px; margin: 8px 0 0; }
+.why-score, .why-yong { margin-top: 10px; font-size: 14px; }
+.why-score summary, .why-yong summary { cursor: pointer; color: var(--lav-d); font: 14px var(--title); min-height: 36px; display: flex; align-items: center; }
+.why-score ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.why-score li { display: flex; justify-content: space-between; gap: 10px; background: #fbf8fd; border-radius: 10px; padding: 7px 10px; }
+.why-score li b { font: 15px var(--title); white-space: nowrap; } .why-score li b.pos { color: #2a8c6a; } .why-score li b.neg { color: var(--pink-d); }
+.why-score li.sum { background: var(--pink-l); font-weight: 700; }
+.yv { display: flex; gap: 8px; margin-top: 6px; } .yv > div { flex: 1; background: #fbf8fd; border-radius: 12px; padding: 8px 10px; }
+.yv small { display: block; color: var(--sub); font-size: 12.5px; } .yv b { font: 20px var(--title); }
+.pref-h { margin: 14px 0 6px; font-size: 15px; }
+.pref-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pref-row button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 16px; padding: 10px; text-align: left; cursor: pointer; min-height: 56px; }
+.pref-row button b { display: block; font: 15px var(--title); } .pref-row button small { color: var(--sub); font-size: 12.5px; }
+.pref-row button.on { border-color: var(--pink); background: var(--pink-l); }
+html.big body { zoom: 1.15; }
+html.noscore .ring.fortune b { display: none; } html.noscore .ring.fortune small { font-size: 18px; }
+.bd.bonus { box-shadow: 0 0 0 2px #e0a92b, 0 1px 3px rgba(0, 0, 0, .15); }
+html.night .low-day { background: #1d3b35; } html.night .why-score li, html.night .yv > div, html.night .pref-row button { background: #2b2546 !important; color: var(--ink); }
+html.night .why-score li.sum, html.night .pref-row button.on { background: var(--pink-l) !important; }
+
 /* ───────── 홈 다이어트 */
 .today-card .mission { margin: 12px 0 10px; width: 100%; text-align: left; }
 .today-card .mission small { display: block; margin-bottom: 2px; }

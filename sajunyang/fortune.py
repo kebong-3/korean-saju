@@ -106,6 +106,39 @@ def _pillar_score(chart, a, p: Pillar) -> tuple[float, list, str]:
     return score, rels, stage
 
 
+TIER_WORD = {2: "내 보약(용신)", 1: "나를 돕는 기운(희신)", 0: "무난한 기운", -1: "살짝 부담인 기운(구신)", -2: "부담인 기운(기신)"}
+STAGE_RISE_WORD = "기운이 차오르는 자리"
+JO = {"목": "은", "화": "는", "토": "는", "금": "은", "수": "는"}  # 오행 이름 뒤 조사
+STAGE_FALL_WORD = "기운이 쉬어 가는 자리"
+
+
+def _why(chart, a, p: Pillar, score: int) -> list[dict]:
+    """오늘 점수가 어떻게 나왔는지 — _pillar_score와 같은 계산을 사람 말로 나눠 보여 준다."""
+    t = _tiers(a)
+    se, be = ELEMENTS[STEM_ELEMENT[p.stem]], ELEMENTS[BRANCH_ELEMENT[p.branch]]
+    rels = find_relations(chart.pillars, [p])
+    good = sorted({r.kind for r in rels if r.kind in GOOD_REL})
+    bad = sorted({r.kind for r in rels if r.kind in BAD_REL})
+    ng = len({frozenset(r.members) for r in rels if r.kind in GOOD_REL})
+    nb = len({frozenset(r.members) for r in rels if r.kind in BAD_REL})
+    stage = twelve_stage(chart.day_stem, p.branch)
+    out = [{"말": "기본 점수", "점": 60}]
+    out.append({"말": f"오늘 천간 {p.hanja[0]}({se}){JO[se]} {TIER_WORD[t[se]]}", "점": round(0.55 * t[se] * 11)})
+    out.append({"말": f"오늘 지지 {p.hanja[1]}({be}){JO[be]} {TIER_WORD[t[be]]}", "점": round(0.45 * t[be] * 11)})
+    if ng:
+        out.append({"말": f"내 사주와 {'·'.join(good)} — 손발이 맞는 날", "점": round(min(ng, 3) * 3)})
+    if nb:
+        out.append({"말": f"내 사주와 {'·'.join(bad)} — 부딪힘이 있는 날", "점": -round(min(nb, 4) * 3.5)})
+    if stage in RISE:
+        out.append({"말": f"12운성 {stage} — {STAGE_RISE_WORD}", "점": 3})
+    elif stage in FALL:
+        out.append({"말": f"12운성 {stage} — {STAGE_FALL_WORD}", "점": -2})
+    total = sum(x["점"] for x in out)
+    if total != score:
+        out.append({"말": "점수는 35~97점 사이로 맞춤" if score in (35, 97) else "반올림", "점": score - total})
+    return out
+
+
 def _grade(s: int) -> str:
     return "대길" if s >= 80 else "길" if s >= 68 else "순탄" if s >= 56 else "보통" if s >= 45 else "정비"
 
@@ -220,6 +253,7 @@ def day_fortune(r, d: date) -> dict:
         "행운": {"색": pick(adv["색"].split("·")), "숫자": pick(adv["숫자"].split(", ")), "방위": adv["방위"],
                "음식": pick(foods), "오행": lucky_el},
         "미션": mission_by_god[god] if di % 2 == 0 else pick(MISSION_EL[a.yongshin]),
+        "근거": _why(c, a, p, score),
     }
 
 

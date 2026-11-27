@@ -89,11 +89,14 @@ const BEADS = 5;
 const BEAD_EL = ["목", "화", "토", "금", "수"];
 const BEAD_NOTE = { 목: "새싹처럼 첫 질문을 틔웠다냥", 화: "불씨처럼 마음을 밝혔다냥", 토: "흙처럼 단단히 다졌다냥", 금: "칼처럼 또렷이 갈랐다냥", 수: "물처럼 마지막까지 흘려 보냈다냥" };
 function beadState() { const b = store.get("beads", null); return b?.d === kstDate(0) ? b : { d: kstDate(0), n: 0 }; }
-const beadsLeft = () => Math.max(0, BEADS - beadState().n);
+/** 냥이와의 약속을 지켰다고 알려 준 날은 구슬 한 알 더(사는 게 아니라 버는 구슬) */
+const beadBonus = () => (store.get("beadBonus", null) === kstDate(0) ? 1 : 0);
+const beadMax = () => BEADS + beadBonus();
+const beadsLeft = () => Math.max(0, beadMax() - beadState().n);
 function useBead() {
-  const b = beadState(); b.n = Math.min(BEADS, b.n + 1); store.set("beads", b); paintBeads();
+  const b = beadState(); b.n = Math.min(beadMax(), b.n + 1); store.set("beads", b); paintBeads();
   track("bead", { n: b.n });
-  return BEAD_EL[b.n - 1];
+  return BEAD_EL[Math.min(b.n, BEADS) - 1];
 }
 function untilMidnight() {
   const now = new Date(), k = new Date(now.getTime() + 9 * 3600e3);
@@ -101,10 +104,11 @@ function untilMidnight() {
   return left >= 60 ? `${Math.floor(left / 60)}시간 ${left % 60}분` : `${left}분`;
 }
 function beadBar() {
-  const used = BEADS - beadsLeft();
-  return `<button type="button" class="beads" id="beads" aria-label="오늘 남은 오행 구슬 ${BEADS - used}알 — 구슬 이야기 보기">
-    ${BEAD_EL.map((e, i) => `<i class="bd e-${e} ${i < used ? "used" : ""}" style="--c:${ELC[e]}">${HANJA[e]}</i>`).join("")}
-    <span>${used >= BEADS ? `내일 다시 · ${untilMidnight()} 뒤` : `오늘 남은 구슬 <b>${BEADS - used}</b>알`}</span><em>?</em></button>`;
+  const max = beadMax(), used = max - beadsLeft();
+  const els = beadBonus() ? [...BEAD_EL, "토"] : BEAD_EL;
+  return `<button type="button" class="beads" id="beads" aria-label="오늘 남은 오행 구슬 ${max - used}알 — 구슬 이야기 보기">
+    ${els.map((e, i) => `<i class="bd e-${e} ${i < used ? "used" : ""} ${i >= BEADS ? "bonus" : ""}" style="--c:${i >= BEADS ? "#ffd66b" : ELC[e]}">${i >= BEADS ? "★" : HANJA[e]}</i>`).join("")}
+    <span>${used >= max ? `내일 다시 · ${untilMidnight()} 뒤` : `오늘 남은 구슬 <b>${max - used}</b>알`}</span><em>?</em></button>`;
 }
 function paintBeads() {
   const el = $("#beads"); if (!el) return;
@@ -122,7 +126,8 @@ function beadStory() {
     <p class="quote">“처음 물으면 알려 주고, 거듭 물으면 흐려진다.”<br><small>— 주역 몽괘, 初筮告 再三瀆</small></p>
     <p>그래서 냥이는 <b>아껴 묻는 사람</b>을 좋아한다냥. 하나를 물어도 깊게 묻고, 들은 말 하나를 오늘 해 보는 것 — 그게 운을 바꾸는 진짜 방법이야. 내일 와서 어땠는지 들려주면 냥이가 이어서 봐 줄게.</p>
     <ul class="tips"><li>🌙 구슬은 <b>매일 자정</b>에 다섯 알이 새로 채워져요.</li><li>🗂 <b>주제를 골라 듣는 상담</b>, 운세, 대풀이, 만세력은 구슬 없이 언제든 볼 수 있어요.</li>
-      <li>💬 냥이 답 한 번에 구슬 한 알. 냥이가 낮잠 자서 답을 못 하면 구슬은 그대로예요.</li></ul>`);
+      <li>💬 냥이 답 한 번에 구슬 한 알. 냥이가 낮잠 자서 답을 못 하면 구슬은 그대로예요.</li>
+      <li>⭐ 냥이와 정한 약속을 지켰다고 알려 주면, 그날은 <b>금빛 별 구슬 한 알</b>을 더 준다냥.</li></ul>`);
 }
 async function outOfBeads(q) {
   addMsg("me", esc(q));

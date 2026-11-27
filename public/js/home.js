@@ -36,13 +36,16 @@ function renderHome() {
     </section>
 
     <div class="card today-card">
-      <div class="today">${ring(t["점수"], t["등급"])}
+      <div class="today">${ring(t["점수"], t["등급"], "fortune")}
         <div><div class="tc-k">오늘의 운세 · <b>${esc(t["일진"])}</b>일 · <span data-t="${esc(t["십성"].split("/")[0])}" class="tc-god">${esc(t["십성"].split("/")[0])}의 날</span></div>
-        <p class="tc-main">${T(t["한마디"])}</p></div></div>
+        <p class="tc-main">${T(t["한마디"])}</p>
+        ${t["점수"] < 45 ? `<p class="low-day">🌿 정비의 날은 나쁜 날이 아니라 <b>숨 고르는 날</b>이다냥. 큰 결정 대신 정리·휴식·준비에 쓰면 딱 좋아.</p>` : ""}</div></div>
+      ${(t["근거"] || []).length ? `<details class="why-score"><summary>🔎 왜 ${hideScore() ? "이 운세" : t["점수"] + "점"}일까?</summary><ul>${t["근거"].map((x) => `<li><span>${esc(x["말"])}</span><b class="${x["점"] > 0 && x["말"] !== "기본 점수" ? "pos" : x["점"] < 0 ? "neg" : ""}">${x["말"] === "기본 점수" ? x["점"] : (x["점"] > 0 ? "+" : "") + x["점"]}</b></li>`).join("")}
+        <li class="sum"><span>오늘 점수</span><b>${t["점수"]}</b></li></ul><p class="sub" style="margin:6px 0 0">보약 기운이 들어오면 오르고, 내 사주와 부딪히면 내려간다냥. 점수는 흐름의 참고일 뿐, 하루를 정하는 건 너야.</p></details>` : ""}
       <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span>
         <span><small>오늘 한 가지 · 하면 보약 화분이 자라요</small>${esc(t["미션"])}</span></button>
       <div class="rd-cta"><button class="btn primary" type="button" data-read="day">오늘 자세히</button>
-        <button class="btn soft" type="button" data-read="tomorrow">내일 ${f["내일운세"]["점수"]}점 →</button></div>
+        <button class="btn soft" type="button" data-read="tomorrow">내일 ${hideScore() ? esc(f["내일운세"]["등급"]) : f["내일운세"]["점수"] + "점"} →</button></div>
       <details class="hours-more"><summary>🍀 행운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b></summary>
         ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
         <div class="lucky-line"><span>🎨 ${esc(t["행운"]["색"])}</span><span>🔢 ${esc(t["행운"]["숫자"])}</span><span>🧭 ${esc(t["행운"]["방위"])}</span><span>🍽️ ${esc(t["행운"]["음식"])}</span></div>

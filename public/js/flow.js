@@ -44,7 +44,14 @@ function glancePane(d) {
     </div>
     <div class="card gl-el"><div class="card-head"><h2>${chip("오행")} 밸런스</h2><span class="badge">보약 ${esc(y["용신"])}</span></div>
       <div class="el-bar">${ELEM.map((e) => (w[e] > 0 ? `<span class="f-${e}" style="flex:${w[e]}" title="${e} ${w[e]}%"></span>` : "")).join("")}</div>
-      <div class="el-leg">${ELEM.map((e) => `<span class="${e === y["용신"] ? "yong" : ""}"><i class="f-${e}"></i>${e} ${Math.round(w[e])}%</span>`).join("")}</div></div>
+      <div class="el-leg">${ELEM.map((e) => `<span class="${e === y["용신"] ? "yong" : ""}"><i class="f-${e}"></i>${e} ${Math.round(w[e])}%</span>`).join("")}</div>
+      <details class="why-yong"><summary>🔎 왜 보약이 ${esc(y["용신"])} 기운이냥?</summary>
+        <div class="yv"><div><small>억부(힘의 균형)로 보면</small><b class="e-txt-${y["용신"]}">${esc(y["용신"])}</b></div>
+          ${y["조후"] && y["조후"] !== y["용신"] ? `<div><small>조후(태어난 계절)로 보면</small><b class="e-txt-${y["조후"]}">${esc(y["조후"])}</b></div>` : ""}</div>
+        <p class="sub" style="margin:6px 0 0">${esc(y["근거"] || "")}</p>
+        <p class="sub" style="margin:4px 0 0">${y["조후"] && y["조후"] !== y["용신"]
+          ? `사주냥이는 억부를 기본으로 보고, 계절 처방(${esc(y["조후"])})은 개운법에 함께 넣는다냥. 학파에 따라 조후를 먼저 보기도 해.`
+          : "사주냥이는 억부를 기본으로 본다냥. 이 사주는 계절 처방이 크게 필요하지 않아."}</p></details></div>
     ${top.length ? `<div class="card"><div class="card-head"><h2>${chip("신살", "나의 별 세 개")}</h2><button class="ghost" type="button" data-go="saju:sinsal">전체 ›</button></div>
       <div class="ss-list">${top.map((n) => ssChip(n)).join("")}</div>
       <button class="ghost wide" type="button" data-story="sinsal" style="margin-top:12px">📸 나의 별 세 개 스토리 카드</button></div>` : ""}
@@ -65,7 +72,7 @@ function tlRows(d) {
 function timelinePane(d) {
   const f = d["운세"], life = f["평생운"], SL = d["이야기"]?.["평생"] || {}, st = d["신살이야기"] || {};
   const rows = tlRows(d);
-  const lab = { past: "정리", now: "지금", future: "준비" };
+  const lab = { past: "지나온", now: "지금", future: "준비" };
   const row = (r) => `<button type="button" class="tl-row ${r.status}" data-tl="${r.i}">
       <span class="tl-age"><b>${r.p["나이"]}세</b><small>${r.p["시작"]}~</small></span>
       <span class="tl-dot"><i>${lab[r.status]}</i></span>
@@ -82,7 +89,7 @@ function timelinePane(d) {
         ${life["현재"] ? `<br>지금은 ${life["현재"]["나이"]}세 대운 '${esc(life["현재"]["테마"])}'의 한가운데에 있다냥.` : ""}</div></div></div>
     ${SL["지금핵심"] ? punchCard("지금, 그리고 앞으로 10년", SL["지금핵심"], "wink", [["📖 자세히 풀이", paras(SL["지금"])], ["🌟 전성기 이야기", paras(SL["전성기"])]]) : ""}
     <div class="card"><div class="card-head"><h2>10년마다 바뀌는 인생의 계절</h2></div>
-      <p class="sub" style="margin:-4px 0 10px">지난 시기는 <b>정리</b>, 지금은 <b>집중</b>, 앞으로는 <b>준비</b>. 칸을 누르면 냥이가 그 10년을 펼쳐 준다냥.</p>
+      <p class="sub" style="margin:-4px 0 10px">지난 시기는 <b>버텨 낸 시간</b>, 지금은 <b>집중</b>, 앞으로는 <b>준비</b>. 칸을 누르면 냥이가 그 10년을 펼쳐 준다냥.</p>
       <div class="tl">${rows.map(row).join("")}</div></div>
     ${yrs.length ? `<div class="card tint-mint"><h2>🌱 올해부터 3년, 미리 챙길 것</h2>${yrs.map((x) => `<div class="tl-year"><b>${x["연도"]}년 <span class="sub">${esc(x["간지"])}</span></b>
         <div class="ss-inline">${x["신살"].map((n) => ssChip(n, "운")).join("") || '<span class="sub">조용한 해</span>'}</div>
@@ -99,7 +106,7 @@ function openTimeline(i) {
   const past = (st["지나온길"] || []).find((x) => x["간지"].startsWith(r.p["간지"]));
   const nxt = st["앞으로"]?.["다음대운"]?.["간지"]?.startsWith(r.p["간지"]) ? st["앞으로"]["다음대운"] : null;
   const lr = r.lr || {}, og = r.og;
-  const head = { past: "지나온 10년 — 정리하기", now: "지금 이 10년 — 집중하기", future: "다가올 10년 — 준비하기" }[r.status];
+  const head = { past: "지나온 10년 — 버텨 낸 시간", now: "지금 이 10년 — 집중하기", future: "다가올 10년 — 준비하기" }[r.status];
   const tile = (ch, el) => `<span class="lk-tile e-${el}">${(STEM_KO[ch] || BR_KO[ch])}<i>${ch}</i></span>`;
   openSheet(`<div class="term-head"><div class="tl-tiles">${tile(r.p["간지"][0], STEM_EL[r.p["간지"][0]])}${tile(r.p["간지"][1], BR_EL[r.p["간지"][1]])}</div>
       <div><h2>${r.p["나이"]}~${r.p["나이"] + 9}세 · ${esc(r.p["한글"])} 대운</h2><div class="term-mean">${r.p["시작"]}~${r.p["시작"] + 9}년 · ${r.p["점수"]}점 · ${head}</div></div></div>
@@ -112,7 +119,7 @@ function openTimeline(i) {
       ${og["작용"]?.length ? `<p class="sub">${T(og["작용"].join(" / "), true)}</p>` : ""}</div>` : ""}
     ${lr["신살"]?.length ? `<div class="ss-sec"><b>✨ 이 시기에 들어오는 별</b><div class="ss-inline" style="margin-top:6px">${lr["신살"].map((n) => ssChip(n, "운")).join("")}</div>
       <ul class="tips">${lr["신살"].slice(0, 3).map((n) => `<li><b>${esc(n)}</b>: ${esc(S.sinsal["설명"][n]?.["운"] || "")}</li>`).join("")}</ul></div>` : ""}
-    ${r.status === "past" && past ? `<div class="ss-sec"><b>✍️ 정리하는 한마디</b><p>${esc(past["정리"])}</p></div>` : ""}
+    ${r.status === "past" && past ? `<div class="ss-sec"><b>✍️ 그 시기를 지나온 너에게</b><p>${esc(past["정리"])}</p></div>` : ""}
     ${r.status === "now" && st["지금"]?.["올해"] ? `<div class="ss-sec"><b>🌕 올해 챙길 것</b><ul class="tips">${(st["지금"]["올해"]["준비"] || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
     ${r.status === "future" && (nxt?.["준비"] || lr["신살"]?.length) ? `<div class="ss-sec"><b>🌱 미리 준비할 것</b><ul class="tips">${(nxt?.["준비"] || lr["신살"].slice(0, 2).map((n) => `${n}: ${S.sinsal["설명"][n]?.["준비"] || ""}`)).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
     ${S.ai ? `<button class="ghost wide" type="button" data-ask="${esc(`${r.p["나이"]}세 ${r.p["간지"]} 대운이 내 사주에서 어떤 의미야?`)}" style="margin-top:10px">💬 이 10년을 냥이에게 더 묻기</button>` : ""}`);

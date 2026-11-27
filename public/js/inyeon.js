@@ -107,6 +107,11 @@ function openGuide(M, m, h) {
   $("#gd-story").addEventListener("click", () => openGuideStory(M, m));
   $$("#role-pick [data-role]").forEach((btn) => btn.addEventListener("click", async () => {
     if (!h.role) return;
+    if (ROLE_GRP[btn.dataset.role] === "work" && !localStorage.getItem("nyang:workNote")) {
+      const ok = confirm("직장 사람을 지도에 올릴 땐 본인에게 '사주냥이에 생일 넣어도 돼?' 하고 먼저 물어봐 줘.\n\n관계 꼬리표(상사·후배 등)와 사용설명서는 지도 주인인 너에게만 보이고, 링크로 들어온 사람에겐 안 보여.");
+      try { localStorage.setItem("nyang:workNote", "1"); } catch { /* */ }
+      if (!ok) return;
+    }
     btn.disabled = true;
     try { await h.role(m, btn.dataset.role); track("role_set", { r: btn.dataset.role || "none" }); } catch (err) { alert(err.message); btn.disabled = false; }
   }));

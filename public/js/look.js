@@ -68,11 +68,40 @@ function applyTheme() {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", night ? "#17142a" : "#fff4f1");
 }
 function openTheme() {
-  const m = themeMode();
-  openSheet(`<div class="term-head"><span data-nyang="sleepy" data-size="64"></span><div><h2>화면 밝기</h2><div class="term-mean">밤에는 눈이 편한 별밤 화면으로</div></div></div>
+  const m = themeMode(), pref = (k, d) => { try { return localStorage.getItem(`nyang:${k}`) || d; } catch { return d; } };
+  const row = (key, cur, opts) => `<div class="pref-row">${opts.map(([v, t, s]) => `<button type="button" data-pref="${key}" data-val="${v}" class="${cur === v ? "on" : ""}"><b>${t}</b><small>${s}</small></button>`).join("")}</div>`;
+  openSheet(`<div class="term-head"><span data-nyang="sleepy" data-size="64"></span><div><h2>보기 설정</h2><div class="term-mean">눈이 편하고 마음이 편하게</div></div></div>
+    <h3 class="pref-h">화면 밝기</h3>
     <div class="theme-pick">${[["auto", "🌗", "자동", "밤 9시~아침 6시, 폰이 다크 모드일 때"], ["day", "☀️", "낮 화면", "늘 밝게"], ["night", "🌙", "별밤 화면", "늘 어둡게"]]
-      .map(([k, e, t, s]) => `<button type="button" data-theme="${k}" class="${m === k ? "on" : ""}"><i>${icOf(e, 30)}</i><b>${t}</b><small>${s}</small></button>`).join("")}</div>`);
+      .map(([k, e, t, s]) => `<button type="button" data-theme="${k}" class="${m === k ? "on" : ""}"><i>${icOf(e, 30)}</i><b>${t}</b><small>${s}</small></button>`).join("")}</div>
+    <h3 class="pref-h">글자 크기</h3>${row("font", pref("font", "normal"), [["normal", "보통", "지금 크기"], ["big", "크게", "글자·버튼을 15% 크게"]])}
+    <h3 class="pref-h">냥이 말투</h3>${row("tone", pref("tone", "nyang"), [["nyang", "냥냥 말투", "…다냥! 귀엽게"], ["calm", "차분한 말투", "…다. 담백하게"]])}
+    <h3 class="pref-h">운세 점수</h3>${row("score", pref("score", "show"), [["show", "숫자로 보기", "오늘 81점"], ["hide", "숫자 숨기기", "길·순탄 같은 말로만"]])}
+    <p class="fine">설정은 이 기기에만 저장돼요.</p>`);
 }
+/** 보기 설정 적용: 글자 크게(html.big) · 점수 숨기기(html.noscore) · 차분한 말투(화면 글자에서 '냥' 어미만 뺀다) */
+const hideScore = () => { try { return localStorage.getItem("nyang:score") === "hide"; } catch { return false; } };
+const CALM_RE = /(다|라|자)냥(?!이)/g;
+let calmObs = null;
+function calmNode(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) { if (CALM_RE.test(n.data)) { CALM_RE.lastIndex = 0; n.data = n.data.replace(CALM_RE, "$1"); } CALM_RE.lastIndex = 0; }
+}
+function applyPrefs() {
+  let font = "normal", tone = "nyang";
+  try { font = localStorage.getItem("nyang:font") || "normal"; tone = localStorage.getItem("nyang:tone") || "nyang"; } catch { /* 저장소 없음 */ }
+  document.documentElement.classList.toggle("big", font === "big");
+  document.documentElement.classList.toggle("noscore", hideScore());
+  if (tone === "calm" && !calmObs) {
+    calmNode(document.body);
+    calmObs = new MutationObserver((ms) => { for (const m of ms) {
+      if (m.type === "characterData") { if (CALM_RE.test(m.target.data)) { CALM_RE.lastIndex = 0; m.target.data = m.target.data.replace(CALM_RE, "$1"); } CALM_RE.lastIndex = 0; }
+      else m.addedNodes.forEach((n) => { if (n.nodeType === 1) calmNode(n); else if (n.nodeType === 3 && CALM_RE.test(n.data)) { CALM_RE.lastIndex = 0; n.data = n.data.replace(CALM_RE, "$1"); } CALM_RE.lastIndex = 0; });
+    } });
+    calmObs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  } else if (tone !== "calm" && calmObs) { calmObs.disconnect(); calmObs = null; }
+}
+applyPrefs();
 setInterval(applyTheme, 5 * 60e3);
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
 
@@ -241,6 +270,16 @@ document.addEventListener("click", (e) => {
   const th = e.target.closest("[data-theme]");
   if (th) { track("theme", { m: th.dataset.theme }); localStorage.setItem("nyang:theme", th.dataset.theme); applyTheme(); openTheme(); return; }
   if (e.target.closest("[data-themesheet]")) { openTheme(); return; }
+  const pf = e.target.closest("[data-pref]");
+  if (pf) {
+    const k = pf.dataset.pref, v = pf.dataset.val, was = localStorage.getItem(`nyang:${k}`);
+    try { localStorage.setItem(`nyang:${k}`, v); } catch { /* 저장소 없음 */ }
+    track("pref", { k, v });
+    if (k === "tone" && was === "calm" && v !== "calm") { location.reload(); return; }  // 이미 바꾼 글자를 되돌리려면 새로 그린다
+    applyPrefs();
+    if (k === "score" && S.d) { const h = $("#tab-home"); renderHome(); paintNyang(h); iconize(h); dedupeTerms(h); }
+    openTheme(); return;
+  }
   const sk = e.target.closest("[data-story]"); if (sk) { openStory(sk.dataset.story); return; }
   if (e.target.closest("[data-promise]")) {
     const t = $("#promise-t")?.value.trim(); if (!t) { $("#promise-t")?.focus(); return; }
@@ -252,7 +291,7 @@ document.addEventListener("click", (e) => {
   if (kp) {
     const p = store.get("promise", null); if (!p) return;
     p.done = kp.dataset.kept === "1"; store.set("promise", p); track("promise_kept", { ok: p.done ? 1 : 0 });
-    if (p.done) gardenAdd(S.d["용신"]["용신"], 1, "약속을 지켰다냥");
+    if (p.done) { gardenAdd(S.d["용신"]["용신"], 1, "약속을 지켰다냥"); store.set("beadBonus", kstDate(0)); toast("약속을 지켰다냥! 오늘 상담 구슬 ⭐ 한 알 더 🐾"); }
     kp.closest(".promise-check").outerHTML = `<div class="card promise-check done"><span data-nyang="${p.done ? "love" : "shy"}" data-size="54"></span><div><b>${p.done ? "역시! 약속 지킨 사람이 운도 지킨다냥. 보약 화분에 물 한 번 더 줬다냥 🌱" : "괜찮아, 오늘 다시 하면 된다냥. 냥이는 늘 여기 있다냥 🐾"}</b></div></div>`;
     paintNyang($("#tab-home"));
   }

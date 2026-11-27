@@ -289,7 +289,7 @@ const ALL_MENU = [
   ["나를 알기", [["@ncard", "🃏", "나의 냥이 카드"], ["saju:fit", "🎯", "나에게 맞는"], ["saju:rx", "🍀", "개운 처방전"], ["saju:manse", "📜", "만세력"], ["saju:sinsal", "🔮", "신살과 길성"], ["saju:ogo", "🏛️", "오고 정밀감명"], ["@gloss", "📚", "명리 교실"]]],
   ["함께", [["compat", "💞", "궁합·귀인 지도"], ["talk", "💬", "고민 상담"], ["path", "🧭", "나의 길"]]],
   ["기록·수집", [["@saved", "🗂️", "내가 본 풀이"], ["@garden", "🌱", "오행 정원"], ["@season", "🎐", "절기 일기"], ["@book", "📖", "냥이 일기장"], ["@dex", "👘", "냥이 도감"], ["@backup", "🔐", "기록 백업"]]],
-  ["설정", [["@themesheet", "🌙", "밤 모드"]]],
+  ["설정", [["@themesheet", "🌙", "보기 설정"]]],
 ];
 const menuBtn = ([g, ic, l]) => `<button type="button" ${g[0] === "@" ? `data-${g.slice(1)}` : `data-go="${g}"`}><i>${ic}</i><span>${l}</span></button>`;
 function openAllMenu() {
