@@ -188,5 +188,48 @@ class VillageTest(unittest.TestCase):
         self.assertIsNone(inyeon.today_pick([], date(2026, 12, 1)))
 
 
+class PersonalGuideTest(unittest.TestCase):
+    """같은 관계 유형이어도 사람마다 다른 사용설명서(십성 + 두 사람만의 근거)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import random
+        rnd = random.Random(7)
+        others = [{"name": f"친구{i}", "role": "friend", "birth": {"year": rnd.randrange(1970, 2004), "month": rnd.randrange(1, 13),
+                                                                  "day": rnd.randrange(1, 29)}} for i in range(30)]
+        cls.ms = TestClient(appmod.app).post("/api/mapcalc", json={"me": ME, "others": others}).json()["멤버"]
+
+    def test_guides_are_mostly_unique(self):
+        full = lambda g: tuple(g[k] + "|" + g["근거"].get(k, "") for k in ("존중", "조심", "보완", "선물"))  # noqa: E731
+        self.assertGreaterEqual(len({full(m["설명서"]) for m in self.ms}), 25)
+        self.assertTrue(all(len(m["설명서"]["근거"]) >= 1 for m in self.ms))
+
+    def test_base_follows_ten_god(self):
+        for m in self.ms:
+            sg = m["나에게"]["십성"]
+            self.assertEqual(m["설명서"]["존중"], inyeon.BASE10[sg][0])
+
+    def test_card_lines_still_fit(self):
+        for m in self.ms:
+            for k, v in m["설명서"]["카드"].items():
+                self.assertLessEqual(len(v), 20, (k, v))
+
+    def test_korean_particles(self):
+        text = json.dumps(self.ms, ensure_ascii=False)
+        for bad in ("상대이 ", "나이 베풀", "나이 받", "나이 주도", "대화이 ", "한마디이 ", "냥가 "):
+            self.assertNotIn(bad, text, bad)
+
+    def test_facts_parser(self):
+        f = inyeon._facts({"좋은점": ["일간: 천간합(→금) — 서로에게 강하게 끌리는 관계", "내 보약(용신) 수 기운을 넉넉히(40%) 가진 사람"],
+                           "아쉬운점": ["띠: 해 — 은근한 오해 주의", "일지(가까운 사이 자리): 충 — 끌림도 크지만 부딪힘도 큼"]})
+        self.assertEqual(f["일간"], "합")
+        self.assertEqual(f["보약"], "수")
+        self.assertEqual(f["나쁜"][0], ("일지", "충"), "가까운 사이 자리가 먼저")
+        f2 = inyeon._facts({"좋은점": ["일간: 壬(임)이 乙(을)을 살려 줌 — 상대가 베풀고 내가 받는 구조"]})
+        self.assertEqual(f2["일간"], "them_give")
+        f3 = inyeon._facts({"아쉬운점": ["일간: 乙(을)이 戊(무)를 누름 — 나이 주도·통제하는 구조"]})  # 예전에 저장된 문장
+        self.assertEqual(f3["일간"], "me_lead")
+
+
 if __name__ == "__main__":
     unittest.main()

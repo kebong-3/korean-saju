@@ -38,30 +38,29 @@ function renderHome() {
     <div class="card today-card">
       <div class="today">${ring(t["점수"], t["등급"])}
         <div><div class="tc-k">오늘의 운세 · <b>${esc(t["일진"])}</b>일 · <span data-t="${esc(t["십성"].split("/")[0])}" class="tc-god">${esc(t["십성"].split("/")[0])}의 날</span></div>
-        <p class="tc-main">${T(t["한마디"])}</p>
-        ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div></div>
-      <div class="lucky-line"><span>🎨 ${esc(t["행운"]["색"])}</span><span>🔢 ${esc(t["행운"]["숫자"])}</span><span>🧭 ${esc(t["행운"]["방위"])}</span><span>🍽️ ${esc(t["행운"]["음식"])}</span></div>
-      <details class="hours-more"><summary>⏰ 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b> · 시간대별 기운</summary>
-        ${hoursStrip(f["시간대"])}<p class="sub" style="margin:6px 0 0">살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p>
-        ${t["작용"].length ? `<p class="sub" style="margin:6px 0 0">명리 원문: ${T(t["작용"].join(" · "), true)}</p>` : ""}</details>
+        <p class="tc-main">${T(t["한마디"])}</p></div></div>
+      <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span>
+        <span><small>오늘 한 가지 · 하면 보약 화분이 자라요</small>${esc(t["미션"])}</span></button>
       <div class="rd-cta"><button class="btn primary" type="button" data-read="day">오늘 자세히</button>
         <button class="btn soft" type="button" data-read="tomorrow">내일 ${f["내일운세"]["점수"]}점 →</button></div>
+      <details class="hours-more"><summary>🍀 행운 · 좋은 시간 <b>${f["시간대"]["좋은시간"].join("·")}</b></summary>
+        ${(t["쉬운작용"] || []).length ? `<ul class="tips easy-rel">${t["쉬운작용"].slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        <div class="lucky-line"><span>🎨 ${esc(t["행운"]["색"])}</span><span>🔢 ${esc(t["행운"]["숫자"])}</span><span>🧭 ${esc(t["행운"]["방위"])}</span><span>🍽️ ${esc(t["행운"]["음식"])}</span></div>
+        ${hoursStrip(f["시간대"])}<p class="sub" style="margin:6px 0 0">살살 갈 시간 ${f["시간대"]["조심시간"].join("·")}</p>
+        ${t["작용"].length ? `<p class="sub" style="margin:6px 0 0">명리 원문: ${T(t["작용"].join(" · "), true)}</p>` : ""}</details>
     </div>
 
     ${promiseCheck()}
-    <h2 class="sec-t">오늘의 의식 <small>하루 1분, 운을 키우는 시간</small></h2>
-    <div class="card ritual">
-      <div class="ritual-top">${paeTile()}<div id="garden-slot">${gardenMini()}</div></div>
-      <button type="button" class="mission ${done ? "done" : ""}" id="mission" aria-pressed="${done}"><span>${done ? "✅" : "⬜"}</span>
-        <span><small>개운 미션 · 하면 보약 화분이 자라요</small>${esc(t["미션"])}</span></button>
-      <div id="checkin-slot">${checkinCard()}</div>
-    </div>
-
     ${nowCard()}
 
     <h2 class="sec-t">바로가기 <button type="button" class="sec-more" data-allmenu>전체 메뉴 ›</button></h2>
     <div class="quick">${[["luck:month", "📅", "월별 운세"], ["luck:read", "🐾", "대풀이"], ["saju:manse", "📜", "만세력"], ["compat", "💞", "궁합·지도"]].map(menuBtn).join("")}</div>
     <div id="install-slot"></div>
+
+    <details class="card home-more ritual-more" id="ritual-more" ${store.get("ritualOpen", 0) ? "open" : ""}><summary><b>🌱 오늘의 의식</b><span class="sub">패 한 장 · 보약 화분 · 오늘 기분 — 하루 1분</span></summary>
+      <div class="ritual"><div class="ritual-top">${paeTile()}<div id="garden-slot">${gardenMini()}</div></div>
+        <div id="checkin-slot">${checkinCard()}</div></div>
+    </details>
 
     <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b><span class="sub">냥이 도사 한마디 · 고전 한 줄 · 옛이야기</span></summary>
       ${todayStory(d["이야기"]?.["오늘"])}
@@ -75,6 +74,7 @@ function renderHome() {
     </details>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
       <a href="/guide">명리 안내</a> · <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
+  $("#ritual-more").addEventListener("toggle", (e) => { store.set("ritualOpen", e.currentTarget.open ? 1 : 0); if (e.currentTarget.open) track("ritual_open"); });
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
     store.set(key, on ? 1 : 0);

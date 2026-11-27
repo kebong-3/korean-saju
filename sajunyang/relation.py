@@ -108,7 +108,7 @@ def relate(me, other, year: int) -> dict:
     s_year, t_year = _branch_relation(me.chart.year.branch, other.chart.year.branch)
     good, bad = [], []
     for sc, tx, label in ((s_stem, t_stem, "일간"), (s_day, t_day, "일지(가까운 사이 자리)"), (s_year // 2, t_year, "띠")):
-        clean = tx.replace("1번", "나").replace("2번", "상대")
+        clean = tx.replace("1번이", "내가").replace("2번이", "상대가").replace("1번", "나").replace("2번", "상대")
         if sc > 2:
             good.append(f"{label}: {clean}")
         elif sc < 0:

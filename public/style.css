@@ -1121,6 +1121,13 @@ html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !im
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
 
+/* ───────── 홈 다이어트 */
+.today-card .mission { margin: 12px 0 10px; width: 100%; text-align: left; }
+.today-card .mission small { display: block; margin-bottom: 2px; }
+.today-card .hours-more { margin-top: 10px; }
+.today-card .hours-more .easy-rel { margin: 8px 0; }
+.ritual-more .ritual { margin-top: 10px; background: none; box-shadow: none; padding: 0; }
+
 /* ───────── 오행 구슬 */
 .beads { display: inline-flex; align-items: center; gap: 5px; border: 0; background: #fff; border-radius: 99px; padding: 6px 12px 6px 8px; cursor: pointer; font: 13.5px var(--title); color: var(--ink); box-shadow: var(--shadow); min-height: 40px; }
 .beads span { margin-left: 4px; } .beads b { color: var(--pink-d); font-weight: 400; }
@@ -1208,6 +1215,8 @@ html.night .legend-box em { color: #ffe08a; } html.night .ty-head small { color:
 .gd.c { background: #fff6e0; } .gd.c small { color: #b8740b; }
 .gd.f { background: #e9f8f2; } .gd.f small { color: #2a8c6a; }
 .gd.g { background: #f0ebff; } .gd.g small { color: var(--lav-d); }
+.gd-why { display: block; font-style: normal; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(0, 0, 0, .12); font-size: 13px; color: #5a4e6e; }
+html.night .gd-why { color: #d6cceb; border-color: rgba(255, 255, 255, .15); }
 .gd-line { background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; }
 .gt { background: #fbf8fd; border-radius: 16px; padding: 12px; margin-top: 10px; font-size: 13.5px; display: grid; gap: 6px; }
 .gt div { display: grid; grid-template-columns: 96px 1fr 30px; align-items: center; gap: 8px; }

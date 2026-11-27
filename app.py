@@ -687,7 +687,11 @@ def _member(me_r, name: str, other_r, year: int) -> dict:
 
 def _map_out(me_r, me_name: str, members: list[dict], year: int, own: bool = True) -> dict:
     """own=True(지도 주인·내 폰 지도)일 때만 실제 관계 꼬리표·사용설명서·인맥 풀이를 붙인다(손님에겐 숨김)."""
+    fix = lambda s: s.replace("상대이 ", "상대가 ").replace("나이 베풀", "내가 베풀").replace("나이 받", "내가 받").replace("나이 주도", "내가 주도")  # noqa: E731
     for m in members:
+        for key in ("좋은점", "아쉬운점"):
+            if isinstance(m.get(key), list):
+                m[key] = [fix(s) for s in m[key]]
         if not own:
             m.pop("관계", None)
         elif inyeon:

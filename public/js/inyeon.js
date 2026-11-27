@@ -23,11 +23,14 @@ function roleChips(M, cur, id = "role-pick", clear = true) {
 /** 사용설명서 네 칸 + 말투 + 관계 팁 */
 function guideHtml(g) {
   if (!g) return "";
+  const why = (k) => (g["근거"]?.[k] ? `<em class="gd-why">🔎 ${esc(g["근거"][k])}</em>` : "");
   return `<div class="gd-grid">
-      <div class="gd r"><small>🫶 존중하기</small>${esc(g["존중"])}</div>
-      <div class="gd c"><small>⚠️ 조심하기</small>${esc(g["조심"])}</div>
-      <div class="gd f"><small>🧩 서로 채워 주기</small>${esc(g["보완"])}</div>
-      <div class="gd g"><small>🎁 해 주면 좋은 것</small>${esc(g["선물"])}</div></div>
+      <div class="gd r"><small>🫶 존중하기</small>${esc(g["존중"])}${why("존중")}</div>
+      <div class="gd c"><small>⚠️ 조심하기</small>${esc(g["조심"])}${why("조심")}</div>
+      <div class="gd f"><small>🧩 서로 채워 주기</small>${esc(g["보완"])}${why("보완")}</div>
+      <div class="gd g"><small>🎁 해 주면 좋은 것</small>${esc(g["선물"])}${why("선물")}</div></div>
+    ${Object.keys(g["근거"] || {}).length ? `<p class="fine" style="margin:6px 0 0">🔎 표시는 두 사람의 사주(일간·일지·띠·보약 기운)에서 나온 둘만의 근거다냥.</p>` : ""}
+    ${g["올해"] ? `<p class="gd-line">🎯 <b>올해 이 사람은</b><br>${esc(g["올해"])}</p>` : ""}
     ${g["말투"] ? `<p class="gd-line">💬 <b>이 사람에게 통하는 말투</b><br>${esc(g["말투"])}</p>` : ""}
     ${g["관계"] && g["관계팁"] ? `<p class="gd-line">${g["관계"]["이모지"]} <b>${esc(g["관계"]["이름"])} 사이 꿀팁</b><br>${esc(g["관계팁"])}</p>` : ""}`;
 }
