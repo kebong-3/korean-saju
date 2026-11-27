@@ -108,10 +108,13 @@ async function renderFamilyPane() {
   }
   const out = $("#fam-out");
   if (!list.length) return;
+  const fk = hashStr(JSON.stringify([S.birth, list.map((m) => [m.name, m.rel, m.birth])])), fc = store.get("famcache", null);
+  if (!famData && fc?.d === kstDate(0) && fc.h === fk) famData = fc.v;
   if (!famData) {
     if (famBusy) return;
     famBusy = true; loading(out);
-    try { famData = await api("/api/familymap", { me: S.birth, members: list.map((m) => ({ name: m.name, rel: m.rel, birth: { ...m.birth, name: m.name } })) }); }
+    try { famData = await api("/api/familymap", { me: S.birth, members: list.map((m) => ({ name: m.name, rel: m.rel, birth: { ...m.birth, name: m.name } })) });
+      store.set("famcache", { d: kstDate(0), h: fk, v: famData }); }
     catch (err) { out.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`; return; }
     finally { famBusy = false; }
     track("family_map", { n: list.length });

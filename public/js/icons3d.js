@@ -131,6 +131,10 @@ const IC3D = {
   closet: (u, f) => [I3L(u, "k", "#ffc9d6", "#ff7a9a") + I3L(u, "h", "#e8c18a", "#a8692a"),
     `<path d="M32 8a5 5 0 1 1 5 5c-2 0-5 1-5 4" stroke="${f("h")}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M32 17L8 34h48z" fill="none" stroke="${f("h")}" stroke-width="3.5" stroke-linejoin="round"/>
      <path d="M18 31l-3 22h34l-3-22-7 4h-14z" fill="${f("k")}"/><path d="M25 35l7 8 7-8" stroke="#fff" stroke-width="2" fill="none" opacity=".8"/>${I3S(22, 38, 2.4, 5, 0.45)}`],
+  dday: (u, f) => [I3L(u, "c", "#fff", "#ffe4ea") + I3L(u, "p", "#ffd66b", "#f08a3a"),
+    `<rect x="9" y="16" width="38" height="36" rx="7" fill="${f("c")}" stroke="#ffc2d0"/><rect x="9" y="16" width="38" height="10" rx="7" fill="#ff8fa3"/><rect x="9" y="21" width="38" height="5" fill="#ff8fa3"/>
+     <text x="28" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#c2385a" font-family="sans-serif">D-</text>
+     <path d="M44 30l12-14 2 18z" fill="${f("p")}"/>${[[50, 8, "#7fd3b8"], [58, 14, "#a78bfa"], [42, 10, "#ff8fa3"], [57, 26, "#ffd66b"]].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="2" fill="${c}"/>`).join("")}`],
   paw: (u, f) => [I3R(u, "p", "#ffd7e0", "#ff6b8b"),
     `<path d="M32 55c-9 0-15-5-15-11 0-6 7-12 15-12s15 6 15 12c0 6-6 11-15 11z" fill="${f("p")}"/>
      ${[[18, 27], [27, 17], [37, 17], [46, 27]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="5" ry="6.5" fill="${f("p")}"/>`).join("")}${I3S(27, 38, 5, 2.4)}${I3S(26, 14, 1.6, 2, 0.6)}`],

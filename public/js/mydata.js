@@ -101,7 +101,22 @@ function openFeedback() {
     } catch (err) { alert(err.message); e.currentTarget.disabled = false; }
   });
 }
+// ───────── 🔊 읽어 주기: 긴 풀이를 기기의 한국어 음성으로(눈이 편하게)
+const canSpeak = () => "speechSynthesis" in window && typeof SpeechSynthesisUtterance === "function";
+function speakToggle(btn, getText) {
+  if (!canSpeak()) return;
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); btn.textContent = "🔊 읽기"; return; }
+  const text = getText().replace(/\s+/g, " ").trim(); if (!text) return;
+  const parts = text.match(/[^.!?。]+[.!?。]?/g) || [text];  // 너무 긴 글은 문장 단위로 끊어 읽는다
+  parts.forEach((p, i) => { const u = new SpeechSynthesisUtterance(p); u.lang = "ko-KR"; u.rate = 0.95;
+    if (i === parts.length - 1) u.onend = () => { btn.textContent = "🔊 읽기"; }; speechSynthesis.speak(u); });
+  btn.textContent = "⏹ 멈추기"; track("speak");
+}
 document.addEventListener("click", (e) => {
+  const sp = e.target.closest("#rd-speak");
+  if (sp) { speakToggle(sp, () => $("#rd-body")?.innerText || ""); return; }
+  if (e.target.closest("#rd-back") && canSpeak()) { speechSynthesis.cancel(); const b = $("#rd-speak"); if (b) b.textContent = "🔊 읽기"; }
   if (e.target.closest("[data-mydata]")) { openMyData(); return; }
   if (e.target.closest("[data-feedback]")) { openFeedback(); return; }
 });
+{ const b = document.getElementById("rd-speak"); if (b && canSpeak()) b.hidden = false; }

@@ -195,7 +195,7 @@ function nowCard() {
 }
 document.addEventListener("click", (e) => {
   const n = e.target.closest("[data-now]");
-  if (n) { track("now_card", { k: n.dataset.now }); S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); refreshBdayTile(); $("#now-wrap").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if (n) { track("now_card", { k: n.dataset.now }); S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); refreshBdayTile(); refreshDdayTile(); $("#now-wrap").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   if (e.target.closest("[data-yearcard]")) openYearCard();
 });
 

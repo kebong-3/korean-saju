@@ -118,8 +118,9 @@ function openBook() {
 }
 
 // ───────────────────────── 택일 도우미
-const TAEGIL = [["move", "🏠", "이사·입주"], ["contract", "✍️", "계약·서명"], ["interview", "💼", "면접·발표"], ["exam", "📚", "시험·자격증"],
-  ["date", "💗", "데이트·고백"], ["start", "🚀", "새 일 시작"]];
+const TAEGIL = [["move", "🏠", "이사·입주"], ["wedding", "💍", "결혼식·상견례"], ["opening", "🏪", "개업·오픈"], ["relocate", "🚚", "사무실·매장 이전"],
+  ["contract", "✍️", "계약·서명"], ["car", "🚗", "차 구입·출고"], ["interview", "💼", "면접·발표"], ["exam", "📚", "시험·자격증"], ["launch", "📣", "출시·작품 공개"],
+  ["start", "🚀", "새 일·첫 출근"], ["begin", "✏️", "공부·운동 시작"], ["travel", "🧳", "여행·출장"], ["date", "💗", "데이트·고백"], ["proposal", "💐", "프러포즈"]];
 let tgSeq = 0;
 async function openTaegil(p = "move") {
   track("taegil");

@@ -134,6 +134,7 @@ function todayCard(M) {
       <h2>오늘은 <b>${esc(t["이름"])}</b>에게 연락해 봐</h2></div></div>
     <p class="sub" style="margin:6px 0 10px">${esc(t["이유"])}</p>
     <div class="ty-msg"><small>${esc(josa(t["캐릭터"], "이", "가"))} 골라 준 한 줄</small><p id="ty-text">${esc(t["한마디"])}</p></div>
+    <p class="fine" style="margin:6px 0 0">고르는 법: 오늘 일진 기운이 살려 주는 오행을 가진 사람을 먼저, 그다음 같은 기운인 사람. 조건이 같으면 날마다 돌아가며 골라요.</p>
     <div class="rd-cta" style="margin-top:10px"><button class="btn primary" type="button" id="ty-copy">📋 이 말 복사하기</button>
       ${t.id ? `<button class="ghost" type="button" data-mid="${esc(t.id)}">📒 사용설명서</button>` : ""}</div></div>`;
 }

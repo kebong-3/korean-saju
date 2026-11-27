@@ -1124,6 +1124,21 @@ html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #f
 .wardrobe { display: inline-flex; align-items: center; gap: 4px; } .wardrobe .i3d { filter: none; }
 .saved-ppl { margin-top: 12px; font-size: 14px; } .saved-ppl summary { cursor: pointer; color: var(--lav-d); font: 14px var(--title); min-height: 36px; display: flex; align-items: center; }
 .sp-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line); } .sp-row small { color: var(--sub); }
+/* ───────── 별밤 제안 · 읽어 주기 · 만세력 인쇄 · 택일 칩 */
+.night-ask { position: fixed; left: 12px; right: 12px; bottom: 96px; z-index: 60; max-width: 496px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  background: #2a2140; color: #f3eefc; border-radius: 18px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+.night-ask span { flex: 1 1 100%; } .night-ask .btn { min-height: 40px; padding: 8px 14px; font-size: 15px; } .night-ask .ghost { background: transparent; color: #f3eefc; border-color: #5a4d78; }
+.rd-top #rd-speak { padding: 6px 12px; font-size: 14px; }
+.mx-out { display: flex; gap: 6px; }
+.print-sheet { display: none; }
+@media print {
+  html.printing body > *:not(.print-sheet) { display: none !important; }
+  html.printing .print-sheet { display: block; color: #000; font: 12pt/1.5 sans-serif; }
+  html.printing body { background: #fff !important; } html.printing body::before { display: none; }
+  .print-sheet h1 { font-size: 18pt; margin: 0 0 6pt; } .print-sheet .ps-svg svg { width: 100%; max-width: 640px; } .ps-foot { color: #666; font-size: 9pt; }
+}
+.tg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
 /* ───────── 내 정보 관리 · 의견 보내기 · 알림 시간 */
 .md-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .md-list li { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; font-size: 14.5px; }

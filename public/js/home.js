@@ -89,7 +89,7 @@ function renderHome() {
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
       <button type="button" class="linkish" data-feedback>💌 의견 보내기</button> · <button type="button" class="linkish" data-mydata>내 정보 관리</button><br>
       <a href="/guide">명리 안내</a> · <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
-  refreshBdayTile();
+  refreshBdayTile(); refreshDdayTile();
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
     store.set(key, on ? 1 : 0);

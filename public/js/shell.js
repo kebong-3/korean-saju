@@ -2,7 +2,7 @@
 /* 사주냥이 화면 스크립트 — 시작·탭 전환·첫 감명 카드·신년 카드.
    index.html 이 js/ 파일들을 순서대로(defer) 불러 하나의 전역 공간을 함께 쓴다. 모든 계산은 서버(/api/*)가 한다. */
 // ───────────────────────── 시작·화면 전환
-const APPV = "34";
+const APPV = "35";
 async function loadMe(birth) {
   const ck = `${hashStr(JSON.stringify(birth))}:${kstDate(0)}:${APPV}`;
   let cache = null; try { cache = JSON.parse(localStorage.getItem("nyang:sajuc") || "null"); } catch { cache = null; }
@@ -22,6 +22,7 @@ async function loadMe(birth) {
   if (go === "compat:map") { compatMode = "map"; renderCompat(); showTab("compat"); store.set("revealed", 1); }
   else if (!store.get("revealed", 0)) showReveal();
   autoBackup();
+  setTimeout(nightSuggest, 1500);
 }
 function loading(el) { el.innerHTML = `<div class="loading"><span data-nyang="focus" data-size="80"></span>냥이가 만세력을 펼치는 중…</div>`; paintNyang(el); }
 

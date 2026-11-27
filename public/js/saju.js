@@ -72,6 +72,7 @@ function renderSaju() {
   $$("#tab-saju .segtabs button").forEach((b) => b.addEventListener("click", () => { setSajuPane(b.dataset.pane); track("saju_pane", { p: b.dataset.pane }); }));
   $$("#tab-saju [data-lens-go]").forEach((b) => b.addEventListener("click", () => $(`#lens-${b.dataset.lensGo}`)?.scrollIntoView({ behavior: "smooth", block: "start" })));
   $("#btn-manse-png")?.addEventListener("click", saveMansePng);
+  $("#btn-manse-print")?.addEventListener("click", printManse);
   setSajuPane("glance");
 }
 function setSajuPane(p) {
@@ -283,8 +284,26 @@ function renderManse(d) {
       <div class="mx-l">길성</div>${ssRow("지지")}</div>
     ${ss["현침개수"] ? `<p class="sub" style="margin:10px 0 0">현침 글자 ${ss["현침개수"]}개 ${ss["현침개수"] >= 3 ? "— 3개 이상이라 예리한 감각이 뚜렷하다냥" : "— 3개 미만이라 가볍게 참고하라냥"}</p>` : ""}</div>
   ${st ? sinsalStory(st) : ""}
-  <div class="card"><div class="card-head"><h2>만세력 이미지</h2><button class="ghost" id="btn-manse-png" type="button">🖼️ 이미지로 저장</button></div>
+  <div class="card"><div class="card-head"><h2>만세력 이미지</h2><span class="mx-out"><button class="ghost" id="btn-manse-png" type="button">🖼️ 저장</button><button class="ghost" id="btn-manse-print" type="button">🖨️ 인쇄·PDF</button></span></div>
     <p class="sub" style="margin:0">친구에게 보내거나 다른 만세력과 비교할 때 쓰라냥.</p><div id="manse-svg" hidden>${manseSvg(d)}</div></div>`;
+}
+/** 상담·보관용 인쇄 — 원국 그림과 대운·용신을 한 장에(브라우저 '인쇄 → PDF로 저장'으로 PDF) */
+function printManse() {
+  const d = S.d, y = d["용신"], life = d["운세"]["평생운"], i = d["입력"];
+  const sheet = document.createElement("div");
+  sheet.className = "print-sheet";
+  sheet.innerHTML = `<h1>사주냥이 만세력 · ${esc(d["이름"] || "")}</h1>
+    <p>양력 ${esc(i["양력"] || "")}${i["음력"] ? ` · 음력 ${esc(i["음력"])}` : ""} · ${esc(d["원국"]["일주"]["한글"])}일주</p>
+    <div class="ps-svg">${manseSvg(d)}</div>
+    <p><b>용신</b> ${esc(y["용신"])} · <b>희신</b> ${esc(y["희신"] || "-")}${y["조후"] ? ` · <b>조후</b> ${esc(y["조후"])}` : ""} — ${esc(y["근거"] || "")}</p>
+    <p><b>대운</b> ${life["대운"].map((p) => `${p["나이"]}세 ${esc(p["간지"])}`).join(" · ")}</p>
+    <p class="ps-foot">korean-saju-six.vercel.app · ${kstDate(0)} 출력</p>`;
+  document.body.append(sheet);
+  document.documentElement.classList.add("printing");
+  track("manse_print");
+  const done = () => { sheet.remove(); document.documentElement.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+  window.addEventListener("afterprint", done);
+  setTimeout(() => window.print(), 50);
 }
 function legacyManse(d) {
   return `<div class="card"><div class="card-head"><h2>만세력</h2><button class="ghost" id="btn-manse-png" type="button">🖼️ 이미지로 저장</button></div>

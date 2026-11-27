@@ -22,7 +22,7 @@ function phonePeople() {
 function savePerson(name, birth) {
   const l = store.get("people", []);
   if (l.some((p) => p.name === name && p.birth.year === birth.year && p.birth.month === birth.month && p.birth.day === birth.day)) return;
-  l.push({ name, birth: { ...birth, name } }); store.set("people", l.slice(-20));
+  l.push({ name, birth: { ...birth, name } }); store.set("people", l.slice(-50));
 }
 const PERSON_IC = { spouse: "💍", child: "🧒", parent: "👵", sibling: "👫", family: "🏠", love: "💗", friend: "🧋", coworker: "💼", boss: "👔", junior: "🐥" };
 
@@ -113,7 +113,7 @@ function openCharm() {
 }
 
 // ───────── 📅 우리 둘 좋은 날
-const TWO_P = [["meet", "☕", "약속·데이트"], ["trip", "🧳", "여행"], ["talk", "💬", "중요한 대화"], ["work", "🤝", "같이 하는 일"]];
+const TWO_P = [["meet", "☕", "약속·데이트"], ["trip", "🧳", "여행"], ["talk", "💬", "중요한 대화"], ["work", "🤝", "같이 하는 일"], ["wedding", "💍", "결혼식·상견례"]];
 const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
 function openTwoDays() {
   track("twodays_open");
@@ -185,7 +185,7 @@ async function openMoodReport() {
 // ───────── 🎂 생일 냥이
 async function bdayData() {
   const me = { name: S.d["이름"] || "나", birth: S.birth };
-  const ppl = [me, ...phonePeople()].slice(0, 30);
+  const ppl = [me, ...phonePeople()].slice(0, 60);
   const h = hashStr(JSON.stringify(ppl.map((p) => [p.name, p.birth.year, p.birth.month, p.birth.day, p.birth.calendar, !!p.birth.leap])));
   const c = store.get("bday", null);
   if (c?.d === kstDate(0) && c.h === h) return c.v;
@@ -255,8 +255,38 @@ function giftSub(k, def) {
 }
 
 // ───────── 타일(지금 나에게 · 오늘의 의식)에서 여는 곳
+// ───────── 🎉 기념일 디데이 — 전역·100일·여행처럼 기다려지는 날만(시험 날짜는 행운 부적을 권한다)
+const ddays = () => store.get("ddays", []).filter((x) => x.d >= kstDate(0)).sort((a, b) => (a.d < b.d ? -1 : 1));
+const ddayN = (d) => Math.round((Date.parse(d + "T00:00:00") - Date.parse(kstDate(0) + "T00:00:00")) / 864e5);
+function openDdays() {
+  track("dday_open");
+  const list = ddays();
+  openSheet(`${giftHead("dday", "기념일 디데이", "전역, 100일, 여행, 이사처럼 기다려지는 날을 세어 준다냥. 시험·면접 날은 '행운 부적'이 더 잘 어울려!")}
+    ${list.length ? list.map((x, i) => `<div class="bd-row ${ddayN(x.d) <= 7 ? "soon" : ""}"><span class="bd-d">${ddayN(x.d) ? `D-${ddayN(x.d)}` : "오늘!"}</span>
+      <div><b>${esc(x.t)}</b><small>${+x.d.slice(5, 7)}월 ${+x.d.slice(8)}일</small></div><button type="button" class="ghost" data-ddel="${esc(x.d + "|" + x.t)}" aria-label="${esc(x.t)} 지우기">✕</button></div>`).join("")
+      : `<p class="sub">아직 세는 날이 없다냥.</p>`}
+    <h3 class="pref-h">새 기념일</h3><input id="dd-t" class="date-in" maxlength="16" placeholder="예) 전역, 우리 100일, 제주 여행">
+    <input type="date" id="dd-d" class="date-in" style="margin-top:8px" min="${kstDate(0)}" value="${kstDate(30)}">
+    <button class="btn primary wide" type="button" id="dd-add" style="margin-top:10px">🎉 세기 시작</button>`);
+  $("#dd-add").addEventListener("click", () => {
+    const t = $("#dd-t").value.trim(), d = $("#dd-d").value;
+    if (!t || !d) { $("#dd-t").focus(); return; }
+    const l = store.get("ddays", []).filter((x) => x.d >= kstDate(0)); l.push({ t, d }); store.set("ddays", l.slice(-12));
+    track("dday_add"); openDdays(); refreshDdayTile();
+  });
+  $$("[data-ddel]").forEach((b) => b.addEventListener("click", () => {
+    const [d, ...t] = b.dataset.ddel.split("|"); store.set("ddays", store.get("ddays", []).filter((x) => !(x.d === d && x.t === t.join("|")))); openDdays(); refreshDdayTile();
+  }));
+}
+function refreshDdayTile() {
+  const t = $('[data-gift="dday"] small'); if (!t) return;
+  const x = ddays()[0];
+  t.textContent = x ? `${x.t} ${ddayN(x.d) ? `D-${ddayN(x.d)}` : "오늘!"}` : "기다리는 날 세기";
+}
+
 const GIFT_TILES = [["charm", "행운 부적", "중요한 날 지켜 줄 부적", openCharm], ["twodays", "우리 둘 좋은 날", "약속·여행 날짜 고르기", openTwoDays],
-  ["moodreport", "기분 리포트", "나만의 기분 패턴", openMoodReport], ["birthday", "생일 냥이", "다가오는 생일 챙기기", openBirthdays]];
+  ["moodreport", "기분 리포트", "나만의 기분 패턴", openMoodReport], ["birthday", "생일 냥이", "다가오는 생일 챙기기", openBirthdays],
+  ["dday", "기념일 디데이", "기다리는 날 세기", openDdays]];
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-gift]");
   if (g) { const t = GIFT_TILES.find((x) => x[0] === g.dataset.gift); if (t) { store.set(`seen:${t[0]}`, 1); $$(`.gtile[data-gift="${t[0]}"]`).forEach((el) => el.classList.remove("new")); t[3](); } return; }

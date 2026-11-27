@@ -531,7 +531,8 @@ def _nick(v: str) -> str:
 
 class TaegilReq(BaseModel):
     birth: Birth
-    purpose: Literal["move", "contract", "interview", "date", "exam", "start"] = "move"
+    purpose: Literal["move", "contract", "interview", "date", "exam", "start", "wedding", "opening", "relocate", "travel", "car",
+                     "proposal", "launch", "begin"] = "move"
 
 
 @app.post("/api/taegil")
@@ -821,7 +822,7 @@ def charm_api(req: CharmReq):
 class TwoDaysReq(BaseModel):
     a: Birth
     b: Birth
-    purpose: Literal["meet", "trip", "talk", "work"] = "meet"
+    purpose: Literal["meet", "trip", "talk", "work", "wedding"] = "meet"
 
 
 @app.post("/api/twodays")
@@ -858,7 +859,7 @@ class BdayPerson(BaseModel):
 
 
 class BdayReq(BaseModel):
-    people: list[BdayPerson] = Field(min_length=1, max_length=30)
+    people: list[BdayPerson] = Field(min_length=1, max_length=60)
 
 
 @app.post("/api/birthdays")

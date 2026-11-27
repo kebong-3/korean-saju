@@ -111,6 +111,20 @@ function applyPrefs() {
   } else if (tone !== "calm" && calmObs) { calmObs.disconnect(); calmObs = null; }
 }
 applyPrefs();
+/** 밤에 처음 열었을 때 한 번만: "별밤으로 바꿀까?" — 기본은 밝은 벚꽃 그대로 */
+function nightSuggest() {
+  const h = new Date().getHours();
+  if (!(h >= 21 || h < 6) || themeMode() === "night" || autoNight()) return;
+  try { if (localStorage.getItem("nyang:nightAsked")) return; localStorage.setItem("nyang:nightAsked", "1"); } catch { return; }
+  const b = document.createElement("div");
+  b.className = "night-ask"; b.setAttribute("role", "status");
+  b.innerHTML = `<span>🌙 밤이다냥. 눈이 편한 <b>별밤</b>으로 바꿀까?</span><button type="button" class="btn primary" data-na="1">밤엔 별밤</button><button type="button" class="ghost" data-na="0">괜찮아</button>`;
+  document.body.append(b);
+  b.addEventListener("click", (e) => { const v = e.target.closest("[data-na]")?.dataset.na; if (v == null) return;
+    if (v === "1") { try { localStorage.setItem("nyang:autonight", "1"); } catch { /* */ } applyTheme(); }
+    track("night_ask", { ok: v }); b.remove(); });
+  setTimeout(() => b.remove(), 15000);
+}
 setInterval(applyTheme, 5 * 60e3);
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", applyTheme);
 
