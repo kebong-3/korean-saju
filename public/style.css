@@ -1121,6 +1121,22 @@ html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !im
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
 
+/* ───────── 가족 지도 */
+.fam-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fam-chip { display: inline-flex; align-items: center; gap: 4px; background: #fbf8fd; border-radius: 99px; padding: 6px 6px 6px 12px; font: 14px var(--title); }
+.fam-chip.me { background: var(--pink-l); padding-right: 12px; }
+.fam-chip button { border: 0; background: none; color: var(--sub); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 13px; }
+.fam-head { display: flex; gap: 12px; align-items: center; } .fam-head small { color: var(--lav-d); font: 13px var(--title); } .fam-head h2 { margin: 0; }
+.fam-svg { width: 100%; display: block; background: linear-gradient(160deg, #fffaf3, #f3ecff); border-radius: 20px; margin-top: 6px; }
+.fam-leg { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--sub); margin-top: 6px; }
+.fam-leg i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+.fam-pair { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin-top: 8px; }
+.fam-pair b { font: 15px var(--title); } .fam-pair small { grid-column: 1 / -1; color: var(--sub); font-size: 13.5px; }
+.fam-pair .fp-chem { font: 20px var(--title); color: var(--pink-d); } .fam-pair.good { background: #eefaf4; } .fam-pair.care { background: #fff7ea; }
+.fam-node:hover circle { opacity: 1; }
+html.night .fam-chip, html.night .fam-pair { background: #2b2546 !important; color: var(--ink); } html.night .fam-chip.me { background: var(--pink-l) !important; }
+html.night .fam-svg { background: linear-gradient(160deg, #2b2546, #33295a); } html.night .fam-pair.good { background: #1d3b35 !important; } html.night .fam-pair.care { background: #43361e !important; }
+
 /* ───────── 후기 반영 3차: 점수 근거 · 용신 두 관점 · 보기 설정 · 힘든 날 */
 .low-day { background: #eef8f1; border-radius: 12px; padding: 8px 10px; font-size: 13.5px; margin: 8px 0 0; }
 .why-score, .why-yong { margin-top: 10px; font-size: 14px; }

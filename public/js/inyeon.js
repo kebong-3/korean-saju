@@ -2,13 +2,13 @@
 /* 사주냥이 화면 스크립트 — 냥이의 인연 수첩(귀인 지도의 실제 관계·사용설명서·인맥 별자리).
    index.html 이 js/ 파일들을 순서대로(defer) 불러 하나의 전역 공간을 함께 쓴다. 모든 계산은 서버(sajunyang/inyeon.py)가 한다. */
 
-const ROLE_GRP = { coworker: "work", boss: "work", junior: "work", friend: "friend", family: "family", love: "love" };
+const ROLE_GRP = { coworker: "work", boss: "work", junior: "work", friend: "friend", family: "family", love: "love", spouse: "family", child: "family", parent: "family", sibling: "family" };
 const MFILTER = [["", "전체"], ["work", "💼 직장"], ["friend", "🧋 친구"], ["family", "🏠 가족"], ["love", "💗 연인"]];
 const ROLE_FALLBACK = { friend: ["친구", "🧋"], coworker: ["동료", "💼"], boss: ["상사·선배", "👔"], junior: ["후배·팀원", "🐥"], family: ["가족", "🏠"], love: ["연인·썸", "💗"] };
 const relRole = (M, k) => (k && (M?.["관계종류"]?.[k] ? [M["관계종류"][k]["이름"], M["관계종류"][k]["이모지"]] : ROLE_FALLBACK[k])) || null;
 
 /** 부를 때: '지수님' — 이미 '님'으로 끝나거나 가족(엄마·언니…)이면 그대로 */
-const callName = (m) => (/님$/.test(m["이름"]) || m["관계"] === "family" ? m["이름"] : `${m["이름"]}님`);
+const callName = (m) => (/님$/.test(m["이름"]) || ROLE_GRP[m["관계"]] === "family" ? m["이름"] : `${m["이름"]}님`);
 /** 받침 있으면 a(은·이·과), 없으면 b(는·가·와) */
 function josa(w, a, b) { const c = (w || "").charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); }
 
@@ -89,7 +89,7 @@ function openGuide(M, m, h) {
     <div class="say"><span class="who" data-nyang="wink" data-size="48"></span><div class="bubble">${esc(ch["소개"])}<br><b>${esc(g["한줄"])}</b></div></div>
     ${g["목소리"] ? `<div class="char-say"><i>${ch["이모지"]}</i><div><small>${esc(ch["이름"])}의 한마디${lore ? ` · ${esc(lore["사는곳"])}에서` : ""}</small>${esc(g["목소리"])}</div></div>` : ""}
     <button class="btn primary wide" type="button" id="gd-story" style="margin:4px 0 6px">📸 ${nm} 사용설명서 스토리 카드 만들기</button>
-    <h3 class="gd-q">${esc(josa(callName(m), "은", "는"))} 나의…</h3>${roleChips(M, m["관계"])}
+    ${h.role ? `<h3 class="gd-q">${esc(josa(callName(m), "은", "는"))} 나의…</h3>${roleChips(M, m["관계"])}` : ""}
     <h3 class="gd-q">📒 ${nm} 사용설명서</h3>${guideHtml(g)}
     ${giveTakeHtml(g, m["이름"])}
     ${moreSet([["🔎 사주로 본 근거", `<div class="grid2" style="margin-bottom:10px"><div class="fit"><small>이 사람이 나에게</small><b>${esc(a["이모지"])} ${esc(a["세부"])}</b>

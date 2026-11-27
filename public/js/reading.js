@@ -72,7 +72,7 @@ function readFrom(id, day) {
   if (id === "child") {
     const kids = JSON.parse(localStorage.getItem("nyang:kids") || "[]");
     if (kids.length === 1) return openReading("child", { partner: kids[0], title: `${kids[0].name || "아이"}와 나, 자녀 궁합` });
-    compatMode = "child"; renderCompat(); showTab("compat"); return;
+    compatMode = "family"; renderCompat(); showTab("compat"); return;
   }
   return openReading(id);
 }

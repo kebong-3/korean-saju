@@ -128,6 +128,11 @@ def relate(me, other, year: int) -> dict:
 TITLES = [(1, "🌙 첫 별"), (3, "✨ 작은 별자리"), (5, "🌌 빛나는 성단"), (8, "💫 별무리"), (12, "🌠 은하수")]
 
 
+def _josa(w: str) -> str:
+    ch = w[-1] if w else ""
+    return w + ("이" if "가" <= ch <= "힣" and (ord(ch) - 0xAC00) % 28 else "가")
+
+
 def summary(me, members: list[dict], year: int) -> dict:
     """내 지도 전체: 귀인 점수, 유형별 수, 가장 큰 귀인, 내가 귀인인 사람, 필요한 오행 친구."""
     a = me.analysis
@@ -146,11 +151,13 @@ def summary(me, members: list[dict], year: int) -> dict:
     best = max(members, key=lambda m: m["나에게"]["영향력"], default=None)
     giver = max(members, key=lambda m: m["상대에게"]["영향력"], default=None)
     need = a.yongshin
-    have_need = [m["이름"] for m in members if m.get("용신공급") and m["용신공급"] >= 22]
+    family = ("family", "spouse", "child", "parent", "sibling")
+    have_need = [m["이름"] if m["이름"].endswith("님") or m.get("관계") in family else f"{m['이름']}님"
+                 for m in members if m.get("용신공급") and m["용신공급"] >= 22]
     w = a.element_weight
     lack = [e for e, v in w.items() if v < 8]
     line = (f"내 사주엔 {max(w, key=w.get)} 기운이 많고 {min(w, key=w.get)} 기운이 적어요 — "
-            f"{need} 기운 친구가 특히 귀한 구성이에요." + (f" 지금 지도에선 {', '.join(have_need[:3])}님이 그 역할!" if have_need else ""))
+            f"{need} 기운 친구가 특히 귀한 구성이에요." + (f" 지금 지도에선 {_josa(', '.join(have_need[:3]))} 그 역할!" if have_need else ""))
     return {"귀인점수": score, "칭호": title, "인원": n, "유형수": cnt, "한줄": line,
             "가장큰귀인": best and {"이름": best["이름"], "영향력": best["나에게"]["영향력"]},
             "내가귀인": giver and {"이름": giver["이름"], "영향력": giver["상대에게"]["영향력"]},

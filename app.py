@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from ksaju import read_compatibility, read_saju  # noqa: E402
-from ksaju.core import BRANCH_ELEMENT, ELEMENTS  # noqa: E402
+from ksaju.core import BRANCH_ELEMENT, ELEMENTS, STEM_ELEMENT  # noqa: E402
 from sajunyang import counsel, llm, ogo, persona, readings  # noqa: E402
 from sajunyang.fortune import bundle, day_fortune, hourly  # noqa: E402
 
@@ -661,7 +661,7 @@ def push_cron_sunday(authorization: str = Header(default="")):
     return push.send_all(share_store, today_kst(), kind="sunday")
 
 
-RoleT = Literal["", "friend", "coworker", "boss", "junior", "family", "love"]  # 지도 주인 입장의 실제 관계
+RoleT = Literal["", "friend", "coworker", "boss", "junior", "family", "love", "spouse", "child", "parent", "sibling"]  # 지도 주인 입장의 실제 관계
 
 
 class MapOther(BaseModel):
@@ -723,6 +723,48 @@ def mapcalc(req: MapCalcReq):
         m["관계"] = o.role
         members.append(m)
     return _map_out(me_r, req.me.name, members, year)
+
+
+class FamMember(BaseModel):
+    name: str = Field(max_length=20)
+    rel: Literal["spouse", "child", "parent", "sibling", "family"]
+    birth: Birth
+
+
+class FamilyMapReq(BaseModel):
+    me: Birth
+    members: list[FamMember] = Field(default_factory=list, max_length=8)
+
+
+@app.post("/api/familymap")
+def familymap(req: FamilyMapReq):
+    """가족 지도 — 저장하지 않는다(생일은 사용자 폰에만). 나와 가족 각자 · 가족끼리 모든 짝 · 우리 집 오행."""
+    if not (relation and inyeon):
+        raise HTTPException(503, "가족 지도를 준비 중이다냥")
+    year = _target_year()
+    me_r = _reading(req.me, "내 생일: ")
+    people = [(req.me.name or "나", "me", me_r)]
+    members = []
+    for i, o in enumerate(req.members):
+        nm = _nick(o.name)
+        r = _reading(o.birth, f"{nm} 생일: ")
+        people.append((nm, o.rel, r))
+        m = _member(me_r, nm, r, year)
+        m["id"], m["관계"] = f"fam{i}", o.rel
+        members.append(m)
+    out = _map_out(me_r, req.me.name, members, year, True)
+    pairs = []
+    for i in range(len(people)):
+        for j in range(i + 1, len(people)):
+            a, b = people[i], people[j]
+            ab, ba = relation.relate(a[2], b[2], year), relation.relate(b[2], a[2], year)
+            pairs.append({"a": a[0], "b": b[0], "ai": i, "bi": j, "케미": ab["케미"] if i == 0 else round((ab["케미"] + ba["케미"]) / 2), **inyeon.pair_tip(ab)})  # 나와의 짝은 사용설명서와 같은 숫자
+    pairs.sort(key=lambda p: -p["케미"])
+    home = inyeon.household([p[2].analysis.element_weight for p in people])
+    return {"지도": out, "사람": [{"이름": n, "관계": rl, "id": None if rl == "me" else f"fam{k - 1}",
+                                 "오행": ELEMENTS[STEM_ELEMENT[r.chart.day_stem]]}
+                                for k, (n, rl, r) in enumerate(people)],
+            "짝": pairs, "우리집": home}
 
 
 class MapCreateReq(BaseModel):

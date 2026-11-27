@@ -6,7 +6,7 @@ let compatMode = "map";
 function renderCompat() {
   const m = married(), kidsN = S.birth?.kids || 0;
   $("#tab-compat").innerHTML = `
-    <div class="segtabs" role="tablist"><button data-cmode="map" type="button">🌌 귀인 지도</button><button data-cmode="love" type="button">${m ? "💑 부부 궁합" : "💞 연인 궁합"}</button><button data-cmode="child" type="button">👨‍👧 자녀</button></div>
+    <div class="segtabs" role="tablist"><button data-cmode="map" type="button">🌌 귀인 지도</button><button data-cmode="love" type="button">${m ? "💑 부부 궁합" : "💞 연인 궁합"}</button><button data-cmode="family" type="button">🏠 가족</button></div>
     <div data-cpane="map" ${compatMode === "map" ? "" : "hidden"}></div>
     <div data-cpane="love" ${compatMode === "love" ? "" : "hidden"}>
       <div class="say"><span class="who" data-nyang="happy" data-size="64"></span><div class="bubble">${m ? "두 사람의 본성부터 마음의 안방(일지)까지, 우리 부부 사용 설명서를 펼쳐 주겠다냥 💑" : `두 사람의 ${chip("일간")}, 배우자 자리(${chip("일지")}), 서로의 ${chip("용신")}까지 정밀하게 보는 궁합이다냥 💞`}</div></div>
@@ -14,15 +14,15 @@ function renderCompat() {
       <button class="btn primary wide" id="btn-compat" type="button">궁합 보기</button>
       <div id="compat-out" style="margin-top:16px"></div>
     </div>
-    <div data-cpane="child" ${compatMode === "child" ? "" : "hidden"}>${renderKidPane()}</div>`;
+    <div data-cpane="family" ${compatMode === "family" ? "" : "hidden"}></div>`;
   buildForm($("#form-b"), "b", m ? "배우자 생일" : "상대방 생일");
   fillForm($("#form-b"), JSON.parse(localStorage.getItem("nyang:partner") || "null"));
   $("#btn-compat").addEventListener("click", runCompat);
   $$("#tab-compat [data-cmode]").forEach((b) => { b.setAttribute("aria-selected", b.dataset.cmode === compatMode);
     b.addEventListener("click", () => { compatMode = b.dataset.cmode; renderCompat(); }); });
-  bindKidPane();
   paintNyang($("#tab-compat"));
   if (compatMode === "map") renderMapPane();
+  if (compatMode === "family") renderFamilyPane();
 }
 
 // ───────────────────────── 귀인 지도(관계 지도)
@@ -325,7 +325,7 @@ function bindKidPane() {
   const kids = getKids();
   if (kidSel !== "new" && kids[kidSel]) fillForm(f, kids[kidSel]); else { f.year.value = 2015; }
   $$("#tab-compat [data-kid]").forEach((b) => b.addEventListener("click", () => {
-    kidSel = b.dataset.kid === "new" ? "new" : +b.dataset.kid; compatMode = "child"; renderCompat();
+    kidSel = b.dataset.kid === "new" ? "new" : +b.dataset.kid; compatMode = "family"; renderCompat();
   }));
   $("#btn-kid-del")?.addEventListener("click", () => { const k = getKids(); k.splice(kidSel, 1); setKids(k); kidSel = 0; renderCompat(); });
   $("#btn-kid").addEventListener("click", runKid);
@@ -335,6 +335,7 @@ async function runKid() {
   const kids = getKids();
   if (kidSel === "new" || !kids.length) { kids.push(kid); kidSel = kids.length - 1; } else kids[kidSel] = kid;
   setKids(kids);
+  { const fl = famList(); if (!fl.some((m) => m.rel === "child" && m.name === (kid.name || `아이 ${kidSel + 1}`)) && fl.length < 8) { fl.push({ name: kid.name || `아이 ${kidSel + 1}`, rel: "child", birth: kid }); setFamList(fl); } }
   btn.disabled = true; loading(out);
   try {
     const r = await api("/api/family", { parent: S.birth, child: kid }), F = r["이야기"] || {};
