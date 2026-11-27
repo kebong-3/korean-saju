@@ -44,8 +44,9 @@ function saveMood(i, day) {
   store.set("diary", diary);
   $("#checkin-slot").innerHTML = checkinCard();
   const say = +i === 2 ? "좋은 날이었구나! 냥이도 꼬리가 살랑살랑 🐾" : +i === 1 ? "무난한 하루도 소중하다냥. 푹 쉬어!" : "고생 많았다냥… 오늘은 따뜻한 거 먹고 일찍 자라냥.";
-  $("#checkin-slot .card").insertAdjacentHTML("beforeend", `<div class="say" style="margin-top:10px"><span class="who" data-nyang="${+i === 0 ? "sad" : +i === 2 ? "laugh" : "happy"}" data-size="44"></span><div class="bubble">${say}</div></div>`);
+  ($("#checkin-slot .checkin") || $("#checkin-slot")).insertAdjacentHTML("beforeend", `<div class="say" style="margin-top:10px"><span class="who" data-nyang="${+i === 0 ? "sad" : +i === 2 ? "laugh" : "happy"}" data-size="44"></span><div class="bubble">${say}</div></div>`);
   paintNyang($("#checkin-slot"));
+  refreshRitual();
 }
 function diaryStats() {
   const diary = store.get("diary", {}), arr = Object.entries(diary).map(([d, v]) => ({ d, ...v }));

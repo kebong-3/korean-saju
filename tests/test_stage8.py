@@ -109,7 +109,7 @@ class SplitScriptsTest(unittest.TestCase):
 
     def test_lists_agree(self):
         html = (ROOT / "public/index.html").read_text(encoding="utf-8")
-        tags = re.findall(r'<script src="/js/([a-z]+)\.js\?v=(\d+)" defer></script>', html)
+        tags = re.findall(r'<script src="/js/([a-z0-9]+)\.js\?v=(\d+)" defer></script>', html)
         names = [n for n, _ in tags]
         sw = (ROOT / "public/sw.js").read_text(encoding="utf-8")
         sw_js = json.loads(re.search(r"const JS = (\[.*?\]);", sw).group(1))

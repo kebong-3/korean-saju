@@ -1121,6 +1121,46 @@ html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !im
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
 
+/* ───────── 그림 타일: 지금 나에게 · 오늘의 의식 · 바로가기 · 대풀이 메뉴 */
+.i3d { display: block; filter: drop-shadow(0 3px 4px rgba(120, 80, 140, .14)); }
+.gtiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.gtile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: #fff; border-radius: 20px; padding: 12px 6px 10px; cursor: pointer;
+  box-shadow: var(--shadow); color: var(--ink); text-align: center; min-height: 124px; transition: transform .15s; }
+.gtile:active { transform: scale(.96); }
+.gtile b { font: 14px var(--title); line-height: 1.25; margin-top: 4px; word-break: keep-all; }
+.gtile small { font-size: 12px; color: var(--sub); line-height: 1.3; word-break: keep-all; }
+.gtile.new::after { content: "NEW"; position: absolute; top: 8px; right: 8px; font: 10px var(--title); background: var(--pink); color: #fff; border-radius: 99px; padding: 1px 6px; }
+.gtile.hot { box-shadow: 0 0 0 2px var(--pink) inset, var(--shadow); } .gtile.hot small { color: var(--pink-d); font-weight: 700; }
+.rit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.rit { position: relative; display: flex; align-items: center; gap: 8px; border: 0; background: #fff; border-radius: 20px; padding: 12px 10px; cursor: pointer; text-align: left;
+  box-shadow: var(--shadow); color: var(--ink); min-height: 82px; transition: transform .15s; }
+.rit:active { transform: scale(.97); }
+.rit .i3d { flex: none; } .rit span { min-width: 0; }
+.rit b { display: block; font: 15px var(--title); } .rit small { display: block; font-size: 12px; color: var(--sub); line-height: 1.35; word-break: keep-all; }
+.rit.done { background: linear-gradient(160deg, #fff 50%, #eefaf4); } .rit-ok { position: absolute; top: 8px; right: 10px; font-style: normal; color: #2f9a54; font: 15px var(--title); }
+.q3d button i.i3w { background: none !important; width: auto; height: auto; display: grid; place-items: center; }
+.rd-menu button i.i3w { background: none !important; box-shadow: none !important; display: grid; place-items: center; }
+.gift-head { display: flex; gap: 12px; align-items: center; margin-bottom: 6px; } .gift-head h2 { margin: 0 0 2px; } .gift-head p { margin: 0; }
+.date-in { width: 100%; font-size: 16px; padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); }
+.pick-form { margin-top: 6px; }
+.gift-note { display: grid; gap: 2px; background: #fff7e3; border-radius: 14px; padding: 10px 12px; margin-top: 10px; font-size: 14px; } .gift-note b { font: 15px var(--title); }
+.td-top { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 6px; } .td-top b { font: 15px var(--title); }
+.td-row { background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin-top: 8px; } .td-row div { display: flex; justify-content: space-between; align-items: center; }
+.td-row b { font: 16px var(--title); } .td-row small { color: var(--sub); font-size: 13px; } .td-row.best { background: #fff0f4; box-shadow: 0 0 0 2px var(--pink) inset; }
+.td-star { color: #f0a63a; letter-spacing: 1px; }
+.mood-prog { display: flex; align-items: center; gap: 10px; margin: 12px 0; } .mp-bar { flex: 1; height: 12px; background: #f1eaf6; border-radius: 99px; overflow: hidden; }
+.mp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd66b, #ff8fa3); } .mood-prog b { font: 15px var(--title); }
+.mr-bars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: end; height: 150px; margin-top: 12px; }
+.mr-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; height: 100%; }
+.mr-col i { display: block; width: 70%; border-radius: 10px 10px 4px 4px; } .mr-col b { font: 13px var(--title); } .mr-col small { font-size: 12px; color: var(--sub); }
+.mr-face { font-size: 20px; } .mr-col.best b { color: var(--pink-d); }
+.bd-row { display: flex; align-items: center; gap: 10px; background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin-top: 8px; }
+.bd-row > div { flex: 1; min-width: 0; } .bd-row b { font: 16px var(--title); display: block; } .bd-row small { color: var(--sub); font-size: 12.5px; }
+.bd-d { font: 15px var(--title); color: var(--lav-d); min-width: 52px; } .bd-row.soon { background: #fff0f4; } .bd-row.soon .bd-d { color: var(--pink-d); }
+html.night .gtile, html.night .rit, html.night .td-row, html.night .bd-row, html.night .date-in { background: var(--card) !important; color: var(--ink); }
+html.night .rit.done { background: linear-gradient(160deg, var(--card) 50%, #1d3b35) !important; } html.night .gift-note { background: #3e3520; }
+html.night .td-row.best, html.night .bd-row.soon { background: #4a2a3d !important; } html.night .mp-bar { background: #2b2546; }
+
 /* ───────── 가족 지도 */
 .fam-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .fam-chip { display: inline-flex; align-items: center; gap: 4px; background: #fbf8fd; border-radius: 99px; padding: 6px 6px 6px 12px; font: 14px var(--title); }

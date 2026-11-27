@@ -52,6 +52,7 @@ pae = _opt("pae")
 sinsal_story = _opt("sinsal_story")
 seo = _opt("seo")
 inyeon = _opt("inyeon")
+extras = _opt("extras")
 
 
 def _safe(fn, *args, **kw):
@@ -70,7 +71,8 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from sajunyang import guard  # noqa: E402
 
 MAX_BODY = 1_000_000  # 1MB — 백업(최대 600KB)보다 넉넉하고, 그 이상은 받을 이유가 없다
-_CALC = {"/api/saju", "/api/day", "/api/compat", "/api/family", "/api/mapcalc", "/api/taegil"}
+_CALC = {"/api/saju", "/api/day", "/api/compat", "/api/family", "/api/mapcalc", "/api/taegil", "/api/familymap",
+         "/api/charm", "/api/twodays", "/api/moodreport", "/api/birthdays"}
 
 
 def _bucket(method: str, path: str) -> str | None:
@@ -765,6 +767,85 @@ def familymap(req: FamilyMapReq):
                                  "오행": ELEMENTS[STEM_ELEMENT[r.chart.day_stem]]}
                                 for k, (n, rl, r) in enumerate(people)],
             "짝": pairs, "우리집": home}
+
+
+# ---------------------------------------------------------------- 부가 기능: 행운 부적 · 우리 둘 좋은 날 · 기분 리포트 · 생일 냥이
+def _need_extras():
+    if not extras:
+        raise HTTPException(503, "준비 중이다냥")
+
+
+class CharmReq(BaseModel):
+    birth: Birth
+    day: date
+    purpose: Literal["exam", "interview", "talk", "love", "start", "deal", "etc"] = "etc"
+
+
+@app.post("/api/charm")
+def charm_api(req: CharmReq):
+    """행운 부적 — 점수는 보여 주지 않고 그날 나를 지켜 줄 것만."""
+    _need_extras()
+    today = today_kst()
+    if not (0 <= (req.day - today).days <= 400):
+        raise HTTPException(400, "부적은 오늘부터 1년 안의 날짜로 만들 수 있다냥")
+    return extras.charm(_reading(req.birth), req.day, req.purpose, today)
+
+
+class TwoDaysReq(BaseModel):
+    a: Birth
+    b: Birth
+    purpose: Literal["meet", "trip", "talk", "work"] = "meet"
+
+
+@app.post("/api/twodays")
+def two_days_api(req: TwoDaysReq):
+    """우리 둘 좋은 날 — 앞으로 60일 중 둘 다 기운이 좋은 날."""
+    _need_extras()
+    return extras.two_days(_reading(req.a), _reading(req.b, "상대 생일: "), today_kst(), req.purpose)
+
+
+class MoodRec(BaseModel):
+    d: date
+    m: int = Field(ge=0, le=2)
+
+
+class MoodReq(BaseModel):
+    birth: Birth
+    records: list[MoodRec] = Field(min_length=1, max_length=180)
+
+
+@app.post("/api/moodreport")
+def mood_report_api(req: MoodReq):
+    """기분 × 기운 리포트 — 폰에 기록한 기분만 받아 계산하고 저장하지 않는다."""
+    _need_extras()
+    today = today_kst()
+    recs = sorted({(r.d, r.m) for r in req.records if (today - r.d).days <= 400 and r.d <= today})
+    if not recs:
+        raise HTTPException(400, "기록이 아직 없다냥")
+    return extras.mood_report(_reading(req.birth), recs, today)
+
+
+class BdayPerson(BaseModel):
+    name: str = Field(max_length=20)
+    birth: Birth
+
+
+class BdayReq(BaseModel):
+    people: list[BdayPerson] = Field(min_length=1, max_length=30)
+
+
+@app.post("/api/birthdays")
+def birthdays_api(req: BdayReq):
+    """생일 냥이 — 다가오는 생일 순서(음력 생일은 올해 양력으로)."""
+    _need_extras()
+    today = today_kst()
+    out = []
+    for p in req.people:
+        r = _reading(p.birth, f"{p.name} 생일: ")
+        info = extras.birthday_info(_nick(p.name), p.birth, r, today, _safe(ilju.of_reading, r) if ilju else None)
+        if info:
+            out.append(info)
+    return {"생일": sorted(out, key=lambda x: x["디데이"])}
 
 
 class MapCreateReq(BaseModel):

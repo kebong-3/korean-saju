@@ -170,6 +170,9 @@ function yearBanner() {
       <div class="t">${esc(d["나의올해"]?.["이모지"] || "")} ${esc(d["나의올해"]?.["이름"] || y["테마"])}</div><small>좋은 달 ${(y["좋은달표시"] || y["좋은달"].map((m) => m + "월")).join("·")} · 카드 만들기 →</small></div><span class="big">🧧</span></button>`;
 }
 const NOW_LABEL = { week: "🪞 이번 주 돌아보기", season: "🎐 절기 일기", month: "🗓️ 이번 달 플랜", year: "🧧 신년 카드", ncard: "🃏 나의 냥이 카드" };
+const NOW_TILE = { week: ["weekrev", "이번 주 돌아보기", "지난 7일 기분과 운"], season: ["season", "절기 일기", "이번 절기 개운법"],
+  month: ["monthplan", "이번 달 플랜", "할 일·피할 일"], year: ["yearcard", "신년 카드", "내 2027 한 장"], ncard: ["ncard", "나의 냥이 카드", "60일주 냥이"] };
+const giftTile = ([ic, title, desc], attr, cls = "") => `<button type="button" class="gtile ${cls}" ${attr}>${ic3d(ic, 46)}<b>${title}</b><small>${desc}</small></button>`;
 function nowPick() {
   const d = S.d, s = d["절기"], today = kstDate(0), day = +today.slice(8), mon = +today.slice(5, 7);
   const fresh = s && (Date.parse(today) - Date.parse(s["시작"])) / 864e5 <= 3;
@@ -185,12 +188,14 @@ function nowCard() {
   const opts = { week: weekCard(), season: seasonBanner(), month: monthCard(d["운세"]["이번달"]), year: yearBanner(), ncard: myCardTile() };
   let pick = S.nowPick || nowPick();
   if (!opts[pick]) pick = Object.keys(opts).find((k) => opts[k]);
-  const chips = Object.keys(opts).filter((k) => k !== pick && opts[k]).map((k) => `<button type="button" class="now-chip" data-now="${k}">${NOW_LABEL[k]}</button>`).join("");
-  return `<div id="now-wrap"><h2 class="sec-t">지금 나에게</h2>${opts[pick] || ""}<div class="now-chips">${chips}</div></div>`;
+  const tiles = Object.keys(opts).filter((k) => k !== pick && opts[k]).map((k) => giftTile(NOW_TILE[k], `data-now="${k}"`)).join("")
+    + GIFT_TILES.map(([k, t, s]) => giftTile([k, t, s], `data-gift="${k}"`, "new")).join("");
+  return `<div id="now-wrap"><h2 class="sec-t">지금 나에게</h2>${opts[pick] || ""}
+    <h2 class="sec-t">냥이가 준비한 것 <small>눌러서 열어 봐</small></h2><div class="gtiles">${tiles}</div></div>`;
 }
 document.addEventListener("click", (e) => {
   const n = e.target.closest("[data-now]");
-  if (n) { track("now_card", { k: n.dataset.now }); S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); return; }
+  if (n) { track("now_card", { k: n.dataset.now }); S.nowPick = n.dataset.now; $("#now-wrap").outerHTML = nowCard(); paintNyang($("#now-wrap")); dedupeTerms($("#now-wrap")); refreshBdayTile(); $("#now-wrap").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   if (e.target.closest("[data-yearcard]")) openYearCard();
 });
 

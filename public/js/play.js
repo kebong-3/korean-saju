@@ -121,7 +121,7 @@ function paeTile() {
 function openPae() {
   track("pae");
   const p = S.d["오늘의패"], first = store.get("pae", "") !== p["날짜"];
-  store.set("pae", p["날짜"]);
+  store.set("pae", p["날짜"]); refreshRitual();
   $("[data-pae]")?.classList.add("open");
   setTimeout(() => {
     openSheet(`<div class="pae-sheet"><div class="pae-big"><i>${esc(p["이모지"])}</i><b>${esc(p["이름"])}</b><small>${esc(p["십성"])}의 날 · ${+p["날짜"].slice(5, 7)}월 ${+p["날짜"].slice(8)}일</small></div>
@@ -143,6 +143,7 @@ function roleOf(el) {
 function gardenAdd(el, n, why) {
   const g = gardenState(); g[el] = (g[el] || 0) + n; store.set("garden", g);
   const slot = $("#garden-slot"); if (slot) slot.innerHTML = gardenMini();
+  refreshRitual();
   if (n && why) toast(`${why} · ${el}(${EL_HANJA[el]}) 화분 +${n} ${stageOf(g[el], el)}`);
 }
 function gardenMini() {

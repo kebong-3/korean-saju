@@ -18,6 +18,29 @@ function todayStory(st, label = "냥이 도사의 오늘 한마디") {
     ${tipBox(st.tip, "오늘의 한마디")}
     ${moreSet([["📖 자세히 풀이", paras(st["핵심"] ? st.story : st.story?.slice(1))], ["🏮 냥이 설화", taleHtml(st["설화"])]])}</div>`;
 }
+/** 오늘의 의식 — 누르면 열리는 그림 타일 네 개(상태를 한 줄로 보여 줘서 '뭔지' 바로 알게) */
+function ritualTiles() {
+  const p = S.d["오늘의패"], paeOpen = p && store.get("pae", "") === p["날짜"], g = gardenState(), watered = g.water === kstDate(0);
+  const moodDone = !!store.get("diary", {})[kstDate(0)], n = streak();
+  const t = (ic, attr, title, sub, done) => `<button type="button" class="rit ${done ? "done" : ""}" ${attr}>${ic3d(ic, 50)}<span><b>${title}</b><small>${sub}</small></span>${done ? '<em class="rit-ok">✓</em>' : ""}</button>`;
+  return t("pae", "data-pae", "오늘의 패", paeOpen ? `오늘: ${esc(p["이름"])}` : "톡 눌러 한 장 뒤집기", paeOpen)
+    + t("garden", "data-garden", "보약 화분", watered ? "오늘 물 주기 완료" : `보약 ${S.d["용신"]["용신"]} 화분에 물 주기`, watered)
+    + t("mood", "data-moodsheet", "오늘 기분", moodDone ? `기록 완료 · ${n}일 연속` : `기록하고 출석 도장 · ${n}일 연속`, moodDone)
+    + t("reading", "data-readsheet", "오늘의 읽을거리", "냥이 한마디 · 고전 · 옛이야기", false);
+}
+function openReadSheet() {
+  const d = S.d, st = d["옛이야기"];
+  track("reading_sheet");
+  openSheet(`<h2 style="margin:0 0 10px">📜 오늘의 읽을거리</h2>${todayStory(d["이야기"]?.["오늘"])}${wisdomCard(d["나의길"]?.["한구절"])}
+    <div class="card story"><div class="card-head"><h2>냥이의 옛이야기</h2><span class="badge">${esc(st["시대"])}</span></div>
+      <h3>『${esc(st["제목"])}』</h3><p style="margin:0">${esc(st["이야기"])}</p>
+      <div class="lesson">🐾 ${esc(st["교훈"])} <span class="sub">— ${T(st["개념"], true)}</span></div></div>${pathTeaser()}`);
+  paintNyang($("#sheet-content"));
+}
+document.addEventListener("click", (e) => { if (e.target.closest("[data-readsheet]")) openReadSheet(); });
+/** 패·정원·기분을 바꾼 뒤 홈 타일 상태를 새로 */
+function refreshRitual() { const g = $(".rit-grid"); if (g) g.innerHTML = ritualTiles(); }
+
 function renderHome() {
   const d = S.d, f = d["운세"], t = f["오늘운세"], y = f["신년운세"], st = d["옛이야기"];
   markVisit(t); seasonMark();
@@ -57,27 +80,15 @@ function renderHome() {
     ${nowCard()}
 
     <h2 class="sec-t">바로가기 <button type="button" class="sec-more" data-allmenu>전체 메뉴 ›</button></h2>
-    <div class="quick">${[["luck:month", "📅", "월별 운세"], ["luck:read", "🐾", "대풀이"], ["saju:manse", "📜", "만세력"], ["compat", "💞", "궁합·지도"]].map(menuBtn).join("")}</div>
+    <div class="quick q3d">${[["luck:month", "month", "월별 운세"], ["luck:read", "paw", "대풀이"], ["saju:manse", "manse", "만세력"], ["compat", "map", "궁합·지도"]]
+      .map(([g, ic, l]) => `<button type="button" data-go="${g}"><i class="i3w">${ic3d(ic, 44)}</i><span>${l}</span></button>`).join("")}</div>
     <div id="install-slot"></div>
 
-    <details class="card home-more ritual-more" id="ritual-more" ${store.get("ritualOpen", 0) ? "open" : ""}><summary><b>🌱 오늘의 의식</b><span class="sub">패 한 장 · 보약 화분 · 오늘 기분 — 하루 1분</span></summary>
-      <div class="ritual"><div class="ritual-top">${paeTile()}<div id="garden-slot">${gardenMini()}</div></div>
-        <div id="checkin-slot">${checkinCard()}</div></div>
-    </details>
-
-    <details class="card home-more"><summary><b>📜 오늘의 읽을거리</b><span class="sub">냥이 도사 한마디 · 고전 한 줄 · 옛이야기</span></summary>
-      ${todayStory(d["이야기"]?.["오늘"])}
-      ${wisdomCard(d["나의길"]?.["한구절"])}
-      <div class="card story">
-        <div class="card-head"><h2>냥이의 옛이야기</h2><span class="badge">${esc(st["시대"])}</span></div>
-        <h3>『${esc(st["제목"])}』</h3><p style="margin:0">${esc(st["이야기"])}</p>
-        <div class="lesson">🐾 ${esc(st["교훈"])} <span class="sub">— ${T(st["개념"], true)}</span></div>
-      </div>
-      ${pathTeaser()}
-    </details>
+    <h2 class="sec-t">오늘의 의식 <small>하루 1분, 운을 키우는 시간</small></h2>
+    <div class="rit-grid">${ritualTiles()}</div>
     <p class="foot">사주는 정답지가 아니라 지도다냥. 건강·법률·투자 판단은 전문가와 상의해 줘!<br>
       <a href="/guide">명리 안내</a> · <a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a> · 계산 엔진 <a href="https://github.com/kebong-3/korean-saju" target="_blank" rel="noopener">korean-saju</a></p>`;
-  $("#ritual-more").addEventListener("toggle", (e) => { store.set("ritualOpen", e.currentTarget.open ? 1 : 0); if (e.currentTarget.open) track("ritual_open"); });
+  refreshBdayTile();
   $("#mission").addEventListener("click", (e) => {
     const on = store.get(key, 0) !== 1;
     store.set(key, on ? 1 : 0);
