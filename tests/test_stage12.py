@@ -104,5 +104,36 @@ class IconsTest(unittest.TestCase):
         self.assertNotIn("ritual-more", home)
 
 
+class ThemeAndP1Test(unittest.TestCase):
+    """색 테마(기본 벚꽃, 밤 자동은 선택) · 저장한 사람 · 전체 메뉴 · NEW · 생일 카드 개인정보."""
+
+    def setUp(self):
+        self.js = {p.stem: p.read_text(encoding="utf-8") for p in (ROOT / "public/js").glob("*.js")}
+        self.boot = (ROOT / "public/boot.js").read_text(encoding="utf-8")
+        self.css = (ROOT / "public/style.css").read_text(encoding="utf-8")
+
+    def test_default_theme_is_light(self):
+        self.assertIn('localStorage.getItem("nyang:theme") || "day"', self.boot)
+        self.assertNotIn("prefers-color-scheme", self.boot, "폰 다크 모드라고 자동으로 어둡게 하지 않는다")
+        self.assertIn('nyang:autonight") === "1"', self.boot)
+        for t in ("day", "hanji", "matcha", "night"):
+            self.assertIn(f'["{t}",', self.js["look"])
+        self.assertIn("html.t-hanji {", self.css)
+        self.assertIn("html.t-matcha {", self.css)
+        html = (ROOT / "public/index.html").read_text(encoding="utf-8")
+        sw = (ROOT / "public/sw.js").read_text(encoding="utf-8")
+        v = re.search(r"boot\.js\?v=(\d+)", html).group(1)
+        self.assertIn(f"/boot.js?v={v}", sw, "부트 스크립트 버전이 서비스 워커와 같다")
+
+    def test_p1_wired(self):
+        self.assertIn('store.get("people", [])', self.js["gifts"])
+        self.assertIn("savePerson(", self.js["gifts"])
+        self.assertIn('seen:${k}', self.js["path"])
+        for k in ("charm", "twodays", "moodreport", "birthday"):
+            self.assertIn(f"""'@gift="{k}"'""", self.js["play"])
+        self.assertIn('"@cfamily"', self.js["play"])
+        self.assertIn("showAge ?? me", self.js["gifts"], "다른 사람 생일 카드는 나이·띠 숨김이 기본")
+
+
 if __name__ == "__main__":
     unittest.main()

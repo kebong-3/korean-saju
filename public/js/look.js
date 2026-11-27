@@ -60,20 +60,29 @@ function iconize(root = document) {
 }
 
 // ───────── 밤 모드: 밤 9시~아침 6시 또는 폰이 다크 모드일 때 자동(설정에서 바꿀 수 있음)
-function themeMode() { return localStorage.getItem("nyang:theme") || "auto"; }
+/** 색 테마 — 기본은 밝은 🌸 벚꽃. 예전 'auto'(밤엔 자동으로 어둡게)는 벚꽃으로 본다. 밤 자동은 따로 켜야만. */
+const THEMES = [["day", "🌸", "벚꽃", "기본 · 밝고 포근하게", ["#fff4f1", "#ff8fa3", "#a78bfa"], "#fff4f1"],
+  ["hanji", "📜", "한지", "차분한 아이보리·먹색", ["#f6f0e4", "#c98563", "#9a8566"], "#f6f0e4"],
+  ["matcha", "🌿", "말차", "산뜻한 초록·크림", ["#eef5ea", "#6fb58a", "#7fb6a6"], "#eef5ea"],
+  ["night", "🌙", "별밤", "어두운 밤하늘", ["#17142a", "#ff8fa3", "#a78bfa"], "#17142a"]];
+function themeMode() { let m = "day"; try { m = localStorage.getItem("nyang:theme") || "day"; } catch { /* */ } return THEMES.some((t) => t[0] === m) ? m : "day"; }
+const autoNight = () => { try { return localStorage.getItem("nyang:autonight") === "1"; } catch { return false; } };
 function applyTheme() {
-  const m = themeMode(), h = new Date().getHours();
-  const night = m === "night" || (m === "auto" && (h >= 21 || h < 6 || matchMedia("(prefers-color-scheme: dark)").matches));
-  document.documentElement.classList.toggle("night", night);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", night ? "#17142a" : "#fff4f1");
+  const m = themeMode(), h = new Date().getHours(), el = document.documentElement;
+  const night = m === "night" || (autoNight() && (h >= 21 || h < 6));
+  el.classList.toggle("night", night);
+  el.classList.toggle("t-hanji", !night && m === "hanji");
+  el.classList.toggle("t-matcha", !night && m === "matcha");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", night ? "#17142a" : THEMES.find((t) => t[0] === m)[5]);
 }
 function openTheme() {
   const m = themeMode(), pref = (k, d) => { try { return localStorage.getItem(`nyang:${k}`) || d; } catch { return d; } };
   const row = (key, cur, opts) => `<div class="pref-row">${opts.map(([v, t, s]) => `<button type="button" data-pref="${key}" data-val="${v}" class="${cur === v ? "on" : ""}"><b>${t}</b><small>${s}</small></button>`).join("")}</div>`;
   openSheet(`<div class="term-head"><span data-nyang="sleepy" data-size="64"></span><div><h2>보기 설정</h2><div class="term-mean">눈이 편하고 마음이 편하게</div></div></div>
-    <h3 class="pref-h">화면 밝기</h3>
-    <div class="theme-pick">${[["auto", "🌗", "자동", "밤 9시~아침 6시, 폰이 다크 모드일 때"], ["day", "☀️", "낮 화면", "늘 밝게"], ["night", "🌙", "별밤 화면", "늘 어둡게"]]
-      .map(([k, e, t, s]) => `<button type="button" data-theme="${k}" class="${m === k ? "on" : ""}"><i>${icOf(e, 30)}</i><b>${t}</b><small>${s}</small></button>`).join("")}</div>
+    <h3 class="pref-h">화면 색</h3>
+    <div class="theme-cards">${THEMES.map(([k, e, t, s, sw]) => `<button type="button" data-theme="${k}" class="${m === k ? "on" : ""}">
+      <span class="sw">${sw.map((c) => `<i style="background:${c}"></i>`).join("")}</span><b>${e} ${t}</b><small>${s}</small></button>`).join("")}</div>
+    <label class="check" style="margin-top:8px"><input type="checkbox" data-autonight ${autoNight() ? "checked" : ""}> 밤 9시~아침 6시엔 자동으로 🌙 별밤</label>
     <h3 class="pref-h">글자 크기</h3>${row("font", pref("font", "normal"), [["normal", "보통", "지금 크기"], ["big", "크게", "글자·버튼을 15% 크게"]])}
     <h3 class="pref-h">냥이 말투</h3>${row("tone", pref("tone", "nyang"), [["nyang", "냥냥 말투", "…다냥! 귀엽게"], ["calm", "차분한 말투", "…다. 담백하게"]])}
     <h3 class="pref-h">운세 점수</h3>${row("score", pref("score", "show"), [["show", "숫자로 보기", "오늘 81점"], ["hide", "숫자 숨기기", "길·순탄 같은 말로만"]])}
@@ -270,6 +279,8 @@ document.addEventListener("click", (e) => {
   const th = e.target.closest("[data-theme]");
   if (th) { track("theme", { m: th.dataset.theme }); localStorage.setItem("nyang:theme", th.dataset.theme); applyTheme(); openTheme(); return; }
   if (e.target.closest("[data-themesheet]")) { openTheme(); return; }
+  const an = e.target.closest("[data-autonight]");
+  if (an) { try { localStorage.setItem("nyang:autonight", an.checked ? "1" : "0"); } catch { /* */ } applyTheme(); return; }
   const pf = e.target.closest("[data-pref]");
   if (pf) {
     const k = pf.dataset.pref, v = pf.dataset.val, was = localStorage.getItem(`nyang:${k}`);

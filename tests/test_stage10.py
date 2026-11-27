@@ -42,7 +42,7 @@ class PrefsClientTest(unittest.TestCase):
             self.assertIn(k, look)
         self.assertIn("hideScore()", JS["home"])
         self.assertIn('ring(t["점수"], t["등급"], "fortune")', JS["home"])
-        self.assertIn('["@themesheet", "🌙", "보기 설정"]', JS["play"])
+        self.assertIn('["@themesheet", "🎨", "보기 설정(색·글자·말투)"]', JS["play"])
 
     def test_bonus_bead(self):
         talk = JS["talk"]

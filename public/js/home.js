@@ -55,7 +55,7 @@ function renderHome() {
       <span class="float" data-nyang="${moods}" data-size="76" title="톡 건드려 봐"></span>
       <div class="hello-t"><small>${dt.getMonth() + 1}월 ${dt.getDate()}일 ${"일월화수목금토"[dt.getDay()]}요일${s ? ` · ${esc(s["이모지"])} ${esc(s["이름"])}` : ""}</small>
         <h1>${esc(nim())}, ${hello}</h1>
-        <button type="button" class="wardrobe" data-dex>👘 냥이 옷장 ${dexCount().got}/${dexCount().all}</button></div>
+        <button type="button" class="wardrobe" data-dex>${ic3d("closet", 22)} 냥이 옷장 ${dexCount().got}/${dexCount().all}</button></div>
     </section>
 
     <div class="card today-card">

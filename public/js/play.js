@@ -288,9 +288,10 @@ async function loadLetters(ref) {
 const ALL_MENU = [
   ["운세", [["luck:new", "🧧", "신년운세"], ["luck:month", "📅", "월별 운세"], ["luck:cal", "🗓️", "운세 달력"], ["luck:life", "📈", "인생 흐름"], ["luck:read", "🐾", "냥이 도사 대풀이"], ["@taegil", "📆", "택일 도우미"]]],
   ["나를 알기", [["@ncard", "🃏", "나의 냥이 카드"], ["saju:fit", "🎯", "나에게 맞는"], ["saju:rx", "🍀", "개운 처방전"], ["saju:manse", "📜", "만세력"], ["saju:sinsal", "🔮", "신살과 길성"], ["saju:ogo", "🏛️", "오고 정밀감명"], ["@gloss", "📚", "명리 교실"]]],
-  ["함께", [["compat", "💞", "궁합·귀인 지도"], ["talk", "💬", "고민 상담"], ["path", "🧭", "나의 길"]]],
+  ["함께", [["compat", "💞", "궁합·귀인 지도"], ["@cfamily", "🏠", "가족 지도"], ["talk", "💬", "고민 상담"], ["path", "🧭", "나의 길"]]],
+  ["냥이의 선물", [['@gift="charm"', "🧧", "행운 부적"], ['@gift="twodays"', "📅", "우리 둘 좋은 날"], ['@gift="moodreport"', "📈", "기분 리포트"], ['@gift="birthday"', "🎂", "생일 냥이"]]],
   ["기록·수집", [["@saved", "🗂️", "내가 본 풀이"], ["@garden", "🌱", "오행 정원"], ["@season", "🎐", "절기 일기"], ["@book", "📖", "냥이 일기장"], ["@dex", "👘", "냥이 도감"], ["@backup", "🔐", "기록 백업"]]],
-  ["설정", [["@themesheet", "🌙", "보기 설정"]]],
+  ["설정", [["@themesheet", "🎨", "보기 설정(색·글자·말투)"]]],
 ];
 const menuBtn = ([g, ic, l]) => `<button type="button" ${g[0] === "@" ? `data-${g.slice(1)}` : `data-go="${g}"`}><i>${ic}</i><span>${l}</span></button>`;
 function openAllMenu() {

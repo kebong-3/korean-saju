@@ -67,6 +67,11 @@ function famForm() {
     <div class="rd-cta"><button class="btn primary" type="button" id="fam-save">가족 지도에 올리기</button><button class="ghost" type="button" id="fam-cancel">취소</button></div></div>`;
 }
 
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("[data-cfamily]")) return;
+  closeSheet(); compatMode = "family"; renderCompat(); showTab("compat");
+});
+
 async function renderFamilyPane() {
   const pane = $("#tab-compat [data-cpane=family]");
   if (!pane || !S.d) return;

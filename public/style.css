@@ -1121,6 +1121,9 @@ html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !im
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
 
+.wardrobe { display: inline-flex; align-items: center; gap: 4px; } .wardrobe .i3d { filter: none; }
+.saved-ppl { margin-top: 12px; font-size: 14px; } .saved-ppl summary { cursor: pointer; color: var(--lav-d); font: 14px var(--title); min-height: 36px; display: flex; align-items: center; }
+.sp-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line); } .sp-row small { color: var(--sub); }
 /* ───────── 그림 타일: 지금 나에게 · 오늘의 의식 · 바로가기 · 대풀이 메뉴 */
 .i3d { display: block; filter: drop-shadow(0 3px 4px rgba(120, 80, 140, .14)); }
 .gtiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
@@ -1315,3 +1318,30 @@ html.night .gd.r small { color: #ffb3c4; } html.night .gd.c small { color: #ffd3
 html.night .gt i { background: linear-gradient(90deg, #ffd66b var(--w), #3a3354 var(--w)); } html.night .gt i.give { background: linear-gradient(90deg, #ff8fa3 var(--w), #3a3354 var(--w)); }
 html.night .rtag, html.night .gd-head h2 em { background: #33295a; color: #cdbdff; }
 html.night .mrow .mn small.nick, html.night .gd-nick { color: #ffb3c4; }
+
+/* ───────── 색 테마: 🌸 벚꽃(기본, :root) · 🌙 별밤(html.night) · 📜 한지 · 🌿 말차 */
+html.t-hanji { --bg: #f6f0e4; --bg2: #efe6d6; --card: #fffdf8; --ink: #3a3128; --sub: #6b5f51; --line: #e7dac4; --pink: #c98563; --pink-d: #97502f; --pink-l: #f5e3d6; --lav: #9a8566; --lav-d: #6f5b3c; --lav-l: #efe5d3; --depth-pink: #a8603e; --depth-lav: #7d6847; --depth-line: #dccdb4; --butter-l: #f8ecd0; }
+html.t-hanji body { background: radial-gradient(1200px 600px at 10% -10%, #f2e2cc 0, transparent 60%), radial-gradient(900px 600px at 110% 10%, #ebe3d0 0, transparent 55%), var(--bg); background-attachment: fixed; }
+html.t-hanji .reader { background: radial-gradient(1200px 600px at 10% -10%, #f2e2cc 0, transparent 60%), radial-gradient(900px 600px at 110% 10%, #ebe3d0 0, transparent 55%), var(--bg); }
+html.t-hanji body::before { opacity: .18; }
+html.t-hanji .btn.primary { background: linear-gradient(180deg, #d99a7c, #c47c5a 60%, #b8704e); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 0 var(--depth-pink), 0 10px 18px -6px rgba(0, 0, 0, .18); }
+html.t-hanji .btn.lav { background: linear-gradient(180deg, #b3a07f, #8f7a59); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 0 var(--depth-lav), 0 10px 18px -6px rgba(0, 0, 0, .15); }
+html.t-hanji .card.tint-pink, html.t-hanji .card.tint-lav, html.t-hanji .card.tint-mint, html.t-hanji .card.tint-butter { background: linear-gradient(160deg, var(--card) 35%, var(--pink-l)); }
+html.t-hanji :is(.bd-row, .bk-note, .checks label, .chip, .classic, .dex, .dlist div, .dom-story .story-text, .dream-box, .dw, .dw3, .easy-item, .el-stack, .fam-chip, .fam-pair, .fit, .gd-line, .glossary-list button, .gt, .gung-c, .kcount div, .lk, .lucky div, .mfilter button, .moods button, .more-box, .mp-bar, .mrow, .mx-c, .note-box, .quote, .ss-g, .td-row, .tips li, .tl-row.now, .tl-row:active, .tm, .top-days button, .vil, .why-score li, .wrow, .yr, .yv > div, input, select) { background: #f8f1e5; }
+html.t-hanji :is(.bd-row.soon, .gd.r, .td-row.best) { background: var(--pink-l); }
+html.t-hanji .top { background: color-mix(in srgb, var(--bg) 85%, transparent); }
+html.t-matcha { --bg: #eef5ea; --bg2: #e3efe0; --card: #ffffff; --ink: #2f3a2c; --sub: #5a6855; --line: #dce8d5; --pink: #6fb58a; --pink-d: #2e7a4e; --pink-l: #dcefe2; --lav: #7fb6a6; --lav-d: #2f7566; --lav-l: #e1f1ec; --depth-pink: #4f9a6c; --depth-lav: #4f8f80; --depth-line: #cfe0c8; --butter-l: #f3f3d8; }
+html.t-matcha body { background: radial-gradient(1200px 600px at 10% -10%, #dcefd8 0, transparent 60%), radial-gradient(900px 600px at 110% 10%, #f4f0d9 0, transparent 55%), var(--bg); background-attachment: fixed; }
+html.t-matcha .reader { background: radial-gradient(1200px 600px at 10% -10%, #dcefd8 0, transparent 60%), radial-gradient(900px 600px at 110% 10%, #f4f0d9 0, transparent 55%), var(--bg); }
+html.t-matcha body::before { opacity: .18; }
+html.t-matcha .btn.primary { background: linear-gradient(180deg, #8fcca3, #66b385 60%, #5aa679); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 0 var(--depth-pink), 0 10px 18px -6px rgba(0, 0, 0, .18); }
+html.t-matcha .btn.lav { background: linear-gradient(180deg, #8fcabb, #5aa596); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 0 var(--depth-lav), 0 10px 18px -6px rgba(0, 0, 0, .15); }
+html.t-matcha .card.tint-pink, html.t-matcha .card.tint-lav, html.t-matcha .card.tint-mint, html.t-matcha .card.tint-butter { background: linear-gradient(160deg, var(--card) 35%, var(--pink-l)); }
+html.t-matcha :is(.bd-row, .bk-note, .checks label, .chip, .classic, .dex, .dlist div, .dom-story .story-text, .dream-box, .dw, .dw3, .easy-item, .el-stack, .fam-chip, .fam-pair, .fit, .gd-line, .glossary-list button, .gt, .gung-c, .kcount div, .lk, .lucky div, .mfilter button, .moods button, .more-box, .mp-bar, .mrow, .mx-c, .note-box, .quote, .ss-g, .td-row, .tips li, .tl-row.now, .tl-row:active, .tm, .top-days button, .vil, .why-score li, .wrow, .yr, .yv > div, input, select) { background: #f2f8ef; }
+html.t-matcha :is(.bd-row.soon, .gd.r, .td-row.best) { background: var(--pink-l); }
+html.t-matcha .top { background: color-mix(in srgb, var(--bg) 85%, transparent); }
+.theme-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.theme-cards button { border: 2px solid var(--line); border-radius: 18px; padding: 10px; background: #fff; cursor: pointer; text-align: left; color: #3b2f4a; }
+.theme-cards button.on { border-color: var(--pink); box-shadow: 0 0 0 2px var(--pink-l); }
+.theme-cards .sw { display: flex; gap: 4px; margin-bottom: 6px; } .theme-cards .sw i { width: 22px; height: 22px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); }
+.theme-cards b { display: block; font: 15px var(--title); } .theme-cards small { font-size: 12px; color: #6b6080; }

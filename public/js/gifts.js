@@ -15,7 +15,14 @@ function phonePeople() {
   try { const p = JSON.parse(localStorage.getItem("nyang:partner") || "null"); if (p) add(p.name || (married() ? "배우자" : "그 사람"), p, married() ? "spouse" : "love"); } catch { /* */ }
   try { JSON.parse(localStorage.getItem("nyang:kids") || "[]").forEach((k, i) => add(k.name || `아이 ${i + 1}`, k, "child")); } catch { /* */ }
   try { localFriends().forEach((f) => add(f.name, f.birth, f.role || "friend")); } catch { /* */ }
+  store.get("people", []).forEach((p) => add(p.name, p.birth, "saved"));
   return out;
+}
+/** '직접 입력'한 사람을 이 폰에 저장(다음에 고르기만 하면 되게) — 서버에는 저장하지 않는다 */
+function savePerson(name, birth) {
+  const l = store.get("people", []);
+  if (l.some((p) => p.name === name && p.birth.year === birth.year && p.birth.month === birth.month && p.birth.day === birth.day)) return;
+  l.push({ name, birth: { ...birth, name } }); store.set("people", l.slice(-20));
 }
 const PERSON_IC = { spouse: "💍", child: "🧒", parent: "👵", sibling: "👫", family: "🏠", love: "💗", friend: "🧋", coworker: "💼", boss: "👔", junior: "🐥" };
 
@@ -31,13 +38,18 @@ function personPicker(id, withMe = true) {
     bind() {
       const root = $(`#${id}`), form = $(`#${id}-form`);
       buildForm(form, id, "생일"); form.querySelector(".form-title")?.remove();
+      form.insertAdjacentHTML("beforeend", `<label class="check"><input type="checkbox" name="keep" checked> 이 사람 이 폰에 저장(다음엔 고르기만)</label>`);
       form.hidden = first !== "new";
       $$("[data-pi]", root).forEach((b) => b.addEventListener("click", () => { $$("[data-pi]", root).forEach((x) => x.classList.toggle("on", x === b)); form.hidden = b.dataset.pi !== "new"; }));
     },
     get() {
       const v = $(`#${id} [data-pi].on`)?.dataset.pi;
       if (v === "me") return { name: S.d["이름"] || "나", birth: S.birth, me: true };
-      if (v === "new") { const b = birthOf($(`#${id}-form`)); return { name: b.name || "그 사람", birth: b }; }
+      if (v === "new") {
+        const f = $(`#${id}-form`), b = birthOf(f), nm = b.name || "그 사람";
+        if (f.keep?.checked && b.name) { savePerson(nm, b); track("person_save"); }
+        return { name: nm, birth: b };
+      }
       return ppl[+v];
     },
   };
@@ -189,18 +201,18 @@ async function refreshBdayTile() {
     if (x && x["디데이"] <= 30) { t.textContent = `${dday(x["디데이"])} ${x["이름"]}`; t.closest("[data-gift]")?.classList.toggle("hot", x["디데이"] <= 7); }
   } catch { /* 생일 정보는 없어도 된다 */ }
 }
-function bdaySvg(x) {
-  const W = 360, H = 640, me = x["이름"] === (S.d["이름"] || "나");
+function bdaySvg(x, showAge = null) {
+  const W = 360, H = 640, me = x["이름"] === (S.d["이름"] || "나"), age = showAge ?? me;
   const cake = ic3d("birthday", 150).replace("<svg ", '<svg x="105" y="96" ');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Jua, Gowun Dodum, Apple SD Gothic Neo, Malgun Gothic, sans-serif">
     <defs><linearGradient id="bb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0f4"/><stop offset="1" stop-color="#e9e0ff"/></linearGradient></defs>
     <rect width="${W}" height="${H}" fill="url(#bb)"/>
     ${[[40, 60, "#ffd66b"], [320, 90, "#ff8fa3"], [300, 260, "#7fd3b8"], [56, 300, "#a78bfa"], [330, 420, "#ffd66b"], [30, 470, "#ff8fa3"]].map(([cx, cy, c]) => `<circle cx="${cx}" cy="${cy}" r="5" fill="${c}"/>`).join("")}
-    <text x="180" y="70" font-size="15" fill="#7c5cf0" text-anchor="middle">${esc(x["날짜말"])} · ${x["나이"]}번째 생일</text>${cake}
+    <text x="180" y="70" font-size="15" fill="#7c5cf0" text-anchor="middle">${esc(x["날짜말"])}${age ? ` · ${x["나이"]}번째 생일` : ""}</text>${cake}
     <text x="180" y="300" font-size="27" fill="#c2385a" text-anchor="middle">${me ? "생일 축하해, 나!" : `생일 축하해, ${esc(x["이름"])}!`}</text>
-    ${x["냥이"] ? `<text x="180" y="336" font-size="15" fill="#3b2f4a" text-anchor="middle">${esc(x["띠"])}띠 · ${esc(x["냥이"]["일주"])}일주 · ${esc(x["냥이"]["이름"])}</text>` : ""}
+    ${x["냥이"] ? `<text x="180" y="336" font-size="15" fill="#3b2f4a" text-anchor="middle">${age ? `${esc(x["띠"])}띠 · ${esc(x["냥이"]["일주"])}일주 · ` : ""}${esc(x["냥이"]["이름"])}</text>` : ""}
     <rect x="34" y="364" width="292" height="150" rx="20" fill="#fff" opacity=".9"/>
-    ${wrapText(x["축하"], 19).slice(0, 3).map((t, i) => `<text x="180" y="${400 + i * 24}" font-size="15.5" fill="#3b2f4a" text-anchor="middle">${esc(t)}</text>`).join("")}
+    ${wrapText(age ? x["축하"] : x["축하"].replace(/^\d+번째 /, ""), 19).slice(0, 3).map((t, i) => `<text x="180" y="${400 + i * 24}" font-size="15.5" fill="#3b2f4a" text-anchor="middle">${esc(t)}</text>`).join("")}
     ${wrapText("🎁 " + x["선물"], 21).slice(0, 2).map((t, i) => `<text x="180" y="${478 + i * 20}" font-size="13" fill="#7c5cf0" text-anchor="middle">${esc(t)}</text>`).join("")}
     <text x="180" y="${H - 18}" font-size="12" fill="#6b6080" text-anchor="middle">사주냥이 · 너의 생일 냥이는 누구야? 🐾</text></svg>`;
 }
@@ -213,11 +225,21 @@ async function openBirthdays() {
     out.innerHTML = `${list.map((x, i) => `<div class="bd-row ${x["디데이"] <= 7 ? "soon" : ""}"><span class="bd-d">${dday(x["디데이"])}</span>
         <div><b>${esc(x["이름"])}</b><small>${esc(x["날짜말"])}${x["음력"] ? " (음력 생일)" : ""} · ${x["나이"]}번째 · ${esc(x["띠"])}띠</small></div>
         <button type="button" class="ghost" data-bdcard="${i}">🎂 카드</button></div>`).join("")}
-      ${list.length <= 1 ? `<p class="sub" style="margin-top:10px">인연 탭의 🏠 가족이나 귀인 지도(내 폰 저장)에 생일을 넣으면 여기서 함께 챙겨 준다냥.</p>` : ""}`;
+      ${list.length <= 1 ? `<p class="sub" style="margin-top:10px">인연 탭의 🏠 가족, 귀인 지도(내 폰 저장), 또는 '우리 둘 좋은 날'·'행운 부적'에서 직접 입력한 사람이 여기 함께 떠요.</p>` : ""}
+      ${store.get("people", []).length ? `<details class="saved-ppl"><summary>저장한 사람 ${store.get("people", []).length}명 관리</summary>
+        ${store.get("people", []).map((p, i) => `<div class="sp-row"><span>👤 ${esc(p.name)} <small>${p.birth.year}.${p.birth.month}.${p.birth.day}${p.birth.calendar === "lunar" ? " 음력" : ""}</small></span>
+          <button type="button" class="ghost" data-pdel="${i}" aria-label="${esc(p.name)} 지우기">✕</button></div>`).join("")}</details>` : ""}`;
+    $$("[data-pdel]", out).forEach((b) => b.addEventListener("click", () => {
+      const l = store.get("people", []), p = l[+b.dataset.pdel];
+      if (p && confirm(`${p.name}을(를) 이 폰에서 지울까?`)) { l.splice(+b.dataset.pdel, 1); store.set("people", l); store.set("bday", null); openBirthdays(); }
+    }));
     $$("[data-bdcard]", out).forEach((b) => b.addEventListener("click", () => {
       const x = list[+b.dataset.bdcard]; track("birthday_card");
+      const me = x["이름"] === (S.d["이름"] || "나");
       openSheet(`<h2 style="margin:0 0 10px">🎂 ${esc(x["이름"])} 생일 카드</h2><div id="story-box" class="story-box">${bdaySvg(x)}</div>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="bd-age" ${me ? "checked" : ""}> 나이·띠 보이기 ${me ? "" : "<small class='sub'>(다른 사람 카드는 기본으로 숨겨요)</small>"}</label>
         <div class="rd-cta" style="margin-top:12px"><button class="btn primary" type="button" id="bd-share">📤 보내기</button><button class="btn lav" type="button" id="bd-save">🖼️ 이미지 저장</button></div>`);
+      $("#bd-age").addEventListener("change", (ev) => { $("#story-box").innerHTML = bdaySvg(x, ev.target.checked); });
       const svg = () => $("#story-box svg"), fn = `사주냥이_생일카드_${x["이름"]}.png`;
       $("#bd-share").addEventListener("click", () => shareImage(svg(), fn, `${x["이름"]}, 생일 축하해! 🎂`));
       $("#bd-save").addEventListener("click", () => saveSvgPng(svg(), fn));
@@ -237,6 +259,6 @@ const GIFT_TILES = [["charm", "행운 부적", "중요한 날 지켜 줄 부적"
   ["moodreport", "기분 리포트", "나만의 기분 패턴", openMoodReport], ["birthday", "생일 냥이", "다가오는 생일 챙기기", openBirthdays]];
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-gift]");
-  if (g) { const t = GIFT_TILES.find((x) => x[0] === g.dataset.gift); if (t) t[3](); return; }
+  if (g) { const t = GIFT_TILES.find((x) => x[0] === g.dataset.gift); if (t) { store.set(`seen:${t[0]}`, 1); $$(`.gtile[data-gift="${t[0]}"]`).forEach((el) => el.classList.remove("new")); t[3](); } return; }
   if (e.target.closest("[data-moodsheet]")) { openMoodSheet(); return; }
 });
