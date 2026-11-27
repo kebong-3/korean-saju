@@ -60,8 +60,9 @@ function charmSvg(c, who) {
     <text x="180" y="108" font-size="15" fill="#a32626" text-anchor="middle">${esc(c["날짜말"])} · ${esc(c["목적"]["이모지"])} ${esc(c["목적"]["이름"])}</text>
     ${ch.map((t, i) => `<text x="${i % 2 ? 228 : 132}" y="${i < 2 ? 196 : 286}" font-size="70" font-weight="700" fill="#c62f2f" text-anchor="middle" font-family="serif">${esc(t)}</text>`).join("")}
     <text x="180" y="332" font-size="19" fill="#a32626" text-anchor="middle">${esc(c["뜻"])}</text>
-    <rect x="244" y="410" width="40" height="40" rx="6" fill="#c62f2f"/><g transform="translate(264 432) scale(2)" fill="#fff"><ellipse cx="0" cy="2" rx="3" ry="2.4"/><circle cx="-3" cy="-2" r="1.2"/><circle cx="0" cy="-3.2" r="1.2"/><circle cx="3" cy="-2" r="1.2"/></g>
-    ${lines(wrapText(c["응원"], 17).slice(0, 3), 165, 370, 13.5, "#5a3a10")}
+    ${c["소원"] ? `<text x="180" y="364" font-size="18" fill="#7a1f1f" text-anchor="middle">“${esc(c["소원"])}”</text>` : ""}
+    <rect x="${c["소원"] ? 256 : 244}" y="${c["소원"] ? 426 : 410}" width="${c["소원"] ? 34 : 40}" height="${c["소원"] ? 34 : 40}" rx="6" fill="#c62f2f"/><g transform="translate(${c["소원"] ? 273 : 264} ${c["소원"] ? 445 : 432}) scale(${c["소원"] ? 1.7 : 2})" fill="#fff"><ellipse cx="0" cy="2" rx="3" ry="2.4"/><circle cx="-3" cy="-2" r="1.2"/><circle cx="0" cy="-3.2" r="1.2"/><circle cx="3" cy="-2" r="1.2"/></g>
+    ${c["소원"] ? lines(wrapText(c["응원"], 15).slice(0, 3), 150, 394, 13, "#5a3a10", 1.4) : lines(wrapText(c["응원"], 17).slice(0, 3), 165, 370, 13.5, "#5a3a10")}
     <rect x="28" y="500" width="304" height="100" rx="16" fill="#fff" opacity=".85"/>
     <text x="180" y="524" font-size="13" fill="#b8740b" text-anchor="middle">이날 나를 지켜 줄 것</text>
     <text x="180" y="550" font-size="14" fill="#3b2f4a" text-anchor="middle">🎨 ${esc(L["색"])} · 🍽️ ${esc(L["음식"])} · 🧭 ${esc(L["방향"])}${L["시간"].length ? ` · ⏰ ${esc(L["시간"].join("·"))}` : ""}</text>
@@ -74,6 +75,7 @@ function openCharm() {
   openSheet(`${giftHead("charm", "행운 부적", "시험·면접·고백 같은 날, 점수 대신 그날 나를 지켜 줄 것만 담아 준다냥.")}
     <h3 class="pref-h">누구를 위한 부적?</h3>${pk.html}
     <h3 class="pref-h">어떤 날이야?</h3><div class="role-pick" id="ch-p">${CHARM_P.map(([k, e, l], i) => `<button type="button" data-role="${k}" class="${i ? "" : "on"}">${e} ${l}</button>`).join("")}</div>
+    <h3 class="pref-h">내 목표 한 줄 <small class="sub">(선택 · 부적에 적혀요)</small></h3><input id="ch-wish" class="date-in" maxlength="20" placeholder="예) 9급 공무원 합격! / 토익 900">
     <h3 class="pref-h">그날은 언제?</h3><input type="date" id="ch-day" class="date-in" value="${kstDate(1)}" min="${kstDate(0)}" max="${kstDate(400)}">
     <button class="btn primary wide" type="button" id="ch-go" style="margin-top:14px">🧧 부적 만들기</button><div id="ch-out"></div>`);
   pk.bind();
@@ -83,7 +85,7 @@ function openCharm() {
     try { who = pk.get(); } catch (err) { alert(err.message); return; }
     btn.disabled = true; const out = $("#ch-out"); loading(out);
     try {
-      const c = await api("/api/charm", { birth: who.birth, day: $("#ch-day").value, purpose: purpose() });
+      const c = await api("/api/charm", { birth: who.birth, day: $("#ch-day").value, purpose: purpose(), wish: $("#ch-wish").value.trim() });
       track("charm", { p: purpose() });
       out.innerHTML = `<div id="story-box" class="story-box" style="margin-top:14px">${charmSvg(c, who)}</div>
         <div class="gift-note"><b>${esc(c["기운"])}</b><span>${esc(c["지킴"])}</span></div>
@@ -162,7 +164,7 @@ async function openMoodReport() {
     const face = (v) => (v == null ? "·" : v < 0.7 ? "😣" : v < 1.4 ? "🙂" : "😆");
     out.innerHTML = `<div class="mr-bars">${ELEM.map((e) => { const x = r["오행"][e]; return `<div class="mr-col ${e === r["좋은기운"] ? "best" : ""}">
         <span class="mr-face">${face(x["평균"])}</span><i style="height:${x["평균"] == null ? 6 : 12 + x["평균"] / 2 * 70}px;background:${ELC[e]}"></i><b>${HANJA[e]} ${e}</b><small>${x["수"]}일</small></div>`; }).join("")}</div>
-      <p class="sub" style="text-align:center;margin:4px 0 12px">그날 들어온 기운(일진 오행)별 내 기분 평균</p>
+      <p class="sub" style="text-align:center;margin:4px 0 12px">그날 들어온 기운(일진 오행)별 내 기분 평균 · ${r["확신"] ? "기운마다 3일 이상 쌓인 결과" : "아직 기록이 적어 참고용"}</p>
       <ul class="tips plain">${r["말"].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
       ${r["상관"] != null ? `<p class="fine">냥이 점수와 기분의 닮은 정도: ${Math.round(r["상관"] * 100)}% (100%에 가까울수록 같이 움직임)</p>` : ""}`;
   } catch (err) { out.innerHTML = `<p class="error">${esc(err.message)}</p>`; }
@@ -221,6 +223,13 @@ async function openBirthdays() {
       $("#bd-save").addEventListener("click", () => saveSvgPng(svg(), fn));
     }));
   } catch (err) { out.innerHTML = `<p class="error">${esc(err.message)}</p>`; }
+}
+
+/** 타일 아래 한 줄 — 기분 리포트는 기록이 얼마나 쌓였는지 */
+function giftSub(k, def) {
+  if (k !== "moodreport") return def;
+  const n = Object.values(store.get("diary", {})).filter((v) => v && v.mood != null).length;
+  return n < MOOD_NEED ? `기록 ${n}/${MOOD_NEED}일 — 쌓이면 열려요` : def;
 }
 
 // ───────── 타일(지금 나에게 · 오늘의 의식)에서 여는 곳

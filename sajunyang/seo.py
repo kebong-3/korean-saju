@@ -38,7 +38,7 @@ def _page(path: str, title: str, desc: str, body: str, crumbs: list[tuple[str, s
 <link rel="icon" href="/nyang.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=31">
+<link rel="stylesheet" href="/style.css?v=32">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 <style>.doc{{max-width:720px;margin:0 auto;padding:18px 16px 60px}}.doc h1{{font-size:26px;margin:6px 0 6px}}.doc h2{{font-size:20px;margin:22px 0 8px}}
 .doc p,.doc li{{font-size:16px;line-height:1.8}}.crumb{{font-size:13px;color:var(--sub)}}.crumb a{{color:var(--sub)}}

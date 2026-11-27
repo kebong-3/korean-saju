@@ -41,21 +41,29 @@ GROUP_TIP = {
     "관성": "규칙과 예의가 잘 통하는 날 — 단정한 차림이 플러스",
     "인성": "머리가 맑고 도움이 들어오는 날 — 아는 것을 차분히",
 }
+GUARD = {
+    "exam": "부적이 그날 기운을 네 편으로 모아 준다냥. 준비한 만큼 꼭 나온다 — 마지막 확인 한 번이면 충분해.",
+    "interview": "부적이 그날 기운을 네 편으로 모아 준다냥. 문을 열고 들어가는 순간부터 너의 시간이야.",
+    "talk": "부적이 그날 기운을 네 편으로 모아 준다냥. 듣는 사람은 생각보다 네 편이다.",
+    "love": "부적이 그날 기운을 네 편으로 모아 준다냥. 마음은 전하는 것만으로도 이미 용기 있는 일이야.",
+    "start": "부적이 그날 기운을 네 편으로 모아 준다냥. 새 시작은 서툴러도 괜찮은 날이다.",
+    "deal": "부적이 그날 기운을 네 편으로 모아 준다냥. 차분하게 읽고 또렷하게 묻기.",
+    "etc": "부적이 그날 기운을 네 편으로 모아 준다냥. 하고 싶은 한 가지에만 마음을 모아 봐.",
+}
 PROP = {"목": "초록 펜이나 나무 연필", "화": "빨간 소품이나 따뜻한 차", "토": "노란 손수건이나 고소한 견과", "금": "흰 셔츠나 은색 시계", "수": "검정 펜과 물 한 병"}
 
 
-def charm(r, d: date, purpose: str, today: date) -> dict:
+def charm(r, d: date, purpose: str, today: date, wish: str = "") -> dict:
     p = PURPOSE.get(purpose, PURPOSE["etc"])
     f = day_fortune(r, d)
     lk = f["행운"]
     god = f["십성"].split("/")[0]
     hrs = hourly(r, d)["좋은시간"][:2]
-    low = f["점수"] < 56
-    guard = ("이날은 기운이 살짝 쉬어 가는 날이라 이 부적이 더 단단히 지켜 준다냥. 서두르지 말고, 한 번 더 확인!" if low
-             else "기운이 잘 받쳐 주는 날이다냥. 부적은 그 기운을 한 번 더 모아 준다.")
+    # 점수나 '낮은 날'은 말하지 않는다 — 부적은 언제나 그날 기운을 내 편으로 모아 주는 것
+    guard = GUARD[purpose if purpose in GUARD else "etc"]
     return {"목적": {"키": purpose if purpose in PURPOSE else "etc", "이름": p[0], "이모지": p[1]},
             "날짜": d.isoformat(), "날짜말": _md(d), "디데이": (d - today).days,
-            "글자": p[2], "뜻": p[3], "응원": p[4], "기운": GROUP_TIP[GROUP[god]], "지킴": guard,
+            "글자": p[2], "뜻": p[3], "응원": p[4], "기운": GROUP_TIP[GROUP[god]], "지킴": guard, "소원": wish,
             "행운": {"색": lk["색"], "음식": lk["음식"], "방향": lk["방위"], "숫자": lk["숫자"], "소품": PROP[lk["오행"]], "시간": hrs, "오행": lk["오행"]}}
 
 
@@ -67,6 +75,25 @@ TWO_TIP = {
     "talk": {"식상": "속마음이 술술 나오는 날", "재성": "현실적인 얘기가 잘 통하는 날", "인성": "서로 이해하기 좋은 날", "비겁": "솔직하게 말해도 괜찮은 날", "관성": "약속을 정하기 좋은 날"},
     "work": {"식상": "아이디어가 잘 나오는 날", "재성": "성과가 보이는 날", "인성": "배우며 함께하는 날", "비겁": "손발이 척척 맞는 날", "관성": "역할을 나누기 좋은 날"},
 }
+
+
+FEEL = {"비겁": "내 페이스대로 편한", "식상": "말이 술술 나오는", "재성": "실속을 잘 챙기는", "관성": "책임감이 빛나는", "인성": "마음이 편안한"}
+WEEKEND_TIP = {True: "주말이라 느긋하게 오래 함께하기 좋아", False: "평일이라 짧고 굵게 만나기 좋아"}
+
+
+def _pick_lines(days: list[dict], n: int = 5) -> list[dict]:
+    """점수 순서는 지키되, 다섯 날의 이유·한줄이 서로 겹치지 않게 후보 문장 중에서 고른다."""
+    used_r, used_t, out = set(), set(), []
+    for x in days:
+        r = next((c for c in x.pop("_r") if c not in used_r), None)
+        t = next((c for c in x.pop("_t") if c not in used_t), None)
+        if r is None or t is None:
+            continue
+        used_r.add(r); used_t.add(t)
+        out.append({**x, "이유": r, "한줄": t})
+        if len(out) == n:
+            break
+    return out
 
 
 def two_days(ra, rb, today: date, purpose: str = "meet", days: int = 60) -> dict:
@@ -81,21 +108,28 @@ def two_days(ra, rb, today: date, purpose: str = "meet", days: int = 60) -> dict
         el = ELEMENTS[STEM_ELEMENT[Pillar(day_index(d), "").stem]]
         both = el in ya and el in yb
         score = min(sa, sb) * 0.6 + (sa + sb) / 2 * 0.4 + (4 if both else 0)
-        ga = GROUP[fa["십성"].split("/")[0]]
-        why = (f"둘 다 보약인 {el} 기운이 들어오는 날" if both else
-               "둘 다 기운이 고르게 좋은 날" if min(sa, sb) >= 68 else "한 사람이 든든히 받쳐 주는 날")
+        ga, gb = GROUP[fa["십성"].split("/")[0]], GROUP[fb["십성"].split("/")[0]]
+        feel = f"둘 다 {FEEL[ga]} 날" if ga == gb else f"나는 {FEEL[ga]} 날, 상대는 {FEEL[gb]} 날"
+        reasons = ([f"둘 다 보약인 {el} 기운이 들어오는 날"] if both else []) + [feel]
+        if abs(sa - sb) >= 8:
+            reasons.append(f"{'내' if sa > sb else '상대'} 기운이 특히 좋아 이끌어 주는 날")
+        reasons.append(f"{el} 기운이 둘 사이를 이어 주는 {WEEK[d.weekday()]}요일")
+        tips = [TWO_TIP[purpose][ga], TWO_TIP[purpose][gb], WEEKEND_TIP[d.weekday() >= 5]]
         out.append({"날짜": d.isoformat(), "날짜말": _md(d), "주말": d.weekday() >= 5, "점": round(score),
-                    "_s": score, "이유": why, "한줄": TWO_TIP[purpose][ga],
-                    "등급": [fa["등급"], fb["등급"]]})
+                    "_s": score, "_r": reasons, "_t": list(dict.fromkeys(tips)), "등급": [fa["등급"], fb["등급"]]})
     lo, hi = min(x["_s"] for x in out), max(x["_s"] for x in out)
     for x in out:  # 60일 안에서 견준 별점 — 가장 좋은 날이 별 다섯
         x["별"] = 1 + round(4 * (x.pop("_s") - lo) / ((hi - lo) or 1))
     best = sorted(out, key=lambda x: (-x["점"], x["날짜"]))
-    return {"목적": TWO_PURPOSE[purpose], "추천": best[:5], "주말추천": [x for x in best if x["주말"]][:5]}
+    import copy
+    return {"목적": TWO_PURPOSE[purpose], "추천": _pick_lines(copy.deepcopy(best)),
+            "주말추천": _pick_lines(copy.deepcopy([x for x in best if x["주말"]]))}
 
 
 # ---------------------------------------------------------------- 기분 × 기운 리포트
 MOOD_WORD = ["별로", "보통", "좋음"]
+SURE_DAYS = 3      # 기운(오행) 하나에 이만큼 쌓여야 '좋았다/지쳤다'고 말한다
+CORR_DAYS = 10     # 점수와 기분이 닮았는지는 이만큼 쌓인 뒤에
 
 
 def mood_report(r, records: list[tuple[date, int]], today: date) -> dict:
@@ -111,11 +145,11 @@ def mood_report(r, records: list[tuple[date, int]], today: date) -> dict:
         ys.append(m)
     avg = lambda v: round(sum(v) / len(v), 2) if v else None  # noqa: E731
     els = {e: {"평균": avg(v), "수": len(v)} for e, v in by_el.items()}
-    seen = {e: v for e, v in els.items() if v["수"] >= 2}
-    best = max(seen, key=lambda e: seen[e]["평균"]) if seen else None
-    worst = min(seen, key=lambda e: seen[e]["평균"]) if seen else None
+    seen = {e: v for e, v in els.items() if v["수"] >= SURE_DAYS}
+    best = max(seen, key=lambda e: seen[e]["평균"]) if len(seen) >= 2 else None
+    worst = min(seen, key=lambda e: seen[e]["평균"]) if len(seen) >= 2 else None
     corr = None
-    if len(xs) >= 5 and len(set(xs)) > 1 and len(set(ys)) > 1:
+    if len(xs) >= CORR_DAYS and len(set(xs)) > 1 and len(set(ys)) > 1:
         mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
         cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
         corr = cov / math.sqrt(sum((x - mx) ** 2 for x in xs) * sum((y - my) ** 2 for y in ys))
@@ -124,20 +158,26 @@ def mood_report(r, records: list[tuple[date, int]], today: date) -> dict:
                           if ELEMENTS[STEM_ELEMENT[Pillar(day_index(today + timedelta(days=i)), "").stem]] == e), None)
     if best and worst and best != worst and seen[best]["평균"] - seen[worst]["평균"] >= 0.3:
         nb, nw = nxt(best), nxt(worst)
-        lines.append(f"너는 {best} 기운 날에 기분이 가장 좋았다냥." + (f" 다음 {best} 기운 날은 {_md(nb)} — 중요한 약속은 그날로!" if nb else ""))
-        lines.append(f"{worst} 기운 날엔 조금 지쳤어." + (f" 다음 {worst} 기운 날({_md(nw)})엔 일정에 여유를 두자냥." if nw else ""))
+        lines.append(f"{best} 기운 날({seen[best]['수']}일)에 기분이 가장 좋았다냥." + (f" 다음 {best} 기운 날은 {_md(nb)} — 중요한 약속은 그날로!" if nb else ""))
+        lines.append(f"{worst} 기운 날({seen[worst]['수']}일)엔 조금 지쳤던 편이야." + (f" 다음 {worst} 기운 날({_md(nw)})엔 일정에 여유를 두자냥." if nw else ""))
     elif best:
-        lines.append("아직은 기운에 따라 기분이 크게 흔들리지 않는 편이다냥. 마음의 중심이 단단한 거야!")
+        lines.append("기운에 따라 기분이 크게 흔들리지 않는 편이다냥. 마음의 중심이 단단한 거야!")
+    else:
+        some = {e: v for e, v in els.items() if v["수"]}
+        lead = max(some, key=lambda e: (some[e]["평균"], some[e]["수"])) if some else None
+        need = sum(max(0, SURE_DAYS - v["수"]) for v in els.values())
+        lines.append((f"아직은 단정하기 이르다냥. 지금까지는 {lead} 기운 날({some[lead]['수']}일) 기분이 좋은 편이었어. " if lead else "")
+                     + f"기운마다 {SURE_DAYS}일씩 쌓이면(앞으로 약 {need}일) 또렷하게 알려 줄게.")
     if corr is not None:
         lines.append("냥이 점수와 네 기분이 꽤 잘 맞는다냥 — 점수가 좋은 날 기분도 좋았어." if corr >= 0.3 else
                      "냥이 점수보다 네 마음이 더 세다냥 — 점수와 상관없이 하루를 잘 만들어 가고 있어." if corr <= 0.05 else
                      "냥이 점수와 네 기분이 조금은 닮았다냥. 기록이 쌓이면 더 또렷해져.")
-    groups = {g: avg(v) for g, v in by_g.items() if v}
+    groups = {g: avg(v) for g, v in by_g.items() if len(v) >= SURE_DAYS}
     gbest = max(groups, key=groups.get) if groups else None
     if gbest:
         lines.append(f"십성으로 보면 '{gbest}'의 날에 제일 웃었다냥 — {GROUP_TIP[gbest].split(' — ')[0]}.")
     return {"기록수": len(records), "오행": els, "좋은기운": best, "힘든기운": worst, "상관": None if corr is None else round(corr, 2),
-            "말": lines, "기분말": MOOD_WORD}
+            "말": lines, "기분말": MOOD_WORD, "확신": best is not None, "기준": SURE_DAYS}
 
 
 # ---------------------------------------------------------------- 생일 냥이

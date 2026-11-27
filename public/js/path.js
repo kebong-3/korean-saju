@@ -189,7 +189,7 @@ function nowCard() {
   let pick = S.nowPick || nowPick();
   if (!opts[pick]) pick = Object.keys(opts).find((k) => opts[k]);
   const tiles = Object.keys(opts).filter((k) => k !== pick && opts[k]).map((k) => giftTile(NOW_TILE[k], `data-now="${k}"`)).join("")
-    + GIFT_TILES.map(([k, t, s]) => giftTile([k, t, s], `data-gift="${k}"`, "new")).join("");
+    + GIFT_TILES.map(([k, t, s]) => giftTile([k, t, giftSub(k, s)], `data-gift="${k}"`, "new")).join("");
   return `<div id="now-wrap"><h2 class="sec-t">지금 나에게</h2>${opts[pick] || ""}
     <h2 class="sec-t">냥이가 준비한 것 <small>눌러서 열어 봐</small></h2><div class="gtiles">${tiles}</div></div>`;
 }

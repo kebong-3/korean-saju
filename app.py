@@ -779,6 +779,12 @@ class CharmReq(BaseModel):
     birth: Birth
     day: date
     purpose: Literal["exam", "interview", "talk", "love", "start", "deal", "etc"] = "etc"
+    wish: str = Field(default="", max_length=20)   # 내 목표 한 줄(예: 9급 공무원 합격) — 저장하지 않는다
+
+    @field_validator("wish")
+    @classmethod
+    def _clean_wish(cls, v: str) -> str:
+        return re.sub(r"[<>\r\n]", "", re.sub(r"<[^>]*>", "", v)).strip()
 
 
 @app.post("/api/charm")
@@ -788,7 +794,7 @@ def charm_api(req: CharmReq):
     today = today_kst()
     if not (0 <= (req.day - today).days <= 400):
         raise HTTPException(400, "부적은 오늘부터 1년 안의 날짜로 만들 수 있다냥")
-    return extras.charm(_reading(req.birth), req.day, req.purpose, today)
+    return extras.charm(_reading(req.birth), req.day, req.purpose, today, req.wish)
 
 
 class TwoDaysReq(BaseModel):
