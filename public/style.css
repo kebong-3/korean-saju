@@ -1134,6 +1134,38 @@ html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #f
 .quote { background: #fbf6ee; border-radius: 14px; padding: 10px 12px; font: 15px var(--title); text-align: center; } .quote small { color: var(--sub); font-family: var(--body); }
 html.night .beads, html.night .quote { background: #2b2546 !important; color: var(--ink); } html.night .beads em { background: #33295a; color: #cdbdff; }
 
+/* ───────── 묘연 마을: 오늘의 인연 · 도감 · 마을 이야기 · 달 인연 · 전설 */
+.today-yeon { background: linear-gradient(160deg, #fffaf0 30%, #ffeec4); }
+.ty-head { display: flex; gap: 12px; align-items: center; }
+.ty-bell { font-size: 30px; width: 54px; height: 54px; flex: none; display: grid; place-items: center; background: #fff; border-radius: 18px; animation: ty-ring 2.4s ease-in-out infinite; transform-origin: 50% 20%; }
+@keyframes ty-ring { 0%, 70%, 100% { transform: rotate(0); } 75% { transform: rotate(14deg); } 85% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .ty-bell { animation: none; } }
+.ty-head small { color: #b8740b; font: 13px var(--title); } .ty-head h2 { margin: 0; font-size: 19px; } .ty-head h2 b { color: var(--pink-d); font-weight: 400; }
+.ty-msg { background: #fff; border-radius: 16px; padding: 10px 12px; } .ty-msg small { color: var(--sub); font: 12.5px var(--title); } .ty-msg p { margin: 4px 0 0; font-size: 15px; }
+.dex-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.dex { background: #f6f1fa; border-radius: 14px; padding: 8px 2px; text-align: center; opacity: .55; }
+.dex i { font-style: normal; font-size: 24px; display: block; filter: grayscale(1); } .dex small { font-size: 12px; color: var(--sub); white-space: nowrap; }
+.dex.on { opacity: 1; background: #fff7e3; } .dex.on i { filter: none; }
+.dex.legend.on { background: linear-gradient(160deg, #fff3c4, #ffd66b); box-shadow: 0 0 0 2px #e0a92b inset; }
+.vil-list { display: grid; gap: 10px; margin: 10px 0; }
+.vil { background: #fbf8fd; border-radius: 18px; padding: 12px; } .vil.locked { opacity: .6; }
+.vil-top { display: flex; gap: 10px; align-items: center; } .vil-top i { font-style: normal; font-size: 30px; width: 48px; height: 48px; display: grid; place-items: center; background: #fff; border-radius: 16px; flex: none; }
+.vil-top b { font: 17px var(--title); display: block; } .vil-top small { color: var(--sub); font-size: 13px; } .vil-top em { font-style: normal; font-size: 12px; background: #e0a92b; color: #fff; border-radius: 99px; padding: 1px 7px; }
+.vil-say { font: 16px var(--hand, var(--title)); color: var(--pink-d); margin: 8px 0 4px; }
+.vil ul { margin: 0 0 6px; padding-left: 18px; font-size: 14px; } .vil ul b { color: var(--lav-d); font-weight: 400; font-family: var(--title); }
+.vil.legend { background: linear-gradient(160deg, #fffaf0, #fff0c2); }
+.moon-tag { display: inline-block; background: #f3efff; border-radius: 99px; padding: 6px 12px; font-size: 13.5px; margin: 0 0 10px; }
+.legend-box { display: grid; gap: 4px; background: linear-gradient(160deg, #fff7d6, #ffe08a); border-radius: 16px; padding: 12px; margin-bottom: 10px; font-size: 14px; box-shadow: 0 0 0 2px #e0a92b inset; }
+.legend-box b { font: 16px var(--title); } .legend-box em { font-style: normal; font: 15px var(--hand, var(--title)); color: #8a5a00; }
+.gd-char.legend { box-shadow: 0 0 0 3px #e0a92b, 0 0 18px #ffd66b; }
+.char-say { display: flex; gap: 10px; align-items: flex-start; background: #2a2140; color: #f3eefc; border-radius: 18px; padding: 10px 12px; margin: 0 0 10px; font-size: 14.5px; }
+.char-say i { font-style: normal; font-size: 26px; } .char-say small { display: block; color: #cdbdff; font: 12.5px var(--title); margin-bottom: 2px; }
+html.night .today-yeon { background: linear-gradient(160deg, var(--card) 30%, #3e3520) !important; }
+html.night .ty-bell, html.night .ty-msg, html.night .vil-top i { background: #2b2546; }
+html.night .dex, html.night .vil, html.night .moon-tag { background: #2b2546 !important; color: var(--ink); }
+html.night .dex.on { background: #3e3520 !important; } html.night .dex.legend.on, html.night .legend-box, html.night .vil.legend { background: linear-gradient(160deg, #4a3a12, #6b5214) !important; color: #fff3c4; }
+html.night .legend-box em { color: #ffe08a; } html.night .ty-head small { color: #ffd38a; }
+
 /* ───────── 냥이의 인연 수첩: 인맥 별자리 · 관계 꼬리표 · 사용설명서 · 오행 구슬 */
 .mfilter { display: flex; gap: 6px; overflow-x: auto; margin: 2px 0 10px; scrollbar-width: none; }
 .mfilter button { flex: none; border: 0; background: #f6f0fb; color: var(--ink); border-radius: 99px; padding: 8px 13px; font: 14px var(--title); cursor: pointer; min-height: 36px; }

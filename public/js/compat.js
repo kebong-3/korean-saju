@@ -88,7 +88,7 @@ function mapBody(M, owner = true) {
       ${owner ? mfilterHtml(M) : ""}
       ${starMap(M, { slot: !owner })}
       <div class="kcount">${kinds.map((k) => { const i = kindName(k), c = M["캐릭터"]?.[k]; return `<div><i class="kdot" style="background:${KCOL[k]}"></i><b>${sm["유형수"][k]}</b><small>${c ? `${c["이모지"]}<br><b class="kname">${esc(c["이름"].replace(/ 냥$/, ""))}</b>` : i[1]}<br>${esc(i[2])}</small></div>`; }).join("")}</div></div>
-    ${owner ? netCard(M) : ""}
+    ${owner ? todayCard(M) + netCard(M) + dexCard(M) : ""}
     ${owner ? `<div class="card tint-butter"><div class="today">${ring(sm["귀인점수"], "귀인 점수", "", "#e0a92b")}
       <div><h3 style="margin:0 0 4px">나의 귀인 점수</h3><p class="sub" style="margin:0">지도에 있는 사람들이 내 용신을 채워 주는 정도, 천을귀인, 귀인 관계를 모아 계산했다냥.</p>
       ${sm["가장큰귀인"] ? `<p style="margin:6px 0 0">🌟 가장 큰 힘이 되는 사람: <b>${esc(sm["가장큰귀인"]["이름"])}</b> (${sm["가장큰귀인"]["영향력"]})</p>` : ""}
@@ -132,7 +132,7 @@ function bindMap(root, M, owner, onDelete, onWait, onLetter, onRole) {
     if (owner && m["설명서"]) openGuide(M, m, { del: onDelete && (() => onDelete(m)), wait: onWait && (() => onWait(m, true)), letter: onLetter && (() => onLetter(m)), role: onRole });
     else openMember(m, owner, onDelete ? () => onDelete(m) : null, onWait ? () => onWait(m, true) : null, onLetter ? () => onLetter(m) : null);
   }));
-  if (owner) bindMFilter(root);
+  if (owner) { bindMFilter(root); bindVillage(root, M); }
 }
 function waitCard(M) {
   const ws = M["대기"] || [], full = M["멤버"].length >= (M["정원"] || 10);

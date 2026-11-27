@@ -698,6 +698,8 @@ def _map_out(me_r, me_name: str, members: list[dict], year: int, own: bool = Tru
            "요약": relation.summary(me_r, members, year), "종류": relation.KIND, "순서": relation.KIND_ORDER}
     if own and inyeon:
         out["인맥"] = _safe(inyeon.network, members, me_r.analysis.yongshin)
+        out["오늘인연"] = _safe(inyeon.today_pick, members, today_kst())
+        out["마을"] = {"소개": inyeon.VILLAGE, "설정": inyeon.LORE, "전설": inyeon.LEGEND}
         out["관계종류"] = {k: {"이름": n, "이모지": e} for k, (n, e) in inyeon.ROLES.items()}
         out["캐릭터"] = {k: {"이름": n, "이모지": e, "소개": t} for k, (n, e, t) in inyeon.CHAR.items()}
     return out

@@ -145,5 +145,48 @@ class BeadsClientTest(unittest.TestCase):
         self.assertEqual(len(re.findall(r"useBead\(\)", s)), 3)  # 정의 1 + 규칙 상담 1 + AI 1
 
 
+class VillageTest(unittest.TestCase):
+    """묘연 마을: 카드 글자 수 · 전설 조건 · 달 인연 · 도감 · 오늘의 인연."""
+
+    def test_card_lines_fit_story_box(self):
+        for k, lines in inyeon.SHORT.items():
+            self.assertEqual(len(lines), 4)
+            for t in lines:
+                self.assertLessEqual(len(t), 20, (k, t))  # 카드 칸: 한 줄 10자 × 최대 3줄
+        for k in relation.KIND_ORDER:
+            self.assertIn(k, inyeon.LORE)
+            self.assertIn(k, inyeon.VOICE)
+            self.assertIn(k, inyeon.HELLO)
+
+    def test_legend_needs_cheoneul_and_high_chem(self):
+        v = lambda g, c: {"나에게": {"천을귀인": g}, "케미": c}  # noqa: E731
+        self.assertTrue(inyeon.is_legend(v(True, 85)))
+        self.assertFalse(inyeon.is_legend(v(True, 84)))
+        self.assertFalse(inyeon.is_legend(v(False, 98)))
+
+    def test_moon_tiers(self):
+        self.assertEqual(inyeon.moon(90)["이름"], "보름달 인연")
+        self.assertEqual(inyeon.moon(70)["이름"], "차오르는 달 인연")
+        self.assertEqual(inyeon.moon(30)["이름"], "초승달 인연")
+
+    def test_dex_and_today(self):
+        from datetime import date
+        j = TestClient(appmod.app).post("/api/mapcalc", json={"me": ME, "others": OTHERS}).json()
+        d = j["인맥"]["도감"]
+        self.assertEqual(d["수"], len(set(m["나에게"]["키"] for m in j["멤버"])))
+        self.assertTrue(d["칭호"].split()[-1])
+        t = j["오늘인연"]
+        self.assertIn(t["이름"], [m["이름"] for m in j["멤버"]])
+        self.assertTrue(t["한마디"] and t["이유"])
+        self.assertNotRegex(t["이유"], r"님님|냥가|엄마님")
+        picks = {inyeon.today_pick(j["멤버"], date(2026, 12, i))["이름"] for i in range(1, 15)}
+        self.assertGreaterEqual(len(picks), 3, "날마다 다른 사람이 골라진다")
+        self.assertEqual(inyeon.today_pick(j["멤버"], date(2026, 12, 3)), inyeon.today_pick(j["멤버"], date(2026, 12, 3)))
+        boss = next(m for m in j["멤버"] if m["관계"] == "boss")
+        self.assertIn(inyeon.HELLO[boss["나에게"]["키"]][1], [inyeon.today_pick([boss], date(2026, 12, 1))["한마디"]], "상사에겐 존댓말")
+        self.assertIn("마을", j)
+        self.assertIsNone(inyeon.today_pick([], date(2026, 12, 1)))
+
+
 if __name__ == "__main__":
     unittest.main()
