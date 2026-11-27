@@ -44,36 +44,6 @@
       ]
     },
     {
-      "source": "/js/(.*)",
-      "has": [
-        {
-          "type": "query",
-          "key": "v"
-        }
-      ],
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(style.css|nyang.js|boot.js)",
-      "has": [
-        {
-          "type": "query",
-          "key": "v"
-        }
-      ],
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
       "source": "/sw.js",
       "headers": [
         {
