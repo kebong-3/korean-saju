@@ -181,7 +181,7 @@ def _put_member(mid: str, pid: str, entry: dict) -> None:
         _bput(f"maps/{mid}/m/{pid}.json", entry)
 
 
-def add_member(mid: str, view: dict, src: str | None = None) -> tuple[str | None, str | None, bool]:
+def add_member(mid: str, view: dict, src: str | None = None, role: str = "") -> tuple[str | None, str | None, bool]:
     """(pid, token, 대기여부). src(상대 지도 id)가 같은 별이 이미 있으면 (None, None, False) — 중복 방지."""
     rec, ms = load(mid)
     if rec is None:
@@ -195,6 +195,8 @@ def add_member(mid: str, view: dict, src: str | None = None) -> tuple[str | None
     entry = {"view": view, "token": _h(token), "wait": wait}
     if src:
         entry["src"] = src
+    if role:
+        entry["role"] = role
     _put_member(mid, pid, entry)
     return pid, token, wait
 
@@ -210,6 +212,22 @@ def set_wait(mid: str, pid: str, token: str, wait: bool) -> bool:
     if not wait and e.get("wait") and active_count(ms) >= ACTIVE_MAX:
         raise StoreError(f"지도에는 {ACTIVE_MAX}명까지만 떠요. 먼저 한 명을 대기 명단으로 내려 줘")
     e["wait"] = bool(wait)
+    _put_member(mid, pid, e)
+    return True
+
+
+def set_role(mid: str, pid: str, token: str, role: str) -> bool:
+    """주인만: 이 별이 나에게 어떤 사이인지(친구·동료·상사·후배·가족·연인) 정한다."""
+    rec, ms = load(mid)
+    if rec is None or pid not in ms:
+        return False
+    if not owner_ok(rec, token):
+        raise StoreError("바꿀 권한이 없다냥")
+    e = ms[pid]
+    if role:
+        e["role"] = role
+    else:
+        e.pop("role", None)
     _put_member(mid, pid, e)
     return True
 

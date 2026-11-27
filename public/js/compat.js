@@ -43,20 +43,22 @@ function starMap(M, opts = {}) {
   let stars = "", lines = "", marks = "";
   order.forEach((k, sec) => {
     const a = (-90 + sec * 72) * Math.PI / 180, mx = C + Math.cos(a) * 158, my = C + Math.sin(a) * 158;
-    const info = mapKind(M, k), n = (by[k] || []).length;
+    const info = mapKind(M, k), n = (by[k] || []).length, emo = M["캐릭터"]?.[k]?.["이모지"] || info[1];
     marks += `<g opacity="${n ? 1 : 0.4}"><circle cx="${mx}" cy="${my}" r="14" fill="#2a2140" stroke="${KCOL[k]}" stroke-width="1.5"/>
-      <text x="${mx}" y="${my + 5}" text-anchor="middle" font-size="14">${info[1]}</text></g>`;
+      <text x="${mx}" y="${my + 5}" text-anchor="middle" font-size="14">${emo}</text></g>`;
     (by[k] || []).forEach((m, i, arr) => {
       const t = ang(i, arr.length, sec), r = rad(m["케미"]) - (arr.length > 2 && i % 2 ? 9 : 0);
       const x = C + Math.cos(t) * r, y = C + Math.sin(t) * r;
       const sz = Math.max(14, 15 + (m["나에게"]["영향력"] - 40) / 60 * 7), col = ELC[m["유형"]["오행"]] || "#fff";
       const nm = [...m["이름"]].slice(0, 3).join(""), fs = nm.length <= 2 ? 12.5 : 10.5;
       lines += `<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="${KCOL[k]}" stroke-opacity="${0.15 + (m["케미"] - 30) / 68 * 0.5}" stroke-width="1.5"/>`;
-      stars += `<g class="mstar" data-mid="${esc(m.id)}" style="cursor:pointer"><title>${esc(m["이름"])} · ${esc(m["나에게"]["세부"])} · 케미 ${m["케미"]}</title>
+      const rl = relRole(M, m["관계"]);
+      stars += `<g class="mstar" data-mid="${esc(m.id)}" data-g="${ROLE_GRP[m["관계"]] || ""}" style="cursor:pointer"><title>${esc(m["이름"])} · ${esc(m["설명서"]?.["별명"] || m["나에게"]["세부"])} · 케미 ${m["케미"]}</title>
         ${m["나에게"]["천을귀인"] ? `<circle cx="${x}" cy="${y}" r="${sz + 6}" fill="none" stroke="#ffd66b" stroke-dasharray="3 3" opacity=".9"/>` : ""}
         <circle cx="${x}" cy="${y}" r="${sz + 4}" fill="${col}" opacity=".18"/>
         <circle cx="${x}" cy="${y}" r="${sz}" fill="${col}" stroke="#fff" stroke-width="1.5"/>
-        <text x="${x}" y="${y + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#2a2140">${esc(nm)}</text></g>`;
+        <text x="${x}" y="${y + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#2a2140">${esc(nm)}</text>
+        ${rl ? `<circle cx="${x + sz * 0.8}" cy="${y - sz * 0.75}" r="8" fill="#2a2140"/><text x="${x + sz * 0.8}" y="${y - sz * 0.75 + 4}" text-anchor="middle" font-size="10">${rl[1]}</text>` : ""}</g>`;
     });
   });
   const sky = Array.from({ length: 40 }, (_, i) => `<circle cx="${(i * 97) % W}" cy="${(i * 53 + 17) % W}" r="${i % 5 ? 0.8 : 1.4}" fill="#fff" opacity="${0.2 + (i % 4) * 0.12}"/>`).join("");
@@ -81,20 +83,25 @@ function mapBody(M, owner = true) {
   ms.forEach((m) => { (groups[m["올해"]["이름"]] ||= { e: m["올해"], names: [] }).names.push(m["이름"]); });
   const medal = (i) => ["🥇", "🥈", "🥉"][i] || `${i + 1}`;
   return `
-    <div class="card map-card"><div class="card-head"><h2>관계 지도 <span class="sub">· ${sm["인원"]}${M["정원"] ? `/${M["정원"]}` : ""}명${M["대기수"] ? ` · 대기 ${M["대기수"]}` : ""}</span></h2><span class="badge">${esc(sm["칭호"])}</span></div>
+    <div class="card map-card"><div class="card-head"><h2>${owner && M["인맥"] ? "냥이의 인연 수첩" : "관계 지도"} <span class="sub">· ${sm["인원"]}${M["정원"] ? `/${M["정원"]}` : ""}명${M["대기수"] ? ` · 대기 ${M["대기수"]}` : ""}</span></h2><span class="badge">${esc(sm["칭호"])}</span></div>
       <div class="map-me">${esc(M["주인"]["유형"]["이모지"])} ${esc(M["주인"]["이름"])}님 · <b>${esc(M["주인"]["유형"]["이름"])}</b> · ${M["연도"]} ${esc(M["주인"]["올해"]["이모지"])} ${esc(M["주인"]["올해"]["이름"])}</div>
+      ${owner ? mfilterHtml(M) : ""}
       ${starMap(M, { slot: !owner })}
-      <div class="kcount">${kinds.map((k) => { const i = kindName(k); return `<div><i class="kdot" style="background:${KCOL[k]}"></i><b>${sm["유형수"][k]}</b><small>${i[1]}<br>${esc(i[2])}</small></div>`; }).join("")}</div></div>
+      <div class="kcount">${kinds.map((k) => { const i = kindName(k), c = M["캐릭터"]?.[k]; return `<div><i class="kdot" style="background:${KCOL[k]}"></i><b>${sm["유형수"][k]}</b><small>${c ? `${c["이모지"]}<br><b class="kname">${esc(c["이름"].replace(/ 냥$/, ""))}</b>` : i[1]}<br>${esc(i[2])}</small></div>`; }).join("")}</div></div>
+    ${owner ? netCard(M) : ""}
     ${owner ? `<div class="card tint-butter"><div class="today">${ring(sm["귀인점수"], "귀인 점수", "", "#e0a92b")}
       <div><h3 style="margin:0 0 4px">나의 귀인 점수</h3><p class="sub" style="margin:0">지도에 있는 사람들이 내 용신을 채워 주는 정도, 천을귀인, 귀인 관계를 모아 계산했다냥.</p>
       ${sm["가장큰귀인"] ? `<p style="margin:6px 0 0">🌟 가장 큰 힘이 되는 사람: <b>${esc(sm["가장큰귀인"]["이름"])}</b> (${sm["가장큰귀인"]["영향력"]})</p>` : ""}
       ${sm["내가귀인"] ? `<p style="margin:2px 0 0">🤲 내가 가장 힘이 되는 사람: <b>${esc(sm["내가귀인"]["이름"])}</b> (${sm["내가귀인"]["영향력"]})</p>` : ""}</div></div>
       <p class="map-line">🐾 ${esc(sm["한줄"])}</p></div>` : `<p class="map-line card">🐾 ${esc(sm["한줄"])}</p>`}
     ${Object.keys(groups).length ? `<div class="card"><h2>${M["연도"]}년, 같은 한 해를 보내는 사람들</h2>${Object.values(groups).map((g) => `<div class="yg"><b>${esc(g.e["이모지"])} ${esc(g.e["이름"])}</b> <span class="sub">${esc(g.e["설명"])}</span><div>${g.names.map(esc).join(" · ")}</div></div>`).join("")}</div>` : ""}
-    <div class="card"><h2>케미 순위</h2><div class="mlist">${ms.length ? ms.map((m, i) => `<button type="button" class="mrow" data-mid="${esc(m.id)}">
-      <span class="md">${medal(i)}</span><span class="mn"><b>${esc(m["이름"])}</b> <small>${esc(m["유형"]["이모지"])} ${esc(m["유형"]["이름"])}</small>
+    <div class="card"><h2>${owner && M["인맥"] ? "📒 사람별 사용설명서" : "케미 순위"}</h2>${owner && ms.length && M["인맥"] ? `<p class="sub" style="margin:-4px 0 10px">이름을 누르면 존중·조심·채워 주기·해 주면 좋은 것이 나온다냥</p>` : ""}
+      <div class="mlist">${ms.length ? ms.map((m, i) => { const g = m["설명서"], rl = relRole(M, m["관계"]);
+        return `<button type="button" class="mrow" data-mid="${esc(m.id)}" data-g="${ROLE_GRP[m["관계"]] || ""}">
+      <span class="md">${medal(i)}</span><span class="mn"><b>${esc(m["이름"])}</b>${rl ? ` <em class="rtag">${rl[1]} ${esc(rl[0])}</em>` : ""}
+      ${g ? `<small class="nick">${g["캐릭터"]["이모지"]} ${esc(g["별명"])}</small>` : `<small>${esc(m["유형"]["이모지"])} ${esc(m["유형"]["이름"])}</small>`}
       <small>${esc(m["나에게"]["이모지"])} ${esc(m["나에게"]["세부"])}${m["나에게"]["천을귀인"] ? " · ✨천을귀인" : ""} · ${esc(m["올해"]["이모지"])} ${esc(m["올해"]["이름"])}</small></span>
-      <span class="ms">${m["케미"]}</span></button>`).join("") : `<p class="sub">아직 아무도 없다냥. 아래에서 친구를 초대해 봐!</p>`}</div></div>`;
+      <span class="ms">${m["케미"]}</span></button>`; }).join("") : `<p class="sub">아직 아무도 없다냥. 아래에서 친구를 초대해 봐!</p>`}</div></div>`;
 }
 
 function openMember(m, owner, onDelete, onWait, onLetter) {
@@ -118,11 +125,14 @@ function openMember(m, owner, onDelete, onWait, onLetter) {
   $("#m-del")?.addEventListener("click", () => { closeSheet(); onDelete(); });
 }
 
-function bindMap(root, M, owner, onDelete, onWait, onLetter) {
+function bindMap(root, M, owner, onDelete, onWait, onLetter, onRole) {
   $$("[data-mid]", root).forEach((el) => el.addEventListener("click", () => {
     const m = M["멤버"].find((x) => x.id === el.dataset.mid);
-    if (m) openMember(m, owner, onDelete ? () => onDelete(m) : null, onWait ? () => onWait(m, true) : null, onLetter ? () => onLetter(m) : null);
+    if (!m) return;
+    if (owner && m["설명서"]) openGuide(M, m, { del: onDelete && (() => onDelete(m)), wait: onWait && (() => onWait(m, true)), letter: onLetter && (() => onLetter(m)), role: onRole });
+    else openMember(m, owner, onDelete ? () => onDelete(m) : null, onWait ? () => onWait(m, true) : null, onLetter ? () => onLetter(m) : null);
   }));
+  if (owner) bindMFilter(root);
 }
 function waitCard(M) {
   const ws = M["대기"] || [], full = M["멤버"].length >= (M["정원"] || 10);
@@ -178,8 +188,10 @@ async function renderMapPane() {
       <p class="fine" style="margin:8px 0 0">${esc(link)}</p></div>` : `
     <div class="card tint-pink"><h2>➕ 친구 직접 넣기</h2><p class="sub">지금은 공유 저장소 연결 전이라 <b>이 폰에만 저장</b>돼요. 연결되면 링크 한 번으로 친구가 직접 올라온다냥.</p>
       <label class="field"><span>친구 별명</span><input id="fr-name" maxlength="12" placeholder="예) 단짝 지수"></label>
+      <div class="field"><span>나에게 이 사람은?</span>${roleChips(mapData, "friend", "fr-role", false)}</div>
       <form id="form-fr" class="form" autocomplete="off"></form>
       <button class="btn primary wide" type="button" id="fr-add">지도에 올리기</button></div>`);
+  const frRole = $("#fr-role") ? pickChips($("#fr-role")) : () => "";
   if (!S.share) { buildForm($("#form-fr"), "fr", "친구 생일"); $("#form-fr .form-title")?.remove(); { const nf = $("#form-fr [name=nm]")?.closest(".field"); if (nf) nf.hidden = true; } }
   const setWait = async (m, wait) => {
     try { await api(`/api/map/${ref.id}/member/${m.id}/wait`, { token: ref.token, wait }); renderMapPane(); }
@@ -190,7 +202,14 @@ async function renderMapPane() {
     else { const fr = localFriends(); fr.splice(+m.id.replace("local", ""), 1); setLocalFriends(fr); }
     renderMapPane();
   };
-  bindMap(pane, mapData, true, delMember, S.share && ref ? setWait : null, S.share && ref ? (m) => openLetter(m, ref) : null);
+  const setRole = async (m, role) => {
+    if (S.share && ref) await api(`/api/map/${ref.id}/member/${m.id}/role`, { token: ref.token, role });
+    else { const fr = localFriends(), i = +m.id.replace("local", ""); if (fr[i]) { fr[i].role = role; setLocalFriends(fr); } }
+    closeSheet(); await renderMapPane();
+    const again = mapData?.["멤버"].find((x) => x.id === m.id);
+    if (again?.["설명서"]) openGuide(mapData, again, { role: setRole, del: () => delMember(again), wait: S.share && ref ? () => setWait(again, true) : null, letter: S.share && ref ? () => openLetter(again, ref) : null });
+  };
+  bindMap(pane, mapData, true, delMember, S.share && ref ? setWait : null, S.share && ref ? (m) => openLetter(m, ref) : null, setRole);
   if (S.share && ref) loadLetters(ref);
   $$("[data-wup]", pane).forEach((b) => b.addEventListener("click", () => setWait({ id: b.dataset.wup }, false)));
   $$("[data-wdel]", pane).forEach((b) => b.addEventListener("click", () => {
@@ -209,7 +228,7 @@ async function renderMapPane() {
     if (!name) { alert("친구 별명을 적어 달라냥"); return; }
     let b; try { b = birthOf($("#form-fr")); } catch (err) { alert(err.message); return; }
     if (mapBusy) return; mapBusy = true;
-    const fr = localFriends(); fr.push({ name, birth: { ...b, name } });
+    const fr = localFriends(); fr.push({ name, birth: { ...b, name }, role: frRole() });
     try { await api("/api/mapcalc", { me: S.birth, others: [fr[fr.length - 1]] }); setLocalFriends(fr); renderMapPane(); }
     catch (err) { alert(err.message); } finally { mapBusy = false; }
   });
@@ -231,6 +250,7 @@ async function guestMap(mid) {
     ${mapBody(M, false)}
     <div class="card" id="g-join"><h2>🙋 생일 넣고 내 자리 찾기</h2>
       <label class="field"><span>이름 또는 별명 <em>지도에 보여요 · 별명 권장</em></span><input id="g-name" maxlength="12" placeholder="예) 고양이 집사"></label>
+      ${guestRoleChips(owner)}
       <form id="form-g" class="form" autocomplete="off"></form>
       <p class="sub">${esc(owner)}님의 지도에는 내 생년월일이 <b>저장되지 않고</b>, 계산된 관계 결과와 별명만 올라가요.</p>
       <label class="check consent"><input type="checkbox" id="g-consent"> 만 14세 이상이며, 별명과 관계 결과를 지도에 올리는 데 동의해요(<a href="/privacy.html" target="_blank">개인정보 처리방침</a>)</label>
@@ -241,6 +261,7 @@ async function guestMap(mid) {
     <p class="foot">사주는 정답지가 아니라 지도다냥 · 언제든 내 별을 지울 수 있어요<br><a href="/privacy.html">개인정보 처리방침</a> · <a href="/terms.html">이용약관</a></p>`;
   buildForm($("#form-g"), "g", "내 생일"); $("#form-g .form-title")?.remove(); { const nf = $("#form-g [name=nm]")?.closest(".field"); if (nf) nf.hidden = true; }
   bindMap(box, M, false, null);
+  const gRole = pickChips($("#g-role"));
   paintNyang(box);
   $("#g-go").addEventListener("click", async (e) => {
     const name = $("#g-name").value.trim();
@@ -252,7 +273,7 @@ async function guestMap(mid) {
       const bk = `nyang:mapref:${hashStr(JSON.stringify(CORE.map((k) => b?.[k])))}`;
       let myMap = null; try { myMap = JSON.parse(localStorage.getItem(bk) || "null"); } catch { myMap = null; }
       const mutual = $("#g-mutual").checked;
-      const r = await api(`/api/map/${encodeURIComponent(mid)}/join`, { name, birth: { ...b, name }, consent: true, mutual, my_map: mutual && myMap ? myMap : null });
+      const r = await api(`/api/map/${encodeURIComponent(mid)}/join`, { name, birth: { ...b, name }, consent: true, mutual, role: gRole(), my_map: mutual && myMap ? myMap : null });
       try {
         if (r.id) localStorage.setItem(`nyang:joined:${mid}`, JSON.stringify({ id: r.id, token: r.token }));
         if (r["내지도"]) localStorage.setItem(bk, JSON.stringify({ id: r["내지도"].id, token: r["내지도"].token }));
@@ -265,6 +286,9 @@ async function guestMap(mid) {
           <div class="fit"><small>나에게 ${esc(owner)}님은</small><b>${esc(me["이모지"])} ${esc(me["세부"])}</b><div class="sub">용신 채움 ${me["보완"]}</div></div></div>
         <p style="margin:10px 0 4px">나는 <b>${esc(r["나"]["이모지"])} ${esc(r["나"]["이름"])}</b> · ${r["나의올해"]["이모지"]} ${esc(r["나의올해"]["이름"])} — ${esc(r["나의올해"]["설명"])}</p>
         <p class="sub">🔄 ${esc(r["내시선"]["흐름"])}</p>
+        ${r["내설명서"] ? `<div class="gd-guest"><div class="gd-head"><span class="gd-char">${r["내설명서"]["캐릭터"]["이모지"]}</span><div><small>나에게 ${esc(owner)}님은 ${esc(r["내설명서"]["캐릭터"]["이름"])}</small>
+          <h2>📒 ${esc(owner)}님 사용설명서</h2><div class="gd-nick">“${esc(r["내설명서"]["별명"])}”</div></div></div>
+          <p class="sub">${esc(r["내설명서"]["한줄"])}</p>${guideHtml(r["내설명서"])}</div>` : ""}
         ${r["이미"] ? `<p class="note-box">🐾 이미 ${esc(owner)}님 지도에 올라가 있어서 한 번 더 올리진 않았다냥.</p>` : ""}
         ${r["대기"] ? `<p class="note-box">⏳ ${esc(owner)}님 지도가 꽉 차서(${10}명) <b>대기 명단</b>에 들어갔다냥. ${esc(owner)}님이 자리를 내 주면 별로 떠요.</p>` : ""}
         ${mm ? `<p class="note-box">🔗 <b>서로 연결 완료!</b> ${esc(owner)}님이 ${mm["new"] ? "새로 만든 내 귀인 지도의 첫 별로" : "내 귀인 지도에"} ${mm["주인올림"] === false ? "이미 떠 있다냥." : mm["주인대기"] ? "들어갔는데 지도가 꽉 차서 대기 명단에 있어." : "떴다냥! 🌟"}</p>` : ""}

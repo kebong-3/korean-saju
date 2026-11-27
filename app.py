@@ -51,6 +51,7 @@ ilju = _opt("ilju")
 pae = _opt("pae")
 sinsal_story = _opt("sinsal_story")
 seo = _opt("seo")
+inyeon = _opt("inyeon")
 
 
 def _safe(fn, *args, **kw):
@@ -660,9 +661,13 @@ def push_cron_sunday(authorization: str = Header(default="")):
     return push.send_all(share_store, today_kst(), kind="sunday")
 
 
+RoleT = Literal["", "friend", "coworker", "boss", "junior", "family", "love"]  # 지도 주인 입장의 실제 관계
+
+
 class MapOther(BaseModel):
     name: str = Field(max_length=20)
     birth: Birth
+    role: RoleT = ""
 
 
 class MapCalcReq(BaseModel):
@@ -680,11 +685,22 @@ def _member(me_r, name: str, other_r, year: int) -> dict:
     return v
 
 
-def _map_out(me_r, me_name: str, members: list[dict], year: int) -> dict:
-    return {"주인": {"이름": me_name or "나", "유형": relation.person_type(me_r), "올해": relation.year_type(me_r, year),
-                   "용신": me_r.analysis.yongshin},
-            "연도": year, "멤버": sorted(members, key=lambda m: -m["케미"]),
-            "요약": relation.summary(me_r, members, year), "종류": relation.KIND, "순서": relation.KIND_ORDER}
+def _map_out(me_r, me_name: str, members: list[dict], year: int, own: bool = True) -> dict:
+    """own=True(지도 주인·내 폰 지도)일 때만 실제 관계 꼬리표·사용설명서·인맥 풀이를 붙인다(손님에겐 숨김)."""
+    for m in members:
+        if not own:
+            m.pop("관계", None)
+        elif inyeon:
+            m["설명서"] = _safe(inyeon.guide, m, m.get("관계", ""))
+    out = {"주인": {"이름": me_name or "나", "유형": relation.person_type(me_r), "올해": relation.year_type(me_r, year),
+                  "용신": me_r.analysis.yongshin},
+           "연도": year, "멤버": sorted(members, key=lambda m: -m["케미"]),
+           "요약": relation.summary(me_r, members, year), "종류": relation.KIND, "순서": relation.KIND_ORDER}
+    if own and inyeon:
+        out["인맥"] = _safe(inyeon.network, members, me_r.analysis.yongshin)
+        out["관계종류"] = {k: {"이름": n, "이모지": e} for k, (n, e) in inyeon.ROLES.items()}
+        out["캐릭터"] = {k: {"이름": n, "이모지": e, "소개": t} for k, (n, e, t) in inyeon.CHAR.items()}
+    return out
 
 
 @app.post("/api/mapcalc")
@@ -698,6 +714,7 @@ def mapcalc(req: MapCalcReq):
     for i, o in enumerate(req.others):
         m = _member(me_r, _nick(o.name), _reading(o.birth, f"{o.name} 생일: "), year)
         m["id"] = f"local{i}"
+        m["관계"] = o.role
         members.append(m)
     return _map_out(me_r, req.me.name, members, year)
 
@@ -759,15 +776,19 @@ def map_get(mid: str, token: str = "", x_token: str = Header(default="")):
     me_r = _reading(owner)
     year = _target_year()
     members, waits = [], []
+    own = share_store.owner_ok(rec, token)
     for pid, e in ms.items():
         v = dict(e["view"])
         v["id"] = pid
+        v["관계"] = e.get("role", "")
         (waits if e.get("wait") else members).append(v)
-    out = _map_out(me_r, rec["owner"]["name"], members, year)
-    own = share_store.owner_ok(rec, token)
+    out = _map_out(me_r, rec["owner"]["name"], members, year, own)
     out.update({"주인권한": own, "정원": share_store.ACTIVE_MAX, "대기수": len(waits)})
     if own:  # 대기 명단의 이름은 주인에게만
         out["대기"] = sorted(waits, key=lambda m: -m["케미"])
+    else:
+        for w in waits:
+            w.pop("관계", None)
     return out
 
 
@@ -780,6 +801,7 @@ class MapJoinReq(BaseModel):
     name: str = Field(max_length=20)
     birth: Birth
     consent: bool
+    role: RoleT = ""                     # 주인 입장에서 나는 어떤 사이인지(손님이 고름: 내가 상사면 boss)
     mutual: bool = False                 # 내 지도에도 주인을 자동으로 올리기(없으면 내 지도를 새로 만든다)
     my_map: Optional[MapRef] = None      # 이 기기에 이미 내 지도가 있으면 그 지도
 
@@ -811,17 +833,21 @@ def map_join(mid: str, req: MapJoinReq):
             print(f"[map] 내 지도 준비 실패: {e!r}")
             my_ref = None
     try:
-        pid, mtoken, wait = share_store.add_member(mid, view, src=my_ref["id"] if my_ref else None)
+        pid, mtoken, wait = share_store.add_member(mid, view, src=my_ref["id"] if my_ref else None, role=req.role)
     except share_store.StoreError as e:
         raise HTTPException(409, str(e)) from e
     if my_ref:
         try:
             back = _member(me_r, rec["owner"]["name"], owner_r, year)
-            bpid, _, bwait = share_store.add_member(my_ref["id"], back, src=mid)
+            back_role = (inyeon.INVERSE.get(req.role, req.role) if inyeon else "")
+            bpid, _, bwait = share_store.add_member(my_ref["id"], back, src=mid, role=back_role)
             my_ref.update({"주인올림": bpid is not None, "주인대기": bwait})
         except share_store.StoreError as e:
             print(f"[map] 내 지도에 주인 올리기 실패: {e!r}")
+    my_role = inyeon.INVERSE.get(req.role, req.role) if inyeon else ""
+    my_view = {"나에게": mine["나에게"], "상대에게": mine["상대에게"], "유형": mine["상대유형"], "케미": mine["케미"]}
     return {"id": pid, "token": mtoken, "이미": pid is None, "대기": wait, "주인이름": rec["owner"]["name"],
+            "내설명서": _safe(inyeon.guide, my_view, my_role) if inyeon else None,
             "나": relation.person_type(me_r), "나의올해": relation.year_type(me_r, year), "내시선": mine, "주인시선": view,
             "내지도": my_ref}
 
@@ -851,6 +877,24 @@ LETTER_LINES = {
     "금": "반짝이는 별 같은 응원을 보낸다냥 ✨ 너의 결단을 믿어!",
     "수": "시원한 물 한 잔 같은 응원을 보낸다냥 💧 푹 쉬어 가!",
 }
+
+
+class RoleReq(BaseModel):
+    token: str = Field(max_length=64)
+    role: RoleT = ""
+
+
+@app.post("/api/map/{mid}/member/{pid}/role")
+def map_member_role(mid: str, pid: str, req: RoleReq):
+    """주인만: 이 별이 나에게 어떤 사이인지 정한다 — 사용설명서와 인맥 풀이가 달라진다."""
+    _load_map(mid)
+    try:
+        ok = share_store.set_role(mid, pid, req.token, req.role)
+    except share_store.StoreError as e:
+        raise HTTPException(403, str(e)) from e
+    if not ok:
+        raise HTTPException(404, "그 별을 찾을 수 없다냥")
+    return {"ok": True}
 
 
 class LetterReq(BaseModel):

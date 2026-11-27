@@ -63,7 +63,7 @@ Vercel → Project → Settings → Environment Variables
 연결 확인: `https://<도메인>/api/status` → `{"ai": true, ...}`. 키 이름·실제 호출 점검(`?check=1`)은 운영자만: `Authorization: Bearer <CRON_SECRET>` 헤더를 붙여 부른다.
 
 키가 없으면 대풀이는 규칙 기반 서술형 풀이로, 상담은 무료 시나리오 상담으로 동작합니다.
-사용량 제한(sajunyang/guard.py): 접속 주소마다 AI 상담 1분 10회·하루 300회, 대풀이 1분 6회·하루 150회 등. Redis(KV/Upstash)를 연결하면 모든 서버가 같은 숫자를 보고, 없으면 서버마다 메모리로 센다. 보안 헤더(CSP 등)는 guard.HEADERS와 vercel.json이 같은 값이어야 한다(테스트가 확인).
+사용량 제한(sajunyang/guard.py): 앱은 자유 상담을 하루 5개(오행 구슬)로 안내하고, 서버는 접속 주소마다 AI 상담 1분 10회·하루 100회, 대풀이 1분 6회·하루 150회 등. Redis(KV/Upstash)를 연결하면 모든 서버가 같은 숫자를 보고, 없으면 서버마다 메모리로 센다. 보안 헤더(CSP 등)는 guard.HEADERS와 vercel.json이 같은 값이어야 한다(테스트가 확인).
 
 ## 고지
 사주는 성향과 흐름을 읽는 전통 해석 체계입니다. 냥이의 옛이야기는 개념 설명용 창작 설화입니다.

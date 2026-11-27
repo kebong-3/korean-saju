@@ -2,9 +2,9 @@
    - 버전이 붙은 파일(?v=)은 내용이 바뀌지 않으므로 캐시에서 바로 연다(두 번째 방문부터 즉시).
    - 화면(HTML)은 네트워크 우선, 3초 안에 답이 없거나 오프라인이면 캐시로.
    - /api 는 항상 네트워크로(캐시하지 않음). */
-const V = "25";
+const V = "26";
 const CACHE = "nyang-v" + V;
-const JS = ["core", "shell", "home", "luck", "saju", "compat", "talk", "reading", "records", "play", "path", "flow", "look", "init"];
+const JS = ["core", "shell", "home", "luck", "saju", "compat", "inyeon", "talk", "reading", "records", "play", "path", "flow", "look", "init"];
 const SHELL = ["/", "/boot.js?v=1", `/style.css?v=${V}`, "/nyang.js?v=3", "/nyang.svg", "/manifest.webmanifest",
   ...JS.map((n) => `/js/${n}.js?v=${V}`)];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });

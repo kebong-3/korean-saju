@@ -1120,3 +1120,80 @@ html.night .track { background: #2b2546 !important; }
 html.night .pae-back { background: linear-gradient(160deg, #4b3a8c, #2f2660) !important; color: #fff; }
 html.night .seg label b { color: var(--sub); } html.night .seg input:checked + b { background: var(--card); color: #ffc2d0; }
 html.night .tl-row.now .tl-dot i { background: var(--pink) !important; color: #fff; } html.night .tl-row.future .tl-dot i { background: #1d3f36 !important; color: #8ee6c8; }
+
+/* ───────── 오행 구슬 */
+.beads { display: inline-flex; align-items: center; gap: 5px; border: 0; background: #fff; border-radius: 99px; padding: 6px 12px 6px 8px; cursor: pointer; font: 13.5px var(--title); color: var(--ink); box-shadow: var(--shadow); min-height: 40px; }
+.beads span { margin-left: 4px; } .beads b { color: var(--pink-d); font-weight: 400; }
+.beads em { font-style: normal; width: 18px; height: 18px; border-radius: 50%; background: var(--lav-l); color: var(--lav-d); font-size: 12px; display: grid; place-items: center; }
+.bd { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font: 11px var(--title); font-style: normal; color: #3b2f4a;
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, var(--c) 55%); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .12), 0 1px 3px rgba(0, 0, 0, .15); transition: .3s; }
+.bd.used { filter: grayscale(1); opacity: .3; transform: scale(.85); }
+.bead-row { display: flex; gap: 8px; justify-content: center; margin: 4px 0 12px; } .bead-row .bd { width: 34px; height: 34px; font-size: 15px; }
+.bead-note { margin: -4px 0 10px 48px; font-size: 12.5px; color: var(--sub); display: flex; align-items: center; gap: 6px; }
+.bead-note .bd { width: 18px; height: 18px; font-size: 10px; }
+.quote { background: #fbf6ee; border-radius: 14px; padding: 10px 12px; font: 15px var(--title); text-align: center; } .quote small { color: var(--sub); font-family: var(--body); }
+html.night .beads, html.night .quote { background: #2b2546 !important; color: var(--ink); } html.night .beads em { background: #33295a; color: #cdbdff; }
+
+/* ───────── 냥이의 인연 수첩: 인맥 별자리 · 관계 꼬리표 · 사용설명서 · 오행 구슬 */
+.mfilter { display: flex; gap: 6px; overflow-x: auto; margin: 2px 0 10px; scrollbar-width: none; }
+.mfilter button { flex: none; border: 0; background: #f6f0fb; color: var(--ink); border-radius: 99px; padding: 8px 13px; font: 14px var(--title); cursor: pointer; min-height: 36px; }
+.mfilter button.on { background: var(--lav); color: #fff; }
+.mstar, .mrow { transition: opacity .2s; }
+.tips.plain li { padding-left: 12px; } .tips.plain li::before { content: none; }
+.kcount small .kname { display: inline; font: 13px var(--title); color: var(--ink); white-space: nowrap; }
+.mstar.dim, .mrow.dim { opacity: .16; }
+.rtag { font-style: normal; font: 12px var(--title); background: var(--lav-l); color: var(--lav-d); border-radius: 99px; padding: 2px 8px; margin-left: 4px; white-space: nowrap; }
+.mrow .mn small.nick { color: var(--pink-d); font: 13.5px var(--title); }
+.net-card { background: linear-gradient(165deg, #fff 35%, #f3ecff); }
+.net-type { display: flex; gap: 12px; align-items: center; }
+.net-emo { font-size: 40px; width: 62px; height: 62px; display: grid; place-items: center; background: #fff7e3; border-radius: 20px; flex: none; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .05); }
+.net-type small { color: var(--lav-d); font: 13px var(--title); }
+.net-type h2 { margin: 0; }
+.net-desc { margin: 10px 0; }
+.net-bal { display: grid; gap: 2px; background: #fff; border-radius: 16px; padding: 10px 12px; margin-bottom: 12px; font-size: 14.5px; }
+.net-bal b { font: 16px var(--title); }
+.el-stack { display: flex; height: 14px; border-radius: 99px; overflow: hidden; gap: 2px; background: #f1eaf6; }
+.el-stack i { display: block; min-width: 6px; }
+.el-lbl { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--sub); margin-top: 6px; }
+.el-lbl .yong { color: var(--ink); font-weight: 700; text-decoration: underline 2px var(--pink); text-underline-offset: 3px; }
+.net-work { display: grid; gap: 2px; background: #eef4ff; border-radius: 16px; padding: 10px 12px; margin-top: 10px; font-size: 14.5px; }
+.net-work b { font: 15px var(--title); }
+.role-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+.role-pick button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 99px; padding: 8px 12px; font: 14px var(--title); cursor: pointer; min-height: 38px; }
+.role-pick button.on { background: var(--pink); border-color: var(--pink); color: #fff; }
+.role-pick .ghost-chip { color: var(--sub); border-style: dashed; }
+.gd-head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.gd-char { font-size: 38px; width: 60px; height: 60px; flex: none; display: grid; place-items: center; background: #2a2140; border-radius: 20px; box-shadow: 0 0 0 3px #ffd66b55; }
+.gd-head small { color: var(--lav-d); font: 13px var(--title); }
+.gd-head h2 { margin: 0; font-size: 21px; }
+.gd-head h2 em { font-style: normal; font: 13px var(--title); background: var(--lav-l); color: var(--lav-d); border-radius: 99px; padding: 2px 8px; vertical-align: middle; }
+.gd-nick { font: 17px var(--hand, var(--title)); color: var(--pink-d); margin-top: 2px; }
+.gd-q { margin: 14px 0 4px; font-size: 16px; }
+.gd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gd { border-radius: 16px; padding: 10px 12px; font-size: 14px; line-height: 1.55; }
+.gd small { display: block; font: 13.5px var(--title); margin-bottom: 3px; }
+.gd.r { background: #fff0f4; } .gd.r small { color: var(--pink-d); }
+.gd.c { background: #fff6e0; } .gd.c small { color: #b8740b; }
+.gd.f { background: #e9f8f2; } .gd.f small { color: #2a8c6a; }
+.gd.g { background: #f0ebff; } .gd.g small { color: var(--lav-d); }
+.gd-line { background: #fbf8fd; border-radius: 14px; padding: 10px 12px; margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; }
+.gt { background: #fbf8fd; border-radius: 16px; padding: 12px; margin-top: 10px; font-size: 13.5px; display: grid; gap: 6px; }
+.gt div { display: grid; grid-template-columns: 96px 1fr 30px; align-items: center; gap: 8px; }
+.gt span { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gt i { display: block; height: 10px; border-radius: 99px; background: linear-gradient(90deg, #ffd66b var(--w), #efe7f3 var(--w)); }
+.gt i.give { background: linear-gradient(90deg, #ff8fa3 var(--w), #efe7f3 var(--w)); }
+.gt b { font: 15px var(--title); text-align: right; }
+.gt p { margin: 2px 0 0; font-size: 14px; }
+.gd-guest { background: #fff; border-radius: 18px; padding: 12px; margin: 12px 0; box-shadow: inset 0 0 0 1.5px var(--line); }
+@media (max-width: 360px) { .gd-grid { grid-template-columns: 1fr; } .gt div { grid-template-columns: 78px 1fr 28px; } }
+html.night .net-card { background: linear-gradient(165deg, var(--card) 35%, var(--lav-l)) !important; }
+html.night .net-emo { background: #3e3520; }
+html.night .net-bal, html.night .gd-line, html.night .gt, html.night .gd-guest, html.night .role-pick button, html.night .mfilter button { background: #2b2546 !important; color: var(--ink); border-color: var(--line); }
+html.night .role-pick button.on, html.night .mfilter button.on { background: var(--pink) !important; color: #fff; }
+html.night .net-work { background: #233058; }
+html.night .el-stack { background: #2b2546; }
+html.night .gd.r { background: #4a2a3d; } html.night .gd.c { background: #43361e; } html.night .gd.f { background: #1d3b35; } html.night .gd.g { background: #33295a; }
+html.night .gd.r small { color: #ffb3c4; } html.night .gd.c small { color: #ffd38a; } html.night .gd.f small { color: #8ee6c8; } html.night .gd.g small { color: #cdbdff; }
+html.night .gt i { background: linear-gradient(90deg, #ffd66b var(--w), #3a3354 var(--w)); } html.night .gt i.give { background: linear-gradient(90deg, #ff8fa3 var(--w), #3a3354 var(--w)); }
+html.night .rtag, html.night .gd-head h2 em { background: #33295a; color: #cdbdff; }
+html.night .mrow .mn small.nick, html.night .gd-nick { color: #ffb3c4; }

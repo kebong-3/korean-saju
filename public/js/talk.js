@@ -65,7 +65,7 @@ function startTalk() {
   tab.dataset.ready = "1";
   tab.innerHTML = `
     <div class="card tint-lav" style="text-align:center"><span class="float" data-nyang="happy" data-size="96" style="display:inline-block"></span>
-      <h2 style="margin:6px 0 2px">사주냥이 고민 상담소</h2><p class="sub" style="margin:0">2천 년 동안 인간의 사주를 봐 온 냥이가 네 사주로 답해 준다냥</p></div>
+      <h2 style="margin:6px 0 2px">사주냥이 고민 상담소</h2><p class="sub" style="margin:0 0 10px">2천 년 동안 인간의 사주를 봐 온 냥이가 네 사주로 답해 준다냥</p>${beadBar()}</div>
     ${S.chat.partner ? `<p class="ctx-note">${S.chat.role === "child" ? "👨‍👧 아이 사주도 함께 보고 있어요" : "💞 상대방 사주도 함께 보고 있어요"}</p>` : ""}
     <div class="chat" id="chat"></div>
     <form class="composer" id="composer"><input name="q" maxlength="300" placeholder="${S.ai ? "냥이에게 무엇이든 털어놔 봐" : "고민을 적으면 냥이가 알맞은 답을 찾아줘"}" autocomplete="off">
@@ -74,12 +74,63 @@ function startTalk() {
   const past = store.get("talklog", null);
   if (past?.html) $("#chat").insertAdjacentHTML("beforebegin", `<details class="past-chat"><summary>💬 지난 상담 다시 보기 <small>${esc(past.at)}</small></summary><div class="chat">${past.html}</div></details>`);
   paintNyang(tab);
+  paintBeads();
   $("#composer").addEventListener("submit", (e) => {
     e.preventDefault();
     const q = e.target.q.value.trim();
     if (q) { e.target.q.value = ""; handleFree(q); }
   });
-  nyangSays([S.d["상담"].intro], "happy").then(topicMenu);
+  const intro = [S.d["상담"].intro];
+  if (!store.get("beadIntro", 0)) { intro.push("참, 냥이는 자유 질문엔 하루에 **오행 구슬 다섯 알**만큼만 답한다냥. 아껴 물을수록 답이 맑아져! 주제를 골라 듣는 상담은 구슬 없이 언제든 돼. 🔮"); store.set("beadIntro", 1); }
+  nyangSays(intro, "happy").then(topicMenu);
+}
+// ───────── 오행 구슬: 자유 질문은 하루 다섯 번(목·화·토·금·수 한 알씩). 주제별 상담·운세·대풀이는 구슬 없이.
+const BEADS = 5;
+const BEAD_EL = ["목", "화", "토", "금", "수"];
+const BEAD_NOTE = { 목: "새싹처럼 첫 질문을 틔웠다냥", 화: "불씨처럼 마음을 밝혔다냥", 토: "흙처럼 단단히 다졌다냥", 금: "칼처럼 또렷이 갈랐다냥", 수: "물처럼 마지막까지 흘려 보냈다냥" };
+function beadState() { const b = store.get("beads", null); return b?.d === kstDate(0) ? b : { d: kstDate(0), n: 0 }; }
+const beadsLeft = () => Math.max(0, BEADS - beadState().n);
+function useBead() {
+  const b = beadState(); b.n = Math.min(BEADS, b.n + 1); store.set("beads", b); paintBeads();
+  track("bead", { n: b.n });
+  return BEAD_EL[b.n - 1];
+}
+function untilMidnight() {
+  const now = new Date(), k = new Date(now.getTime() + 9 * 3600e3);
+  const left = 24 * 60 - (k.getUTCHours() * 60 + k.getUTCMinutes());
+  return left >= 60 ? `${Math.floor(left / 60)}시간 ${left % 60}분` : `${left}분`;
+}
+function beadBar() {
+  const used = BEADS - beadsLeft();
+  return `<button type="button" class="beads" id="beads" aria-label="오늘 남은 오행 구슬 ${BEADS - used}알 — 구슬 이야기 보기">
+    ${BEAD_EL.map((e, i) => `<i class="bd e-${e} ${i < used ? "used" : ""}" style="--c:${ELC[e]}">${HANJA[e]}</i>`).join("")}
+    <span>${used >= BEADS ? `내일 다시 · ${untilMidnight()} 뒤` : `오늘 남은 구슬 <b>${BEADS - used}</b>알`}</span><em>?</em></button>`;
+}
+function paintBeads() {
+  const el = $("#beads"); if (!el) return;
+  el.outerHTML = beadBar();
+  $("#beads").addEventListener("click", beadStory);
+  const inp = $("#composer input[name=q]");
+  if (inp) inp.placeholder = beadsLeft() ? (S.ai ? `냥이에게 무엇이든 털어놔 봐 (구슬 ${beadsLeft()}알)` : "고민을 적으면 냥이가 알맞은 답을 찾아줘") : "오늘 구슬은 다 썼다냥 — 아래 주제 상담은 계속 돼";
+}
+function beadStory() {
+  track("bead_story");
+  openSheet(`<div class="term-head"><span data-nyang="think" data-size="60"></span><div><h2>🔮 냥이의 오행 구슬</h2><div class="term-mean">자유 질문은 하루 다섯 번</div></div></div>
+    <div class="bead-row">${BEAD_EL.map((e) => `<i class="bd" style="--c:${ELC[e]}">${HANJA[e]}</i>`).join("")}</div>
+    <p>2천 년 전, 냥이는 스승 <b>흑묘 선사</b>에게 딱 하나의 규칙을 배웠다냥. <b>“하루의 점은 오행 구슬 다섯 알까지.”</b></p>
+    <p>하루는 목·화·토·금·수 다섯 기운으로 이루어져 있어. 냥이는 질문마다 그날의 기운을 한 알씩 빌려 답을 본다냥. 다섯 알을 다 쓰면 그날 기운을 다 꺼내 본 셈이라, 더 물으면 답이 흐려져.</p>
+    <p class="quote">“처음 물으면 알려 주고, 거듭 물으면 흐려진다.”<br><small>— 주역 몽괘, 初筮告 再三瀆</small></p>
+    <p>그래서 냥이는 <b>아껴 묻는 사람</b>을 좋아한다냥. 하나를 물어도 깊게 묻고, 들은 말 하나를 오늘 해 보는 것 — 그게 운을 바꾸는 진짜 방법이야. 내일 와서 어땠는지 들려주면 냥이가 이어서 봐 줄게.</p>
+    <ul class="tips"><li>🌙 구슬은 <b>매일 자정</b>에 다섯 알이 새로 채워져요.</li><li>🗂 <b>주제를 골라 듣는 상담</b>, 운세, 대풀이, 만세력은 구슬 없이 언제든 볼 수 있어요.</li>
+      <li>💬 냥이 답 한 번에 구슬 한 알. 냥이가 낮잠 자서 답을 못 하면 구슬은 그대로예요.</li></ul>`);
+}
+async function outOfBeads(q) {
+  addMsg("me", esc(q));
+  track("bead_empty");
+  await nyangSays([`오늘 오행 구슬 다섯 알을 다 썼다냥 🫧 목·화·토·금·수 기운을 모두 꺼내 봤으니, 오늘은 여기까지가 가장 맑은 답이야.`,
+    `구슬이 쉬는 동안 오늘 들은 말 하나만 해 보고, **내일(${untilMidnight()} 뒤)** 어땠는지 들려줘. 냥이가 기억해 두고 이어서 봐 줄게.`], "sleepy");
+  choices([["🤝 냥이와 오늘의 약속 정하기", () => { chatEl().insertAdjacentHTML("beforeend", promiseBox()); chatEl().lastElementChild?.scrollIntoView({ behavior: "smooth", block: "end" }); }],
+    ["🗂 주제 골라 상담하기 (구슬 없이)", () => topicMenu()], ["🔮 구슬 이야기", beadStory]]);
 }
 let talkBusy = false;
 async function handleFree(q) {
@@ -97,10 +148,11 @@ async function handleFreeInner(q) {
       "혼자 버티지 않아도 된다냥. 냥이도 여기 있을게. 🐾"], "think");
     return;
   }
+  if (!beadsLeft()) return outOfBeads(q);
   if (S.ai) return aiSend(q);
   addMsg("me", esc(q));
   const hit = ROUTE.find(([re]) => re.test(q));
-  if (hit) { await nyangSays(["냥이가 찰떡같이 알아들었다냥. 네 사주로 보면 말이지…"], "wink"); return answer(hit[1], hit[2]); }
+  if (hit) { useBead(); await nyangSays(["냥이가 찰떡같이 알아들었다냥. 네 사주로 보면 말이지…"], "wink"); return answer(hit[1], hit[2]); }
   await nyangSays(["음… 냥이가 정확히 알아듣지 못했다냥. 어떤 쪽 고민인지 골라 줄래?"], "think");
   topicMenu();
 }
@@ -142,6 +194,9 @@ async function aiSend(q) {
   } catch (e) { err = e.message; }
   if (text) S.chat.history.push({ role: "assistant", content: text }); else S.chat.history.pop();
   if (text) {
+    const el = useBead(), left = beadsLeft();
+    row.insertAdjacentHTML("afterend", `<p class="bead-note"><i class="bd" style="--c:${ELC[el]}">${HANJA[el]}</i> ${el} 구슬로 ${BEAD_NOTE[el]} · ${left ? `남은 구슬 ${left}알` : "오늘 구슬 끝!"}</p>`);
+    if (!left) setTimeout(() => nyangSays(["오늘 구슬 다섯 알을 다 썼다냥. 오늘 들은 것 중 하나만 해 보고, 내일 새 구슬로 이어서 이야기하자! 🌙"], "wink"), 600);
     rememberTalk(q);
     if (!S.chat.promised && store.get("promise", null)?.d !== kstDate(0)) { row.insertAdjacentHTML("afterend", promiseBox()); S.chat.promised = 1; }
   }
